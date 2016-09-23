@@ -45,3 +45,10 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
+bin/Debug/NeuroCorrelation.exe
+*.jpg
+*.o
+resources/lodepng.cpp
+resources/picopng.cpp
+resources/lodepng.h
+NeuroCorrelation.cscope_file_list

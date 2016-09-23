@@ -1,6 +1,7 @@
 #include "NeuCor.h"
 
 #include <vector>
+#include <map>
 #include <stdlib.h>
 #include <iostream>
 #include <cstring>
@@ -30,9 +31,9 @@ void NeuCor::makeConnections(){
 void NeuCor::createNeuron(coord3 position){
     //std::cout<<"Free neurons: "<<freeNeuronIDs.size()<<std::endl;
     if (position.x != position.x){
-        position.x = ((float) rand()/RAND_MAX-0.5)*10.0;
-        position.y = ((float) rand()/RAND_MAX-0.5)*10.0;
-        position.z = ((float) rand()/RAND_MAX-0.5)*10.0;
+        position.x = ((float) rand()/RAND_MAX-0.5)*3.0;
+        position.y = ((float) rand()/RAND_MAX-0.5)*3.0;
+        position.z = ((float) rand()/RAND_MAX-0.5)*3.0;
     }
 
     if (freeNeuronIDs.size() == 0 || false){
@@ -85,10 +86,6 @@ Neuron* NeuCor::getNeuron(std::size_t ID){
     return &neurons.at(ID);
 }
 
-Synapse* NeuCor::getSynapse(synapseID synID){
-    return getSynapse(synID[0], synID[1]);
-}
-
 Synapse* NeuCor::getSynapse(std::size_t fromID, std::size_t toID){
     for (size_t i = 0; i<getNeuron(fromID)->outSynapses.size(); i++)
         if (getNeuron(fromID)->outSynapses.at(i).tN == toID)
@@ -105,14 +102,13 @@ void NeuCor::deleteNeuron(std::size_t ID){
 
     //Delete owned synapses backwards iterating for loop
     for (std::vector<Synapse>::reverse_iterator syn = n->outSynapses.rbegin(); syn != n->outSynapses.rend(); ++syn){
-        //std::cout<<"Deleting outSyn "<<syn.pN<<" -> "<<syn.tN<<std::endl;
         deleteSynapse(syn->pN, syn->tN);
     }
     n->outSynapses.clear();
 
     //Delete input owned synapses using backwards iterating for loop
-    for (std::vector<synapseID>::reverse_iterator syn = n->inSynapses.rbegin(); syn != n->inSynapses.rend(); ++syn){
-        deleteSynapse((*syn)[0],(*syn)[1]);
+    for (auto syn = n->inSynapses.rbegin(); syn != n->inSynapses.rend();){
+        deleteSynapse(syn->first, syn->second);
     }
     n->inSynapses.clear();
 
@@ -213,12 +209,7 @@ void Neuron::removeOutSyn(std::size_t synTo){
     }
 }
 void Neuron::removeInSyn(std::size_t synFrom){
-    for (size_t i = 0; i<inSynapses.size(); i++){
-        if (inSynapses.at(i)[0] == synFrom){
-            inSynapses.erase(inSynapses.begin()+i);
-            return;
-        }
-    }
+    inSynapses.erase(synFrom);
 }
 
 coord3 Neuron::position() const { return parentNet->positions.at(pos); }
@@ -231,23 +222,18 @@ Synapse::Synapse(NeuCor* p, std::size_t parent, std::size_t target)
 :simulator(p) {
     pN = parent;
     tN = target;
+    parentNet->getNeuron(target)->inSynapses.emplace(parent, target);
+
     potential = 0.0;
     lastSpikeArrival = 0.0;
-
-    synapseID synCoordinates = {parent, target};
-    parentNet->getNeuron(target)->inSynapses.push_back(synCoordinates);
-
 
     strength = (float) rand()/RAND_MAX*2.0 - 0.0;
 
     coord3 n1 = parentNet->getNeuron(target)->position();
     coord3 n2 = parentNet->getNeuron(parent)->position();
     length = n2.getDist(n1);
-    /*length = parentNet->getNeuron(parent)->position().getDist(parentNet->getNeuron(target)->position());*/
 }
 Synapse::Synapse(const Synapse &other):simulator(other.parentNet){
-   // std::cout<<"Synapse copy constructor\n";
-
     // Simulator member update
     lastRan = other.lastRan;
 
@@ -262,7 +248,6 @@ Synapse::Synapse(const Synapse &other):simulator(other.parentNet){
     potential = other.potential;
 }
 Synapse& Synapse::operator= (const Synapse &other){
-   // std::cout<<"Synapse Copy assignment operator\n";
     // Simulator member update
     lastRan = other.lastRan;
 
@@ -301,7 +286,6 @@ void NeuCor::run(){
         }
         std::cout<<"Deleting neuron : "<<delNeu<<std::endl;
         deleteNeuron(delNeu);
-        makeConnections();
     }
     return;
     if (currentTime > 8){
@@ -349,10 +333,9 @@ void Neuron::fire(){
 
     for (size_t s = 0; s < outSynapses.size(); s++){
         outSynapses.at(s).fire();
-        //outSynapses.at(s)->targetFire();
     }
-    for (size_t s = 0; s < inSynapses.size(); s++){
-        parentNet->getSynapse(inSynapses.at(s))->targetFire();
+    for (synCoordMap::iterator syn = inSynapses.begin(); syn != inSynapses.end(); syn++){
+        parentNet->getSynapse(syn->first, syn->second)->targetFire();
     }
 
     vesicles -=  potential();

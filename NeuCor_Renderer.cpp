@@ -1,7 +1,5 @@
 #include "NeuCor_Renderer.h"
 
-
-
 /*  .h & .cpp includes  */
 #include <NeuCor.h>
 
@@ -295,14 +293,14 @@ void NeuCor_Renderer::updateView(){
     for (auto &neu : brain->neurons){
         for (auto &syn : neu.outSynapses){
             connections.push_back(brain->getNeuron(syn.pN)->position());
-            if (connections.back().x != connections.back().x){
+            if (connections.back().x != connections.back().x){ // For debugging
                 std::cout<<"NaN coord!\n";
             }
             connections.push_back(brain->getNeuron(syn.tN)->position());
-            if (connections.back().x != connections.back().x){
+            if (connections.back().x != connections.back().x){ // For debugging
                 std::cout<<"NaN coord!\n";
             }
-            if (PRINT_CONNECTIONS_EVERY_FRAME) std::cout<<syn.pN<<" "<<connections.back().x<<" -> "<<syn.tN<<" "<<connections.at(connections.size()-2).x<<" | ";
+            if (PRINT_CONNECTIONS_EVERY_FRAME) std::cout<<syn.pN<<" "<<connections.at(connections.size()-2).x<<" -> "<<syn.tN<<" "<<connections.back().x<<" | ";
 
             synPot.push_back(syn.getPotential());
             synPot.push_back(synPot.back()/2.0);

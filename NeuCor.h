@@ -2,6 +2,7 @@
 #define NEUCOR_H
 
 #include <vector>
+#include <map>
 #include <array>
 #include <math.h>
 #include <tuple>
@@ -24,8 +25,6 @@ struct coord3 {
         z = NAN;
     }
 };
-
-typedef std::array<std::size_t, 2> synapseID;
 
 class simulator;
 class Neuron;
@@ -58,10 +57,9 @@ class NeuCor {
 
         std::vector<Neuron> neurons;
         Neuron* getNeuron(std::size_t ID);
-        Synapse* getSynapse(synapseID);
-        Synapse* getSynapse(std::size_t fromID, std::size_t toID);
+        Synapse* getSynapse(std::size_t toID, std::size_t fromID);
 
-        void deleteSynapse(std::size_t fromID, std::size_t toID);
+        void deleteSynapse(std::size_t toID, std::size_t fromID);
         void deleteNeuron(std::size_t ID);
 
         //bool __banSynDereg; // Really ugly way to make sure Synapse data isn't de-registered when vector data is moved.
@@ -74,6 +72,8 @@ class NeuCor {
         float currentTime = 0.0;
 
 };
+
+typedef std::map<std::size_t, std::size_t> synCoordMap;
 
 class simulator {
     public:
@@ -109,7 +109,7 @@ class Neuron: public simulator {
         std::size_t pos;
         std::size_t PA;
         std::vector<Synapse> outSynapses; //Owns synapses
-        std::vector<synapseID> inSynapses; // Contains id of post synaptic neuron.
+        synCoordMap inSynapses; // Contains coordinates to synapse in order {from neuron, to neuron}
 
         void removeOutSyn(std::size_t synTo); // Removes given synapse from outSynapses
         void removeInSyn(std::size_t synFrom); // Removes given synapse from inSynapses
