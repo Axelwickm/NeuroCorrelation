@@ -13,7 +13,8 @@ void windowDestroy() {
 
 int main(int argc, char* args[]){
     srand(time(NULL));
-    srand(12795);
+    srand(6542);
+
     NeuCor brain(60);
     coord3 d;
     d.x = 0;

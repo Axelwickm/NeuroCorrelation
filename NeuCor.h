@@ -2,17 +2,13 @@
 #define NEUCOR_H
 
 #include <vector>
+#include <boost/container/stable_vector.hpp>
 #include <map>
 #include <array>
 #include <math.h>
 #include <tuple>
 #include <memory>
 
-
-/*
-    List of pointers to objects in vectors:
-        simulationQueAdresses
-*/
 struct coord3 {
     float x,y,z;
 
@@ -26,6 +22,7 @@ struct coord3 {
     }
 };
 
+struct simulation;
 class simulator;
 class Neuron;
 class Synapse;
@@ -55,17 +52,14 @@ class NeuCor {
         std::tuple<std::size_t, std::size_t> registerNeuron(coord3 pos, float potential, float activity);
         std::size_t getFreeID();
 
-        std::vector<Neuron> neurons;
+        boost::container::stable_vector<Neuron> neurons;
         Neuron* getNeuron(std::size_t ID);
         Synapse* getSynapse(std::size_t toID, std::size_t fromID);
 
         void deleteSynapse(std::size_t toID, std::size_t fromID);
         void deleteNeuron(std::size_t ID);
-
-        //bool __banSynDereg; // Really ugly way to make sure Synapse data isn't de-registered when vector data is moved.
     private:
-        std::vector<float> simulationQueTime;
-        std::vector<simulator*> simulationQueAdresses;
+        std::vector<simulation> simulationQue;
 
         std::vector<std::size_t> freeNeuronIDs;
 
@@ -74,6 +68,12 @@ class NeuCor {
 };
 
 typedef std::map<std::size_t, std::size_t> synCoordMap;
+
+struct simulation {
+    simulation(simulator* simulatorAddress, float simulationTime): addr(simulatorAddress), stime(simulationTime) {};
+    simulator* addr;
+    float stime;
+};
 
 class simulator {
     public:
@@ -161,5 +161,4 @@ class Synapse: public simulator {
 
         float potential;
 };
-
 #endif // NEUCOR_H
