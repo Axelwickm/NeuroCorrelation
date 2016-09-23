@@ -1,4 +1,5 @@
 # depslib dependency file v1.0
+1474662630 source:d:\axel\github\neurocorrelation\main.cpp
 	<NeuCor.h>
 	<NeuCor_Renderer.h>
 	<stdlib.h>
@@ -668,6 +669,7 @@
 	<_mingw.h>
 	<stddef.h>
 
+1474662644 source:d:\axel\github\neurocorrelation\neucor_renderer.cpp
 	"NeuCor_Renderer.h"
 	<NeuCor.h>
 	<GLFW/glfw3.h>
@@ -713,6 +715,7 @@
 	<iostream>
 	<fstream>
 
+1474662610 source:d:\axel\github\neurocorrelation\neucor.cpp
 	"NeuCor.h"
 	<vector>
 	<map>
