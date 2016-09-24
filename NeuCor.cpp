@@ -25,7 +25,7 @@ NeuCor::NeuCor(int n_neurons) {
 NeuCor::~NeuCor(){}
 
 inline size_t NeuCor::positionData::kdtree_get_point_count() const {return neuronPositions.size();}
-inline float NeuCor::positionData::kdtree_distance(const float *p1, const size_t idx_p2,size_t) const {
+inline float NeuCor::positionData::kdtree_distance(const float *p1, const size_t idx_p2, size_t) const {
     const float d0=p1[0]-neuronPositions[idx_p2].x;
     const float d1=p1[1]-neuronPositions[idx_p2].y;
     const float d2=p1[2]-neuronPositions[idx_p2].z;

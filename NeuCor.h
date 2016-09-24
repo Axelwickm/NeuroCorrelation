@@ -14,8 +14,11 @@
 struct coord3 {
     float x,y,z;
 
-   float getDist(coord3 c){
+    float getDist(const coord3 &c){
         return sqrtf(powf(x-c.x,2)+powf(y-c.y,2)+powf(z-c.z,2));
+    }
+    float getDistSqrd(const coord3 &c){ // When only relative distance is needed
+        return powf(x-c.x,2)+powf(y-c.y,2)+powf(z-c.z,2);
     }
     void setNAN(){
         x = NAN;
@@ -49,8 +52,10 @@ class NeuCor {
             std::vector<coord3> neuronPositions;
 
             inline size_t kdtree_get_point_count() const;
-            inline float kdtree_distance(const float *p1, const size_t idx_p2,size_t) const;
+            inline float kdtree_distance(const float *p1, const size_t idx_p2, size_t) const;
             inline float kdtree_get_pt(const size_t idx, int dim) const;
+            template <class BBOX>
+            bool kdtree_get_bbox(BBOX& /*bb*/) const { return false; }
         };
 
         std::vector<coord3> positions;
