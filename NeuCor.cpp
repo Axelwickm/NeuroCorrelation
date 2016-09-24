@@ -270,19 +270,22 @@ float Synapse::getPotential(){return potential;}
 /* Simulation related methods */
 
 void NeuCor::run(){
-    if (currentTime > 8){
-        size_t neuron = 0;
-        potAct.at(neuron*2) += 0.05*runSpeed;
-        queSimulation(&neurons.at(neuron), 0.0);
+    if ((float) rand()/RAND_MAX < 0.5 and true) {
+        std::cout<<"Creating neuron\n";
+        coord3 d;
+        d.setNAN();
+        createNeuron(d);
+        makeConnections();
     }
-    float const targetTime = currentTime + runSpeed;
-    while (simulationQue.size() != 0){
-        currentTime = simulationQue.top().stime;
-        if (currentTime < simulationQue.top().stime || targetTime < currentTime) break;
-        simulationQue.top().addr->run();
-        simulationQue.pop();
+    if ((float) rand()/RAND_MAX < 0.5 and true){
+        size_t delNeu;
+        while (true){
+            delNeu = rand()%neurons.size();
+            if (neurons.at(delNeu).exists()) break;
+        }
+        std::cout<<"Deleting neuron : "<<delNeu<<std::endl;
+        deleteNeuron(delNeu);
     }
-    currentTime = targetTime;
 }
 
 void Neuron::run(){
