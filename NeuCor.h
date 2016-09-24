@@ -34,6 +34,7 @@ class NeuCor {
         ~NeuCor();
 
         void run();
+        float runSpeed;
 
         std::vector<coord3> positions;
         std::vector<float> potAct;

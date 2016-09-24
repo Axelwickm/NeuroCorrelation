@@ -10,6 +10,7 @@
 #include <memory>
 
 NeuCor::NeuCor(int n_neurons) {
+    runSpeed = 1.0;
     for (int n = 0; n<n_neurons; n++){
         coord3 d;
         d.setNAN();
@@ -147,7 +148,7 @@ Neuron::Neuron(NeuCor* p, coord3 position)
     outSynapses.reserve(5);
 
     //reuptake = (float) rand()/RAND_MAX;
-    reuptake = 0.05;
+    reuptake = 0.5;
     buffer = 5.0;
     vesicles = buffer * 0.75;
 
@@ -269,17 +270,12 @@ float Synapse::getPotential(){return potential;}
 /* Simulation related methods */
 
 void NeuCor::run(){
-    #define TIME_RUN 0.2
-
     if (currentTime > 8){
-        size_t neuron = (rand() % 2);
-        neuron = 0;
-        //std::cout<<neuron<<std::endl;
-        potAct.at(neuron*2) += 0.01;
+        size_t neuron = 0;
+        potAct.at(neuron*2) += 0.05*runSpeed;
         queSimulation(&neurons.at(neuron), 0.0);
-        //potAct.at(neuron*2+1) += 0.8;
     }
-    float const targetTime = currentTime + TIME_RUN;
+    float const targetTime = currentTime + runSpeed;
     while (simulationQue.size() != 0){
         currentTime = simulationQue.top().stime;
         if (currentTime < simulationQue.top().stime || targetTime < currentTime) break;
@@ -379,13 +375,13 @@ void Synapse::targetFire(){
         //strength += strength*pFire - strength*tFire;
         std::cout<<strength<<std::endl;
     }
-    else if (true){
+    else if (false){
          //std::cout<<traceS<<std::endl;
          if (0.02<traceS) strength += 0.1;
          else strength -= 0.1;
     }
     else {
-        strength *= 0.5;
+        strength += 0.1;
     }
     strength = fmax(fmin(strength, 5.0), 0.0);
     //std::cout<<(parentNet->getTime() - target->lastFire)<<std::endl;

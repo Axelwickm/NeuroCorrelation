@@ -15,7 +15,7 @@ int main(int argc, char* args[]){
     srand(time(NULL));
     srand(6542);
 
-    NeuCor brain(60);
+    NeuCor brain(120);
     coord3 d;
     d.x = 0;
     d.y = 0;
@@ -29,6 +29,8 @@ int main(int argc, char* args[]){
 
     NeuCor_Renderer brainRenderer(&brain);
     brainRenderer.setDestructCallback(windowDestroy);
+
+    brain.runSpeed = 0.1;
 
     std::cout<<"Starting program loop\n";
     unsigned t = 0;
