@@ -53,3 +53,5 @@ resources/picopng.cpp
 resources/lodepng.h
 NeuroCorrelation.cscope_file_list
 NeuroCorrelation.depend
+*.depend
+NeuroCorrelation.layout

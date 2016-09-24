@@ -14,8 +14,6 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-g" />
-					<Add directory="include" />
-					<Add directory="../NeuroCorrelation" />
 				</Compiler>
 			</Target>
 			<Target title="Release">
@@ -35,9 +33,9 @@
 			</Target>
 		</Build>
 		<Compiler>
+			<Add option="-Weffc++" />
 			<Add option="-std=c++11" />
-			<Add option="-Wall" />
-			<Add directory="D:/CodeBlocks/MinGW/include" />
+			<Add directory="../NeuroCorrelation" />
 		</Compiler>
 		<Linker>
 			<Add library="glfw3" />
@@ -47,7 +45,6 @@
 			<Add library="user32" />
 			<Add library="kernel32" />
 			<Add library="glew32" />
-			<Add directory="D:/CodeBlocks/MinGW/lib" />
 		</Linker>
 		<Unit filename="NeuCor.cpp" />
 		<Unit filename="NeuCor.h" />
