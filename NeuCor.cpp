@@ -6,8 +6,6 @@
 #include <queue>
 #include <stdlib.h>
 #include <iostream>
-#include <cstring>
-#include <memory>
 
 NeuCor::NeuCor(int n_neurons) {
     runSpeed = 1.0;

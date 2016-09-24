@@ -16,7 +16,6 @@ using namespace glm;
 #include <fstream>
 #include <vector>
 #include <stdlib.h>
-#include <cstdio>
 
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/matrix_transform.hpp>

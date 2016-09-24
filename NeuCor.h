@@ -8,7 +8,6 @@
 #include <array>
 #include <math.h>
 #include <tuple>
-#include <memory>
 
 struct coord3 {
     float x,y,z;
