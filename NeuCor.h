@@ -4,6 +4,7 @@
 #include <vector>
 #include <boost/container/stable_vector.hpp>
 #include <map>
+#include <queue>
 #include <array>
 #include <math.h>
 #include <tuple>
@@ -59,20 +60,19 @@ class NeuCor {
         void deleteSynapse(std::size_t toID, std::size_t fromID);
         void deleteNeuron(std::size_t ID);
     private:
-        std::vector<simulation> simulationQue;
-
-        std::vector<std::size_t> freeNeuronIDs;
-
+        std::priority_queue<simulation, std::vector<simulation>, std::greater<simulation>> simulationQue;
         float currentTime = 0.0;
 
+        std::vector<std::size_t> freeNeuronIDs;
 };
 
 typedef std::map<std::size_t, std::size_t> synCoordMap;
 
 struct simulation {
-    simulation(simulator* simulatorAddress, float simulationTime): addr(simulatorAddress), stime(simulationTime) {};
+    simulation(simulator* sim, float simTime): addr(sim), stime(simTime){};
     simulator* addr;
     float stime;
+    bool operator>(const simulation &otherSim) const {return stime > otherSim.stime;};
 };
 
 class simulator {

@@ -3,13 +3,13 @@
 #include <vector>
 #include <boost/container/stable_vector.hpp>
 #include <map>
+#include <queue>
 #include <stdlib.h>
 #include <iostream>
 #include <cstring>
 #include <memory>
 
 NeuCor::NeuCor(int n_neurons) {
-    //__banSynDereg = false;
     for (int n = 0; n<n_neurons; n++){
         coord3 d;
         d.setNAN();
@@ -78,7 +78,7 @@ std::size_t NeuCor::getFreeID(){
 float NeuCor::getTime(){return currentTime;}
 
 void NeuCor::queSimulation(simulator* s, float time){
-    simulationQue.emplace_back(s, currentTime+time);
+    simulationQue.emplace(s, currentTime+time);
 }
 
 Neuron* NeuCor::getNeuron(std::size_t ID){
@@ -140,7 +140,6 @@ void simulator::exterminate(){
 
 Neuron::Neuron(NeuCor* p, coord3 position)
 :simulator(p), ownID(p->getFreeID()) {
-    std::cout<<ownID<<std::endl;
     auto registration = p->registerNeuron(position, 0.5, 1.0);
     pos = std::get<0>(registration);
     PA = std::get<1>(registration);
@@ -270,25 +269,8 @@ float Synapse::getPotential(){return potential;}
 /* Simulation related methods */
 
 void NeuCor::run(){
-    for (size_t n = 0; n<neurons.size(); n++) queSimulation(&neurons.at(n), 0.0);
-    /*
-    if ((float) rand()/RAND_MAX < 0.5 and true) {
-        std::cout<<"Creating neuron\n";
-        coord3 d;
-        d.setNAN();
-        createNeuron(d);
-        makeConnections();
-    }
-    if ((float) rand()/RAND_MAX < 0.5 and true){
-        size_t delNeu;
-        while (true){
-            delNeu = rand()%neurons.size();
-            if (neurons.at(delNeu).exists()) break;
-        }
-        std::cout<<"Deleting neuron : "<<delNeu<<std::endl;
-        deleteNeuron(delNeu);
-    }
-    return;*/
+    #define TIME_RUN 0.2
+
     if (currentTime > 8){
         size_t neuron = (rand() % 2);
         neuron = 0;
@@ -297,15 +279,14 @@ void NeuCor::run(){
         queSimulation(&neurons.at(neuron), 0.0);
         //potAct.at(neuron*2+1) += 0.8;
     }
-    for (size_t i = 0; i<simulationQue.size(); i++){
-        if (simulationQue.at(i).stime <= currentTime){
-            simulationQue.at(i).addr->run();
-            simulationQue.erase(simulationQue.begin()+i);
-            i--;
-        }
-        else continue;
+    float const targetTime = currentTime + TIME_RUN;
+    while (simulationQue.size() != 0){
+        currentTime = simulationQue.top().stime;
+        if (currentTime < simulationQue.top().stime || targetTime < currentTime) break;
+        simulationQue.top().addr->run();
+        simulationQue.pop();
     }
-    currentTime += 1.0;
+    currentTime = targetTime;
 }
 
 void Neuron::run(){
@@ -407,6 +388,5 @@ void Synapse::targetFire(){
         strength *= 0.5;
     }
     strength = fmax(fmin(strength, 5.0), 0.0);
-    std::cout<<strength<<std::endl;
     //std::cout<<(parentNet->getTime() - target->lastFire)<<std::endl;
 }
