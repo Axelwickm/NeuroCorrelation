@@ -48,7 +48,7 @@ class NeuCor {
         friend class Synapse;
         friend class NeuCor_Renderer;
 
-        struct positionData{
+        struct positionData_type{
             std::vector<coord3> neuronPositions;
 
             inline size_t kdtree_get_point_count() const;
@@ -57,6 +57,11 @@ class NeuCor {
             template <class BBOX>
             bool kdtree_get_bbox(BBOX& /*bb*/) const { return false; }
         };
+        typedef nanoflann::KDTreeSingleIndexAdaptor< nanoflann::L2_Simple_Adaptor<float, positionData_type> , positionData_type, 3 > posTree_type;
+
+        positionData_type positionData;
+        posTree_type* posTree;
+        //posTree_type posTree;
 
         std::vector<coord3> positions;
         std::vector<float> potAct;

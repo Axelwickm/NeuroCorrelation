@@ -36,7 +36,7 @@ int main(int argc, char* args[]){
     unsigned t = 0;
     do {
         if (t%1 == 0)
-            brain.run();
+            //brain.run();
         t++;
         brainRenderer.pollWindow();
         brainRenderer.updateView();

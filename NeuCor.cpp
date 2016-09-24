@@ -4,6 +4,7 @@
 #include <boost/container/stable_vector.hpp>
 #include <map>
 #include <queue>
+#include <nanoflann.hpp>
 #include <stdlib.h>
 #include <iostream>
 #include <cstring>
@@ -11,6 +12,7 @@
 
 NeuCor::NeuCor(int n_neurons) {
     runSpeed = 1.0;
+
     for (int n = 0; n<n_neurons; n++){
         coord3 d;
         d.setNAN();
@@ -20,18 +22,24 @@ NeuCor::NeuCor(int n_neurons) {
         std::cout<<"Making connections for "<<n<<std::endl;
         neurons.at(n).makeConnections();
     }
+    //Init kd-tree
+    positionData.neuronPositions = positions;
+    posTree = new posTree_type(3, positionData, nanoflann::KDTreeSingleIndexAdaptorParams(10));
+    posTree->buildIndex();
 }
 
-NeuCor::~NeuCor(){}
+NeuCor::~NeuCor(){
+    delete posTree;
+}
 
-inline size_t NeuCor::positionData::kdtree_get_point_count() const {return neuronPositions.size();}
-inline float NeuCor::positionData::kdtree_distance(const float *p1, const size_t idx_p2, size_t) const {
+inline size_t NeuCor::positionData_type::kdtree_get_point_count() const {return neuronPositions.size();}
+inline float NeuCor::positionData_type::kdtree_distance(const float *p1, const size_t idx_p2, size_t) const {
     const float d0=p1[0]-neuronPositions[idx_p2].x;
     const float d1=p1[1]-neuronPositions[idx_p2].y;
     const float d2=p1[2]-neuronPositions[idx_p2].z;
     return d0*d0+d1*d1+d2*d2;
 }
-inline float NeuCor::positionData::kdtree_get_pt(const size_t idx, int dim) const {
+inline float NeuCor::positionData_type::kdtree_get_pt(const size_t idx, int dim) const {
     if (dim==0) return neuronPositions[idx].x;
     else if (dim==1) return neuronPositions[idx].y;
     else return neuronPositions[idx].z;
