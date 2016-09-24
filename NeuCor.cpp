@@ -69,18 +69,18 @@ std::tuple<std::size_t, std::size_t> NeuCor::registerNeuron(coord3 pos, float po
 
     return std::make_tuple(posIndx, PTIndx);
 }
-std::size_t NeuCor::getFreeID(){
+std::size_t NeuCor::getFreeID() const {
     if (freeNeuronIDs.size() == 0) return neurons.size()-1;
     else return freeNeuronIDs.back();
 }
 
-float NeuCor::getTime(){return currentTime;}
+float NeuCor::getTime() const {return currentTime;}
 
-void NeuCor::queSimulation(simulator* s, float time){
-    simulationQue.emplace(s, currentTime+time);
+void NeuCor::queSimulation(simulator* s, const float time){
+    simulationQue.emplace(s, currentTime + time);
 }
 
-Neuron* NeuCor::getNeuron(std::size_t ID){
+Neuron* NeuCor::getNeuron(std::size_t ID) {
     return &neurons.at(ID);
 }
 
@@ -262,7 +262,7 @@ Synapse& Synapse::operator= (const Synapse &other){
 Synapse::~Synapse(){
 
 }
-float Synapse::getPotential(){return potential;}
+float Synapse::getPotential() const {return potential;}
 
 
 /* Simulation related methods */

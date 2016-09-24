@@ -12,7 +12,7 @@
 struct coord3 {
     float x,y,z;
 
-   float getDist(coord3 c){
+   float getDist(coord3 c) const {
         return sqrtf(powf(x-c.x,2)+powf(y-c.y,2)+powf(z-c.z,2));
     }
     void setNAN(){
@@ -47,11 +47,11 @@ class NeuCor {
         friend class Synapse;
         friend class NeuCor_Renderer;
 
-        void queSimulation(simulator* s, float time);
-        float getTime();
+        void queSimulation(simulator* s, const float time);
+        float getTime() const;
 
         std::tuple<std::size_t, std::size_t> registerNeuron(coord3 pos, float potential, float activity);
-        std::size_t getFreeID();
+        std::size_t getFreeID() const;
 
         boost::container::stable_vector<Neuron> neurons;
         Neuron* getNeuron(std::size_t ID);
@@ -150,7 +150,7 @@ class Synapse: public simulator {
         friend class NeuCor_Renderer;
 
         void targetFire();
-        float getPotential();
+        float getPotential() const;
 
         std::size_t pN;
         std::size_t tN;
