@@ -6,6 +6,7 @@
 #include <map>
 #include <queue>
 #include <array>
+#include <nanoflann.hpp>
 #include <math.h>
 #include <tuple>
 #include <memory>
@@ -36,10 +37,6 @@ class NeuCor {
         void run();
         float runSpeed;
 
-        std::vector<coord3> positions;
-        std::vector<float> potAct;
-
-
         void createNeuron(coord3 position);
         void makeConnections();
     protected:
@@ -47,6 +44,17 @@ class NeuCor {
         friend class Neuron;
         friend class Synapse;
         friend class NeuCor_Renderer;
+
+        struct positionData{
+            std::vector<coord3> neuronPositions;
+
+            inline size_t kdtree_get_point_count() const;
+            inline float kdtree_distance(const float *p1, const size_t idx_p2,size_t) const;
+            inline float kdtree_get_pt(const size_t idx, int dim) const;
+        };
+
+        std::vector<coord3> positions;
+        std::vector<float> potAct;
 
         void queSimulation(simulator* s, float time);
         float getTime();
