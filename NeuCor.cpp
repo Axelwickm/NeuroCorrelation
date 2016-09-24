@@ -18,14 +18,15 @@ NeuCor::NeuCor(int n_neurons) {
         d.setNAN();
         createNeuron(d);
     }
-    for (int n = 0; n<n_neurons; n++){
-        std::cout<<"Making connections for "<<n<<std::endl;
-        neurons.at(n).makeConnections();
-    }
     //Init kd-tree
     positionData.neuronPositions = positions;
     posTree = new posTree_type(3, positionData, nanoflann::KDTreeSingleIndexAdaptorParams(10));
     posTree->buildIndex();
+
+    for (int n = 0; n<n_neurons; n++){
+        std::cout<<"Making connections for "<<n<<std::endl;
+        neurons.at(n).makeConnections();
+    }
 }
 
 NeuCor::~NeuCor(){
@@ -49,6 +50,15 @@ void NeuCor::makeConnections(){
     for (int n = 0; n<neurons.size(); n++){
         neurons.at(n).makeConnections();
     }
+}
+
+std::vector<std::pair<size_t, float>> NeuCor::findNear(coord3 point, const float radius){
+    std::vector<std::pair<size_t, float>> matches;
+
+    const nanoflann::SearchParams params;
+
+    posTree->radiusSearch(&point.x, radius, matches, params);
+    return matches;
 }
 
 void NeuCor::createNeuron(coord3 position){
@@ -197,29 +207,31 @@ Neuron& Neuron::operator=(const Neuron& other){
     deleted = other.deleted;
 }
 void Neuron::makeConnections(){
+    #define MAX_LENGTH 1.0
+
     if (!exists()) return;
     coord3 nPos = position();
-    for (size_t i = 0; i<parentNet->neurons.size(); i++){
-        if (not parentNet->neurons.at(i).exists()) continue;
+    auto near = parentNet->findNear(nPos, MAX_LENGTH);
+    for (auto itr = near.begin(); itr != near.end(); itr++){
+        Neuron& otherNeuron = parentNet->neurons.at(itr->first);
+        if (!otherNeuron.exists()) continue;
 
-        coord3 otherPos = parentNet->neurons.at(i).position();
-        float distance = nPos.getDist(otherPos);
-        if (distance<1.0 and i != ownID){
+        if (otherNeuron.pos != pos){
             bool allowed = true;
-            for (size_t j = 0; j < parentNet->neurons.at(i).outSynapses.size(); j++){
-                if (parentNet->getNeuron(parentNet->neurons.at(i).outSynapses.at(j).tN) == this){
+            for (size_t j = 0; j < otherNeuron.outSynapses.size(); j++){
+                if (parentNet->getNeuron(otherNeuron.outSynapses.at(j).tN) == this){
                     allowed = false;
                     break;
                 }
             }
             for (size_t j = 0; j<outSynapses.size(); j++){
-                if (outSynapses.at(j).tN == i){
+                if (outSynapses.at(j).tN == itr->first){
                     allowed = false;
                     break;
                 }
             }
             if (allowed){
-                outSynapses.emplace_back(parentNet, ownID, i);
+                outSynapses.emplace_back(parentNet, ownID, itr->first);
             }
         }
     }

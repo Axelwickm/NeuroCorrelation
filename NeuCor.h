@@ -42,6 +42,7 @@ class NeuCor {
 
         void createNeuron(coord3 position);
         void makeConnections();
+
     protected:
         friend class simulator;
         friend class Neuron;
@@ -55,13 +56,12 @@ class NeuCor {
             inline float kdtree_distance(const float *p1, const size_t idx_p2, size_t) const;
             inline float kdtree_get_pt(const size_t idx, int dim) const;
             template <class BBOX>
-            bool kdtree_get_bbox(BBOX& /*bb*/) const { return false; }
+            bool kdtree_get_bbox(BBOX&) const { return false; }
         };
         typedef nanoflann::KDTreeSingleIndexAdaptor< nanoflann::L2_Simple_Adaptor<float, positionData_type> , positionData_type, 3 > posTree_type;
 
         positionData_type positionData;
         posTree_type* posTree;
-        //posTree_type posTree;
 
         std::vector<coord3> positions;
         std::vector<float> potAct;
@@ -75,6 +75,8 @@ class NeuCor {
         boost::container::stable_vector<Neuron> neurons;
         Neuron* getNeuron(std::size_t ID);
         Synapse* getSynapse(std::size_t toID, std::size_t fromID);
+
+        std::vector<std::pair<size_t, float>> findNear(coord3 point, const float radius);
 
         void deleteSynapse(std::size_t toID, std::size_t fromID);
         void deleteNeuron(std::size_t ID);
