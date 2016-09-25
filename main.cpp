@@ -30,7 +30,8 @@ int main(int argc, char* args[]){
     NeuCor_Renderer brainRenderer(&brain);
     brainRenderer.setDestructCallback(windowDestroy);
 
-    brain.runSpeed = 0.1;
+    brain.runSpeed = 1.0;
+    brain.runAll = false;
 
     std::cout<<"Starting program loop\n";
     unsigned t = 0;

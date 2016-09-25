@@ -9,6 +9,8 @@
 
 NeuCor::NeuCor(int n_neurons) {
     runSpeed = 1.0;
+    runAll = false;
+
     for (int n = 0; n<n_neurons; n++){
         coord3 d;
         d.setNAN();
@@ -268,6 +270,10 @@ float Synapse::getPotential() const {return potential;}
 /* Simulation related methods */
 
 void NeuCor::run(){
+    if (runAll){
+        for (auto &neu: neurons) queSimulation(&neu, 0.0);
+    }
+
     if (currentTime > 8){
         size_t neuron = 0;
         potAct.at(neuron*2) += 0.05*runSpeed;
@@ -286,6 +292,7 @@ void NeuCor::run(){
 void Neuron::run(){
     if (!exists()) return;
 
+    // Determine time
     float timeC = parentNet->getTime();
     float deltaT = timeC - lastRan;
     lastRan = timeC;
