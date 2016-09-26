@@ -31,11 +31,13 @@ void NeuCor::makeConnections(){
 }
 
 void NeuCor::createNeuron(coord3 position){
+    #define SPAWN_BOX_SIZE 3.0
+
     //std::cout<<"Free neurons: "<<freeNeuronIDs.size()<<std::endl;
     if (position.x != position.x){
-        position.x = ((float) rand()/RAND_MAX-0.5)*3.0;
-        position.y = ((float) rand()/RAND_MAX-0.5)*3.0;
-        position.z = ((float) rand()/RAND_MAX-0.5)*3.0;
+        position.x = ((float) rand()/RAND_MAX-0.5)*SPAWN_BOX_SIZE;
+        position.y = ((float) rand()/RAND_MAX-0.5)*SPAWN_BOX_SIZE;
+        position.z = ((float) rand()/RAND_MAX-0.5)*SPAWN_BOX_SIZE;
     }
 
     if (freeNeuronIDs.size() == 0 || false){
@@ -264,6 +266,24 @@ Synapse& Synapse::operator= (const Synapse &other){
 Synapse::~Synapse(){
 
 }
+void Synapse::flipDirection(){
+    Neuron* neuP = parentNet->getNeuron(pN);
+    Neuron* neuT = parentNet->getNeuron(tN);
+
+    auto inSyn = neuT->inSynapses.find(pN);
+    neuP->inSynapses.emplace(tN, pN);
+    neuT->inSynapses.erase(inSyn);
+
+
+    for (auto itr = neuP->outSynapses.begin(); itr != neuP->outSynapses.end(); itr++){
+        if (itr->tN == tN) {
+            std::swap(tN, pN);
+            neuT->outSynapses.push_back(std::move(*itr));
+            neuP->outSynapses.erase(itr);
+            break;
+        }
+    }
+}
 float Synapse::getPotential() const {return potential;}
 
 
@@ -273,7 +293,6 @@ void NeuCor::run(){
     if (runAll){
         for (auto &neu: neurons) queSimulation(&neu, 0.0);
     }
-
     if (currentTime > 8){
         size_t neuron = 0;
         potAct.at(neuron*2) += 0.05*runSpeed;
@@ -314,7 +333,8 @@ void Neuron::fire(){
     for (size_t s = 0; s < outSynapses.size(); s++){
         outSynapses.at(s).fire();
     }
-    for (synCoordMap::iterator syn = inSynapses.begin(); syn != inSynapses.end(); syn++){
+
+    for (auto syn = inSynapses.begin(); syn != inSynapses.end(); syn++){
         parentNet->getSynapse(syn->first, syn->second)->targetFire();
     }
 

@@ -153,6 +153,8 @@ class Synapse: public simulator {
         void targetFire();
         float getPotential() const;
 
+        void flipDirection();
+
         std::size_t pN;
         std::size_t tN;
         float lastSpikeArrival;
