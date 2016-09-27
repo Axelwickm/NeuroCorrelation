@@ -20,7 +20,7 @@ using namespace glm;
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include <resources/picopng.cpp>
+#include <picopng.cpp>
 
 /* glfw error function helper */
 void glfw_ErrorCallback(int error, const char* description){
