@@ -143,7 +143,7 @@ void simulator::exterminate(){
 
 Neuron::Neuron(NeuCor* p, coord3 position)
 :simulator(p), ownID(p->getFreeID()) {
-    auto registration = p->registerNeuron(position, 0.5, 1.0);
+    auto registration = p->registerNeuron(position, 0.0, 1.0);
     pos = std::get<0>(registration);
     PA = std::get<1>(registration);
 
@@ -157,6 +157,8 @@ Neuron::Neuron(NeuCor* p, coord3 position)
     trace = 0.0;
 
     baselevel = 0.3;
+
+    setPotential(baselevel);
 }
 Neuron::~Neuron(){
 
@@ -324,6 +326,10 @@ void Neuron::run(){
     charge_thresholdCheck(deltaT);
 
     vesicles_uptake(deltaT);
+
+    if (ownID == 24)
+        std::cout<<potential()<<std::endl;
+
 }
 
 void Neuron::fire(){
@@ -339,7 +345,7 @@ void Neuron::fire(){
     }
 
     vesicles -=  potential();
-    setPotential(0.0);
+    setPotential(-0.3);
 }
 void Neuron::transmission(float pot){
     setPotential(potential()+pot);
@@ -347,10 +353,11 @@ void Neuron::transmission(float pot){
 
 void Neuron::charge_passive(float deltaT){
     float newPot = potential();
-    newPot = (newPot-baselevel) * powf(0.995, deltaT) + baselevel;
+    newPot = (newPot-baselevel) * powf(0.94, deltaT) + baselevel;
 
     setPotential(newPot);
 }
+
 void Neuron::charge_thresholdCheck(float deltaT){
     if (1.0 < potential() and 0.0 < vesicles) fire();
 }
@@ -375,7 +382,7 @@ void Synapse::fire(){
     potential = powf(parentNet->getNeuron(pN)->potential(), 0.5);
 
 
-    float time = length*8.0;
+    float time = length*6.0;
     parentNet->queSimulation(this, time);
 }
 
@@ -405,7 +412,7 @@ void Synapse::targetFire(){
          if (0.02<traceS) strength += 0.1;
          else strength -= 0.1;
     }
-    else {
+    else if (true){
         strength += 0.1;
     }
     strength = fmax(fmin(strength, 5.0), 0.0);

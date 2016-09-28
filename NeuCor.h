@@ -67,8 +67,6 @@ class NeuCor {
         std::vector<std::size_t> freeNeuronIDs;
 };
 
-typedef std::map<std::size_t, std::size_t> synCoordMap;
-
 struct simulation {
     simulation(simulator* sim, float simTime): addr(sim), stime(simTime){};
     simulator* addr;
@@ -110,7 +108,7 @@ class Neuron: public simulator {
         std::size_t pos;
         std::size_t PA;
         std::vector<Synapse> outSynapses; //Owns synapses
-        synCoordMap inSynapses; // Contains coordinates to synapse in order {from neuron, to neuron}
+        std::map<std::size_t, std::size_t> inSynapses; // Contains coordinates to synapse in order {from neuron, to neuron}
 
         void removeOutSyn(std::size_t synTo); // Removes given synapse from outSynapses
         void removeInSyn(std::size_t synFrom); // Removes given synapse from inSynapses
