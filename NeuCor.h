@@ -132,6 +132,8 @@ class Neuron: public simulator {
         void charge_thresholdCheck(float deltaT);
 
         void vesicles_uptake(float deltaT);
+
+        float AP(float fireTime);
 };
 
 class Synapse: public simulator {

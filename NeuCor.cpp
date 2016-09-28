@@ -320,10 +320,12 @@ void Neuron::run(){
 
     if (deltaT == 0) return;
 
-    trace *= powf(0.6, deltaT);
-
     charge_passive(deltaT);
     charge_thresholdCheck(deltaT);
+
+    setPotential(potential() + ( AP(timeC-lastFire) - AP(timeC-lastFire-deltaT)) );
+
+    trace *= powf(0.6, deltaT);
 
     vesicles_uptake(deltaT);
 
@@ -345,7 +347,7 @@ void Neuron::fire(){
     }
 
     vesicles -=  potential();
-    setPotential(-0.3);
+    setPotential(baselevel);
 }
 void Neuron::transmission(float pot){
     setPotential(potential()+pot);
@@ -359,11 +361,16 @@ void Neuron::charge_passive(float deltaT){
 }
 
 void Neuron::charge_thresholdCheck(float deltaT){
-    if (1.0 < potential() and 0.0 < vesicles) fire();
+    if (1.0 < potential() && 0.0 < vesicles) fire();
 }
 
 void Neuron::vesicles_uptake(float deltaT){
     vesicles = fmin(buffer, vesicles + reuptake * deltaT);
+}
+
+float Neuron::AP(float fireTime){
+    if (fireTime > 9.0) return 0.0;
+    return exp(-powf(fireTime-4.0,2.0)/4.0)-exp(-powf(fireTime-1.1-4.0, 2.0)/4.0)/2.0;
 }
 
 
