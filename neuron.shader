@@ -28,5 +28,5 @@ void main(){
 
 
     UV = squareVertices.xy * vec2(1, -1) + 0.5;
-    opacity = potAct[0];
+    opacity = (potAct[0]+75.0)/122.0;
 }

@@ -149,15 +149,19 @@ Neuron::Neuron(NeuCor* p, coord3 position)
 
     outSynapses.reserve(5);
 
+    baselevel = -70.0;
+    threshold = -55.0;
+    recharge = 0.93;
+
     //reuptake = (float) rand()/RAND_MAX;
     reuptake = 0.5;
     buffer = 5.0;
-    vesicles = buffer * 0.75;
 
     trace = 0.0;
+    vesicles = buffer * 0.75;
+    lastFire = NAN;
 
-    baselevel = 0.3;
-
+    lastAP = 0;
     setPotential(baselevel);
 }
 Neuron::~Neuron(){
@@ -295,11 +299,10 @@ void NeuCor::run(){
     if (runAll){
         for (auto &neu: neurons) queSimulation(&neu, 0.0);
     }
-    if (currentTime > 8){
-        size_t neuron = 0;
-        potAct.at(neuron*2) += 0.05*runSpeed;
-        queSimulation(&neurons.at(neuron), 0.0);
+    if ((int) round(currentTime-50.0)%100==0 && rand()/RAND_MAX < 0.8){
+        neurons.at(0).transmission(20.0*runSpeed);
     }
+    queSimulation(&neurons.at(0), 0.0);
     float const targetTime = currentTime + runSpeed;
     while (simulationQue.size() != 0){
         currentTime = simulationQue.top().stime;
@@ -323,13 +326,13 @@ void Neuron::run(){
     charge_passive(deltaT);
     charge_thresholdCheck(deltaT);
 
-    setPotential(potential() + ( AP(timeC-lastFire) - AP(timeC-lastFire-deltaT)) );
+    AP(timeC);
 
     trace *= powf(0.6, deltaT);
 
-    vesicles_uptake(deltaT);
+    //vesicles_uptake(deltaT);
 
-    if (ownID == 24)
+    if (ownID == 0)
         std::cout<<potential()<<std::endl;
 
 }
@@ -337,6 +340,7 @@ void Neuron::run(){
 void Neuron::fire(){
     lastFire = parentNet->getTime();
     trace = fmin(trace + potential(), 5.0);
+    return;
 
     for (size_t s = 0; s < outSynapses.size(); s++){
         outSynapses.at(s).fire();
@@ -346,8 +350,8 @@ void Neuron::fire(){
         parentNet->getSynapse(syn->first, syn->second)->targetFire();
     }
 
-    vesicles -=  potential();
-    setPotential(baselevel);
+    //vesicles -=  potential();
+    //setPotential(baselevel);
 }
 void Neuron::transmission(float pot){
     setPotential(potential()+pot);
@@ -355,22 +359,27 @@ void Neuron::transmission(float pot){
 
 void Neuron::charge_passive(float deltaT){
     float newPot = potential();
-    newPot = (newPot-baselevel) * powf(0.94, deltaT) + baselevel;
+    newPot = ((float) newPot-baselevel) * powf(recharge, deltaT) + baselevel;
 
     setPotential(newPot);
 }
 
 void Neuron::charge_thresholdCheck(float deltaT){
-    if (1.0 < potential() && 0.0 < vesicles) fire();
+    if (threshold < potential() && fabs(lastAP) < 0.5 && 0.0 < vesicles) fire();
 }
 
 void Neuron::vesicles_uptake(float deltaT){
     vesicles = fmin(buffer, vesicles + reuptake * deltaT);
 }
 
-float Neuron::AP(float fireTime){
-    if (fireTime > 9.0) return 0.0;
-    return exp(-powf(fireTime-4.0,2.0)/4.0)-exp(-powf(fireTime-1.1-4.0, 2.0)/4.0)/2.0;
+void Neuron::AP(float currentT){
+    if (lastFire != lastFire) return;
+
+    float currentAP = 150.0*(exp(-powf(((float) currentT-lastFire)-4.0,2.0)/4.0)-exp(-powf(((float) currentT-lastFire)-1.1-4.0, 2.0)/4.0)/2.0);
+    currentAP = currentAP - lastAP;
+    lastAP = currentAP + lastAP;
+
+    setPotential(potential() + currentAP);
 }
 
 

@@ -31,7 +31,7 @@ int main(int argc, char* args[]){
     brainRenderer.setDestructCallback(windowDestroy);
 
     brain.runSpeed = 1.0;
-    brain.runAll = true;
+    brain.runAll = false;
 
     std::cout<<"Starting program loop\n";
     unsigned t = 0;

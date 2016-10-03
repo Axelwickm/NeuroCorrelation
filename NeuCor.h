@@ -125,7 +125,7 @@ class Neuron: public simulator {
         std::size_t const ownID;
         // Neuron function variables:
 
-        float baselevel;
+        float baselevel, threshold, recharge;
         float vesicles, reuptake, buffer;
 
         void charge_passive(float deltaT);
@@ -133,7 +133,8 @@ class Neuron: public simulator {
 
         void vesicles_uptake(float deltaT);
 
-        float AP(float fireTime);
+        void AP(float currentT);
+        float lastAP;
 };
 
 class Synapse: public simulator {
