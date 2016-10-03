@@ -157,6 +157,8 @@ Neuron::Neuron(NeuCor* p, coord3 position)
     reuptake = 0.5;
     buffer = 5.0;
 
+    AP_h = 100.0, AP_depolW = 0.3, AP_depolH = 0.6, AP_deltaPol = 1.16, AP_depolFac = 0.2;
+
     trace = 0.0;
     vesicles = buffer * 0.75;
     lastFire = NAN;
@@ -332,13 +334,14 @@ void Neuron::run(){
 
     //vesicles_uptake(deltaT);
 
-    if (ownID == 0)
+    if (ownID == 0 && true)
         std::cout<<potential()<<std::endl;
 
 }
 
 void Neuron::fire(){
     lastFire = parentNet->getTime();
+    lastAP = -0.05;
     trace = fmin(trace + potential(), 5.0);
     return;
 
@@ -365,7 +368,7 @@ void Neuron::charge_passive(float deltaT){
 }
 
 void Neuron::charge_thresholdCheck(float deltaT){
-    if (threshold < potential() && fabs(lastAP) < 0.5 && 0.0 < vesicles) fire();
+    if (threshold < potential() && fabs(lastAP) < 0.04 && 0.0 < vesicles) fire();
 }
 
 void Neuron::vesicles_uptake(float deltaT){
@@ -375,7 +378,10 @@ void Neuron::vesicles_uptake(float deltaT){
 void Neuron::AP(float currentT){
     if (lastFire != lastFire) return;
 
-    float currentAP = 150.0*(exp(-powf(((float) currentT-lastFire)-4.0,2.0)/4.0)-exp(-powf(((float) currentT-lastFire)-1.1-4.0, 2.0)/4.0)/2.0);
+    float currentAP = AP_h
+        * (exp(-powf(((float) currentT-lastFire)-1.0,               2.0)/(2.0*AP_depolW*AP_depolW))
+        -  exp(-powf(((float) currentT-lastFire)-1.0 - AP_deltaPol, 2.0)/(2.0*AP_depolH*AP_depolH)) * AP_depolFac );
+
     currentAP = currentAP - lastAP;
     lastAP = currentAP + lastAP;
 
