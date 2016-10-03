@@ -157,7 +157,7 @@ Neuron::Neuron(NeuCor* p, coord3 position)
     reuptake = 0.5;
     buffer = 5.0;
 
-    AP_h = 100.0, AP_depolW = 0.3, AP_depolH = 0.6, AP_deltaPol = 1.16, AP_depolFac = 0.2;
+    AP_h = 100.0, AP_depolW = 0.3, AP_polW = 0.6, AP_deltaPol = 1.16, AP_depolFac = 0.2, AP_deltaStart = 1.0;
 
     trace = 0.0;
     vesicles = buffer * 0.75;
@@ -346,7 +346,7 @@ void Neuron::fire(){
     return;
 
     for (size_t s = 0; s < outSynapses.size(); s++){
-        outSynapses.at(s).fire();
+        outSynapses.at(s).fire(AP_polW, AP_depolFac, AP_deltaStart);
     }
 
     for (auto syn = inSynapses.begin(); syn != inSynapses.end(); syn++){
@@ -379,8 +379,8 @@ void Neuron::AP(float currentT){
     if (lastFire != lastFire) return;
 
     float currentAP = AP_h
-        * (exp(-powf(((float) currentT-lastFire)-1.0,               2.0)/(2.0*AP_depolW*AP_depolW))
-        -  exp(-powf(((float) currentT-lastFire)-1.0 - AP_deltaPol, 2.0)/(2.0*AP_depolH*AP_depolH)) * AP_depolFac );
+        * (exp(-powf(((float) currentT-lastFire) - AP_deltaStart,               2.0)/(2.0*AP_depolW*AP_depolW))
+        -  exp(-powf(((float) currentT-lastFire) - AP_deltaStart - AP_deltaPol, 2.0)/(2.0*AP_polW*AP_polW)) * AP_depolFac );
 
     currentAP = currentAP - lastAP;
     lastAP = currentAP + lastAP;
@@ -398,10 +398,14 @@ void Synapse::run(){
 
     lastSpikeArrival = parentNet->getTime();
 
-    potential = 0;
+    potential = 0.0;
 }
-void Synapse::fire(){
-    potential = powf(parentNet->getNeuron(pN)->potential(), 0.5);
+void Synapse::fire(float polW, float depolFac, float deltaStart){
+    AP_polW = polW, AP_depolFac = depolFac, AP_deltaStart = deltaStart;
+
+    if (AP_polW != 0) return;
+
+    potential = AP_depolFac;
 
 
     float time = length*6.0;

@@ -127,7 +127,7 @@ class Neuron: public simulator {
 
         float baselevel, threshold, recharge;
         float vesicles, reuptake, buffer;
-        float AP_h, AP_depolW, AP_depolH, AP_deltaPol, AP_depolFac;
+        float AP_h, AP_depolW, AP_polW, AP_deltaPol, AP_depolFac, AP_deltaStart;
 
         void charge_passive(float deltaT);
         void charge_thresholdCheck(float deltaT);
@@ -146,7 +146,7 @@ class Synapse: public simulator {
         ~Synapse();
 
         void run();
-        void fire();
+        void fire(float polW, float depolFac, float deltaStart);
     protected:
         friend class NeuCor;
         friend class Neuron;
@@ -163,6 +163,8 @@ class Synapse: public simulator {
     private:
         float length;
         float strength;
+
+        float AP_polW, AP_depolFac, AP_deltaStart;
 
         float potential;
 };
