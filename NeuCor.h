@@ -101,7 +101,8 @@ class Neuron: public simulator {
 
         void run();
         void fire();
-        void transmission(float pot);
+        void transmission();
+        void givePotential(float pot);
 
         /* These are indexes so that they can be allocated next to each other in a vector,
            thus making hardware buffering more efficient in the rendering engine. */

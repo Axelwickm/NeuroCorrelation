@@ -302,7 +302,7 @@ void NeuCor::run(){
         for (auto &neu: neurons) queSimulation(&neu, 0.0);
     }
     if ((int) round(currentTime-50.0)%100==0 && rand()/RAND_MAX < 0.8){
-        neurons.at(0).transmission(20.0*runSpeed);
+        neurons.at(0).givePotential(20.0*runSpeed);
     }
     queSimulation(&neurons.at(0), 0.0);
     float const targetTime = currentTime + runSpeed;
@@ -356,7 +356,12 @@ void Neuron::fire(){
     //vesicles -=  potential();
     //setPotential(baselevel);
 }
-void Neuron::transmission(float pot){
+void Neuron::transmission(){
+    for (auto syn: inSynapses){
+        parentNet->getSynapse(syn->first, syn->second);
+    }
+}
+void Neuron::givePotential(float pot){
     setPotential(potential()+pot);
 }
 
@@ -393,7 +398,7 @@ void Neuron::AP(float currentT){
 void Synapse::run(){
     if (!exists()) return;
 
-    parentNet->getNeuron(tN)->transmission(potential*strength);
+    parentNet->getNeuron(tN)->transmission();
     parentNet->queSimulation(parentNet->getNeuron(tN), 0.1);
 
     lastSpikeArrival = parentNet->getTime();
