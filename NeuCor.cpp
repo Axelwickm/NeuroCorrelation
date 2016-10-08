@@ -234,7 +234,6 @@ Synapse::Synapse(NeuCor* p, std::size_t parent, std::size_t target)
     tN = target;
     parentNet->getNeuron(target)->inSynapses.emplace(parent, target);
 
-    potential = 0.0;
     lastSpikeArrival = 0.0;
 
     strength = (float) rand()/RAND_MAX*2.0 - 0.0;
@@ -254,8 +253,6 @@ Synapse::Synapse(const Synapse &other):simulator(other.parentNet){
 
     length = other.length;
     strength = other.strength;
-
-    potential = other.potential;
 }
 Synapse& Synapse::operator= (const Synapse &other){
     // Simulator member update
@@ -268,8 +265,6 @@ Synapse& Synapse::operator= (const Synapse &other){
 
     length = other.length;
     strength = other.strength;
-
-    potential = other.potential;
 }
 Synapse::~Synapse(){
 
@@ -292,7 +287,7 @@ void Synapse::flipDirection(){
         }
     }
 }
-float Synapse::getPotential() const {return potential;}
+float Synapse::getPotential() const {return (AP_fireTime != 0.0) ? 0.0 : AP_depolFac;}
 
 
 /* Simulation related methods */
@@ -343,7 +338,6 @@ void Neuron::fire(){
     lastFire = parentNet->getTime();
     lastAP = -0.05;
     trace = fmin(trace + potential(), 5.0);
-    return;
 
     for (size_t s = 0; s < outSynapses.size(); s++){
         outSynapses.at(s).fire(AP_polW, AP_depolFac, AP_deltaStart);
@@ -396,25 +390,19 @@ void Neuron::AP(float currentT){
 
 
 void Synapse::run(){
-    if (!exists()) return;
+    if (!exists() || (AP_fireTime < parentNet->getTime() && AP_fireTime == AP_fireTime)) return;
 
     parentNet->getNeuron(tN)->transmission();
     parentNet->queSimulation(parentNet->getNeuron(tN), 0.1);
 
     lastSpikeArrival = parentNet->getTime();
-
-    potential = 0.0;
 }
 void Synapse::fire(float polW, float depolFac, float deltaStart){
     AP_polW = polW, AP_depolFac = depolFac, AP_deltaStart = deltaStart;
 
-    if (AP_polW != 0) return;
-
-    potential = AP_depolFac;
-
-
-    float time = length*6.0;
-    parentNet->queSimulation(this, time);
+    AP_fireTime = length*6.0;
+    parentNet->queSimulation(this, AP_fireTime);
+    AP_fireTime += parentNet->getTime();
 }
 
 void Synapse::targetFire(){

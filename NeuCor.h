@@ -165,8 +165,6 @@ class Synapse: public simulator {
         float length;
         float strength;
 
-        float AP_polW, AP_depolFac, AP_deltaStart;
-
-        float potential;
+        float AP_polW, AP_depolFac, AP_deltaStart, AP_fireTime;
 };
 #endif // NEUCOR_H
