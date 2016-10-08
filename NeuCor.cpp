@@ -358,7 +358,7 @@ void Neuron::fire(){
 }
 void Neuron::transmission(){
     for (auto syn: inSynapses){
-        parentNet->getSynapse(syn.first, syn->second);
+        parentNet->getSynapse(syn.first, syn.second);
     }
 }
 void Neuron::givePotential(float pot){
