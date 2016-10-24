@@ -284,6 +284,26 @@ void NeuCor_Renderer::updateView(){
     );
     glm::mat4 vp = Projection * View;
 
+
+    /// POSSIBLY TODO
+    // On left mouse button hold
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS and false){
+        glm::vec4 viewport(0, 0, width, height);
+        glm::vec3 nearCoord = glm::unProject(glm::vec3(width/2.0, height/2.0, 0.0), View, Projection, viewport);
+        glm::vec3 farCoord = glm::unProject(glm::vec3(width/2.0, height/2.0, 1000.0), View, Projection, viewport);
+        //std::cout<<nearCoord.x<<" "<<nearCoord.y<<" "<<nearCoord.z<<std::endl;
+
+        float shortestDist = INFINITY;
+        unsigned selectedNeu = NAN;
+        for (auto &neu: brain->neurons){
+            float dist = fabs((farCoord.y - nearCoord.y)*neu.position().x - (farCoord.x - nearCoord.x)*neu.position().y + farCoord.x*nearCoord.y - farCoord.y*nearCoord.x);
+            std::cout<<sqrt(powf((double) farCoord.y - nearCoord.y, 2.0) - powf((double) farCoord.y - nearCoord.y, 2.0))<<std::endl;
+            dist /= sqrt(powf(farCoord.y - nearCoord.y, 2.0) - powf(farCoord.y - nearCoord.y, 2.0));
+            if (dist < shortestDist) shortestDist = dist;
+        }
+    }
+
+
     // Render synapses
     glUseProgram(synapseProgramID);
 
@@ -420,6 +440,7 @@ void NeuCor_Renderer::updateView(){
 }
 void NeuCor_Renderer::pollWindow(){
     glfwPollEvents();
+
     int temp_width, temp_height;
     glfwGetWindowSize(window, &temp_width, &temp_height);
     if (temp_width != width || temp_height != height){
