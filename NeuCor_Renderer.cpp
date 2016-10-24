@@ -306,23 +306,7 @@ void NeuCor_Renderer::updateView(){
         }
     }
     if (PRINT_CONNECTIONS_EVERY_FRAME) std::cout<<std::endl;
-    /*
-    for (size_t neu = 0; neu < brain->neurons.size(); s++){
 
-        Neuron* n = brain->getNeuron(brain->synapsePT.at(s));
-        coord3 position = brain->positions.at(n->pos);
-        connections.push_back(position);
-    }
-
-    for (size_t s = 0; s<brain->synapsePot.size(); s++){
-        synPot.push_back((float) brain->synapsePot.at(s));
-        synPot.push_back((float) brain->synapsePot.at(s)*0.5);
-        //synPot.push_back(fmax(0.0, fmin(1.0, brain->synapsePot.at(s))));
-        //synPot.push_back((float) rand()/RAND_MAX * 5.0);
-
-    }
-    */
-    //std::cout<<std::endl;
     glBindBuffer(GL_ARRAY_BUFFER, synapse_PT_buffer);
     glBufferSubData(GL_ARRAY_BUFFER, 0, connections.size() * sizeof(coord3), NULL);
     glBufferData(GL_ARRAY_BUFFER, connections.size() * sizeof(coord3), &connections[0], GL_DYNAMIC_DRAW);
