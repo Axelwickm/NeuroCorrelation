@@ -296,7 +296,7 @@ void NeuCor::run(){
     if (runAll){
         for (auto &neu: neurons) queSimulation(&neu, 0.0);
     }
-    if ((int) round(currentTime-50.0)%100==0 && rand()/RAND_MAX < 0.8){
+    if ((int) round(currentTime-5.0)%100==0 && rand()/RAND_MAX < 0.8){
         neurons.at(0).givePotential(20.0*runSpeed);
     }
     queSimulation(&neurons.at(0), 0.0);
@@ -320,7 +320,7 @@ void Neuron::run(){
 
     if (deltaT == 0) return;
 
-    charge_passive(deltaT);
+    charge_passive(deltaT, timeC);
     charge_thresholdCheck(deltaT);
 
     AP(timeC);
@@ -359,10 +359,32 @@ void Neuron::givePotential(float pot){
     setPotential(potential()+pot);
 }
 
-void Neuron::charge_passive(float deltaT){
-    float newPot = potential();
-    newPot = ((float) newPot-baselevel) * powf(recharge, deltaT) + baselevel;
+void Neuron::charge_passive(float deltaT, float timeC){
+    float newPot;
 
+    float synapseSum = 0.0;
+    for (auto syn: inSynapses){
+        auto s = parentNet->getSynapse(syn.first, syn.second);
+        if (s->AP_fireTime != s->AP_fireTime) continue;
+        //std::cout<<s->AP_depolFac<<"  "<<s->AP_polW<<"  "<<s->AP_deltaStart<<std::endl;
+        float timeOffset = s->AP_deltaStart - (timeC - s->AP_fireTime);
+
+        float synapseIntegral = sqrt(2.0*3.14592)*s->AP_depolFac*s->AP_polW*powf(recharge,-timeOffset)
+            * ((float) -exp(0.5*powf(s->AP_polW,2.0)*powf(log(recharge),2.0)))
+            * ((float) erf((powf(s->AP_polW,2.0)*log(recharge)-timeOffset+1.0)/(sqrt(2.0)*s->AP_polW))
+            -  erf((float) ((float) powf(s->AP_polW,2.0)*log(recharge)-timeOffset+deltaT)/(sqrt(2.0)*s->AP_polW)));
+        synapseSum += synapseIntegral;
+
+        if (synapseIntegral == 0) s->AP_fireTime = NAN;
+    }
+
+    if (synapseSum == 0.0){
+        newPot = ((float) potential()-baselevel) * powf(recharge, deltaT) + baselevel;
+    }
+    else {
+        synapseSum += powf(recharge,-deltaT)-1.0/recharge;
+        newPot = potential()*powf(recharge,deltaT) + powf(recharge,deltaT)*synapseSum*0.5;
+    }
     setPotential(newPot);
 }
 
