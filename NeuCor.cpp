@@ -351,7 +351,7 @@ void Neuron::fire(){
     //vesicles -=  potential();
     //setPotential(baselevel);
 }
-void Neuron::transmission(){
+void Neuron::transfer(){
     for (auto syn: inSynapses){
         parentNet->getSynapse(syn.first, syn.second);
     }
@@ -414,7 +414,7 @@ void Neuron::AP(float currentT){
 void Synapse::run(){
     if (!exists() || (AP_fireTime < parentNet->getTime() && AP_fireTime == AP_fireTime)) return;
 
-    parentNet->getNeuron(tN)->transmission();
+    parentNet->getNeuron(tN)->transfer();
     parentNet->queSimulation(parentNet->getNeuron(tN), 0.1);
 
     lastSpikeArrival = parentNet->getTime();

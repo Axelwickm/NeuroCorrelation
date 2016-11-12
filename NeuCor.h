@@ -101,7 +101,7 @@ class Neuron: public simulator {
 
         void run();
         void fire();
-        void transmission();
+        void transfer();
         void givePotential(float pot);
 
         /* These are indexes so that they can be allocated next to each other in a vector,
