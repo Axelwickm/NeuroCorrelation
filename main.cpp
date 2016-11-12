@@ -15,7 +15,7 @@ int main(int argc, char* args[]){
     srand(time(NULL));
     srand(6542);
 
-    NeuCor brain(120);
+    NeuCor brain(120);/*
     coord3 d;
     d.x = 0;
     d.y = 0;
@@ -25,13 +25,13 @@ int main(int argc, char* args[]){
     d.y = 0;
     d.z = 0;
     brain.createNeuron(d);
-    brain.makeConnections();
+    brain.makeConnections();*/
 
     NeuCor_Renderer brainRenderer(&brain);
     brainRenderer.setDestructCallback(windowDestroy);
 
-    brain.runSpeed = 1.0;
-    brain.runAll = false;
+    brain.runSpeed = 0.05;
+    brain.runAll = true;
 
     std::cout<<"Starting program loop\n";
     unsigned t = 0;

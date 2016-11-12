@@ -321,6 +321,7 @@ void Neuron::run(){
     if (deltaT == 0) return;
 
     charge_passive(deltaT, timeC);
+    //if (ownID == 0 && true)
     charge_thresholdCheck(deltaT);
 
     AP(timeC);
@@ -329,7 +330,7 @@ void Neuron::run(){
 
     //vesicles_uptake(deltaT);
 
-    if (ownID == 0 && true)
+    if (ownID == 40 && true)
         std::cout<<potential()<<std::endl;
 
 }
@@ -366,7 +367,6 @@ void Neuron::charge_passive(float deltaT, float timeC){
     for (auto syn: inSynapses){
         auto s = parentNet->getSynapse(syn.first, syn.second);
         if (s->AP_fireTime != s->AP_fireTime) continue;
-        //std::cout<<s->AP_depolFac<<"  "<<s->AP_polW<<"  "<<s->AP_deltaStart<<std::endl;
         float timeOffset = s->AP_deltaStart - (timeC - s->AP_fireTime);
 
         float synapseIntegral = sqrt(2.0*3.14592)*s->AP_depolFac*s->AP_polW*powf(recharge,-timeOffset)
