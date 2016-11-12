@@ -241,6 +241,8 @@ Synapse::Synapse(NeuCor* p, std::size_t parent, std::size_t target)
     coord3 n1 = parentNet->getNeuron(target)->position();
     coord3 n2 = parentNet->getNeuron(parent)->position();
     length = n2.getDist(n1);
+
+    AP_polW = 0, AP_depolFac = 0, AP_deltaStart = 0, AP_fireTime = 0;
 }
 Synapse::Synapse(const Synapse &other):simulator(other.parentNet){
     // Simulator member update
@@ -253,6 +255,8 @@ Synapse::Synapse(const Synapse &other):simulator(other.parentNet){
 
     length = other.length;
     strength = other.strength;
+
+    AP_polW = 0, AP_depolFac = 0, AP_deltaStart = 0, AP_fireTime = 0;
 }
 Synapse& Synapse::operator= (const Synapse &other){
     // Simulator member update
@@ -265,6 +269,8 @@ Synapse& Synapse::operator= (const Synapse &other){
 
     length = other.length;
     strength = other.strength;
+
+    AP_polW = 0, AP_depolFac = 0, AP_deltaStart = 0, AP_fireTime = 0;
 }
 Synapse::~Synapse(){
 
@@ -287,7 +293,7 @@ void Synapse::flipDirection(){
         }
     }
 }
-float Synapse::getPotential() const {return (AP_fireTime != 0.0) ? 0.0 : AP_depolFac;}
+float Synapse::getPotential() const {return (AP_fireTime == 0.0) ? 0.0 : AP_depolFac;}
 
 
 /* Simulation related methods */
@@ -321,8 +327,8 @@ void Neuron::run(){
     if (deltaT == 0) return;
 
     charge_passive(deltaT, timeC);
-    //if (ownID == 0 && true)
-    charge_thresholdCheck(deltaT);
+    if (ownID == 0 && true)
+        charge_thresholdCheck(deltaT);
 
     AP(timeC);
 
@@ -366,24 +372,25 @@ void Neuron::charge_passive(float deltaT, float timeC){
     float synapseSum = 0.0;
     for (auto syn: inSynapses){
         auto s = parentNet->getSynapse(syn.first, syn.second);
-        if (s->AP_fireTime != s->AP_fireTime) continue;
-        float timeOffset = s->AP_deltaStart - (timeC - s->AP_fireTime);
+        if (s->AP_fireTime == 0) continue;
+        float timeOffset = (timeC - s->AP_fireTime);
+        float poto = potential();
 
-        float synapseIntegral = sqrt(2.0*3.14592)*s->AP_depolFac*s->AP_polW*powf(recharge,-timeOffset)
+        float synapseIntegral = sqrt(3.14592/2.0)*s->AP_depolFac*s->AP_polW*powf(recharge,-s->AP_deltaStart)
             * ((float) -exp(0.5*powf(s->AP_polW,2.0)*powf(log(recharge),2.0)))
-            * ((float) erf((powf(s->AP_polW,2.0)*log(recharge)-timeOffset+1.0)/(sqrt(2.0)*s->AP_polW))
-            -  erf((float) ((float) powf(s->AP_polW,2.0)*log(recharge)-timeOffset+deltaT)/(sqrt(2.0)*s->AP_polW)));
+            * ((float) erf((powf(s->AP_polW,2.0)*log(recharge)-s->AP_deltaStart+1.0)/(sqrt(2.0)*s->AP_polW))
+            -  erf((float) ((float) powf(s->AP_polW,2.0)*log(recharge)-s->AP_deltaStart+timeOffset)/(sqrt(2.0)*s->AP_polW)));
         synapseSum += synapseIntegral;
 
-        if (synapseIntegral == 0) s->AP_fireTime = NAN;
+        if (synapseIntegral == 0) s->AP_fireTime = 0;
     }
 
     if (synapseSum == 0.0){
         newPot = ((float) potential()-baselevel) * powf(recharge, deltaT) + baselevel;
     }
     else {
-        synapseSum += powf(recharge,-deltaT)-1.0/recharge;
-        newPot = potential()*powf(recharge,deltaT) + powf(recharge,deltaT)*synapseSum*0.5;
+        synapseSum += baselevel*(powf(recharge,-deltaT)-1.0/recharge);
+        newPot = potential()*powf(recharge,deltaT) + powf(recharge,deltaT)*synapseSum;
     }
     setPotential(newPot);
 }
@@ -412,7 +419,7 @@ void Neuron::AP(float currentT){
 
 
 void Synapse::run(){
-    if (!exists() || (AP_fireTime < parentNet->getTime() && AP_fireTime == AP_fireTime)) return;
+    if (!exists() || (AP_fireTime < parentNet->getTime())) return;
 
     parentNet->getNeuron(tN)->transfer();
     parentNet->queSimulation(parentNet->getNeuron(tN), 0.1);
@@ -421,6 +428,7 @@ void Synapse::run(){
 }
 void Synapse::fire(float polW, float depolFac, float deltaStart){
     AP_polW = polW, AP_depolFac = depolFac, AP_deltaStart = deltaStart;
+    AP_depolFac*=1.0;
 
     AP_fireTime = length*6.0;
     parentNet->queSimulation(this, AP_fireTime);
