@@ -369,29 +369,26 @@ void Neuron::givePotential(float pot){
 void Neuron::charge_passive(float deltaT, float timeC){
     float newPot;
 
+    float poto = potential();
+
     float synapseSum = 0.0;
     for (auto syn: inSynapses){
         auto s = parentNet->getSynapse(syn.first, syn.second);
-        if (s->AP_fireTime == 0) continue;
         float timeOffset = (timeC - s->AP_fireTime);
-        float poto = potential();
+        if (timeOffset <= 0.0 || s->AP_fireTime == 0) continue;
 
-        float synapseIntegral = sqrt(3.14592/2.0)*s->AP_depolFac*s->AP_polW*powf(recharge,-s->AP_deltaStart)
-            * ((float) -exp(0.5*powf(s->AP_polW,2.0)*powf(log(recharge),2.0)))
-            * ((float) erf((powf(s->AP_polW,2.0)*log(recharge)-s->AP_deltaStart+1.0)/(sqrt(2.0)*s->AP_polW))
-            -  erf((float) ((float) powf(s->AP_polW,2.0)*log(recharge)-s->AP_deltaStart+timeOffset)/(sqrt(2.0)*s->AP_polW)));
+        float synapseIntegral = sqrt(3.1459/2.0)*s->AP_polW*AP_depolFac
+            * pow(recharge, timeOffset-s->AP_deltaStart)
+            * exp(0.5*pow(s->AP_polW,2.0)*pow(log(recharge),2.0))
+            * erf((pow(s->AP_polW,2.0)*log(recharge)-s->AP_deltaStart+timeOffset) / (sqrt(2.0)*s->AP_polW));
+
         synapseSum += synapseIntegral;
 
         if (synapseIntegral == 0) s->AP_fireTime = 0;
     }
 
-    if (synapseSum == 0.0){
-        newPot = ((float) potential()-baselevel) * powf(recharge, deltaT) + baselevel;
-    }
-    else {
-        synapseSum += baselevel*(powf(recharge,-deltaT)-1.0/recharge);
-        newPot = potential()*powf(recharge,deltaT) + powf(recharge,deltaT)*synapseSum;
-    }
+    newPot = ((float) potential()-baselevel) * powf(recharge, deltaT) + baselevel + synapseSum;
+
     setPotential(newPot);
 }
 
