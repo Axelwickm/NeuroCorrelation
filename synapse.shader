@@ -14,7 +14,7 @@ void main(){
         return;
 	}
 
-	gl_Position = VP * vec4(xyz, 1.0f);
+	gl_Position = VP * vec4(xyz, 1.0);
 
     opacity = pot;
 }
