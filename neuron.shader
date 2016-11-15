@@ -22,7 +22,7 @@ void main(){
     float particleSize = min(1.0, potAct[1])/20.0;
 
 
-	gl_Position = VP * vec4(vertexPosition_worldspace, 1.0f);
+	gl_Position = VP * vec4(vertexPosition_worldspace, 1.0);
 	gl_Position /= pow(gl_Position.w, 0.2)*0.1 + 1.0;
 	gl_Position.xy += squareVertices.xy * vec2(1.0, aspect) * particleSize;
 
