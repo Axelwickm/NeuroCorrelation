@@ -31,13 +31,23 @@ void NeuCor::makeConnections(){
 }
 
 void NeuCor::createNeuron(coord3 position){
-    #define SPAWN_BOX_SIZE 3.0
+    #define SPAWN_SIZE 3.0
+    #define SPAWN_SPHERE true
 
     //std::cout<<"Free neurons: "<<freeNeuronIDs.size()<<std::endl;
-    if (position.x != position.x){
-        position.x = ((float) rand()/RAND_MAX-0.5)*SPAWN_BOX_SIZE;
-        position.y = ((float) rand()/RAND_MAX-0.5)*SPAWN_BOX_SIZE;
-        position.z = ((float) rand()/RAND_MAX-0.5)*SPAWN_BOX_SIZE;
+    if (position.x != position.x && SPAWN_SPHERE){
+
+        do {
+            position.x = ((float) rand()/RAND_MAX-0.5)*SPAWN_SIZE;
+            position.y = ((float) rand()/RAND_MAX-0.5)*SPAWN_SIZE;
+            position.z = ((float) rand()/RAND_MAX-0.5)*SPAWN_SIZE;
+        } while ( pow(position.x,2) + pow(position.y,2) + pow(position.z,2) > pow(SPAWN_SIZE/2.0,2.0) );
+
+    }
+    else if (position.x != position.x){
+        position.x = ((float) rand()/RAND_MAX-0.5)*SPAWN_SIZE;
+        position.y = ((float) rand()/RAND_MAX-0.5)*SPAWN_SIZE;
+        position.z = ((float) rand()/RAND_MAX-0.5)*SPAWN_SIZE;
     }
 
     if (freeNeuronIDs.size() == 0 || false){
