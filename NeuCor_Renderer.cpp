@@ -321,8 +321,9 @@ void NeuCor_Renderer::updateView(){
             }
             if (PRINT_CONNECTIONS_EVERY_FRAME) std::cout<<syn.pN<<" "<<connections.at(connections.size()-2).x<<" -> "<<syn.tN<<" "<<connections.back().x<<" | ";
 
-            synPot.push_back(syn.getPotential());
-            synPot.push_back(synPot.back()/2.0);
+            float sadsad = syn.getPrePot();
+            synPot.push_back(syn.getPrePot());
+            synPot.push_back(syn.getPostPot());
         }
     }
     if (PRINT_CONNECTIONS_EVERY_FRAME) std::cout<<std::endl;

@@ -293,8 +293,15 @@ void Synapse::flipDirection(){
         }
     }
 }
-float Synapse::getPotential() const {return (AP_fireTime == 0.0) ? 0.0 : AP_depolFac;}
+float Synapse::getPrePot() const {
+    if (AP_fireTime != 0.0)
+        return float(AP_fireTime - parentNet->getTime())/(length*6.0);
+    else return 0.0;}
 
+float Synapse::getPostPot() const {
+    if (AP_fireTime != 0.0 && parentNet->getTime() < AP_fireTime)
+        return float(parentNet->getTime() - lastSpikeStart)/(length*6.0);
+    else return 0.0;}
 
 /* Simulation related methods */
 
@@ -433,6 +440,8 @@ void Synapse::fire(float polW, float depolFac, float deltaStart){
     AP_fireTime = length*6.0;
     parentNet->queSimulation(this, AP_fireTime);
     AP_fireTime += parentNet->getTime();
+
+    lastSpikeStart = parentNet->getTime();
 }
 
 void Synapse::targetFire(){

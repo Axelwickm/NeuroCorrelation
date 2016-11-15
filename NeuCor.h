@@ -154,12 +154,14 @@ class Synapse: public simulator {
         friend class NeuCor_Renderer;
 
         void targetFire();
-        float getPotential() const;
+        float getPrePot() const;
+        float getPostPot() const;
 
         void flipDirection();
 
         std::size_t pN;
         std::size_t tN;
+        float lastSpikeStart;
         float lastSpikeArrival;
 
         float AP_polW, AP_depolFac, AP_deltaStart, AP_fireTime;
