@@ -28,16 +28,14 @@ int main(int argc, char* args[]){
     brain.makeConnections();*/
 
     NeuCor_Renderer brainRenderer(&brain);
+    //brainRenderer.setRunRate(0.001);
     brainRenderer.setDestructCallback(windowDestroy);
 
-    brain.runSpeed = 0.3;
     brain.runAll = true;
 
     std::cout<<"Starting program loop\n";
     unsigned t = 0;
     do {
-        if (t%1 == 0)
-            brain.run();
         t++;
         brainRenderer.pollWindow();
         brainRenderer.updateView();
