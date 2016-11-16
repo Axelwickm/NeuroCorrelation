@@ -447,6 +447,9 @@ void NeuCor_Renderer::updateView(){
     glfwSwapBuffers(window);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
+ float NeuCor_Renderer::getDeltaTime(){
+    return deltaTime;
+ }
 void NeuCor_Renderer::pollWindow(){
     glfwPollEvents();
 

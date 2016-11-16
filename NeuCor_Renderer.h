@@ -17,6 +17,8 @@ class NeuCor_Renderer
         NeuCor_Renderer(NeuCor* _brain);
         ~NeuCor_Renderer();
 
+        float getDeltaTime();
+
         void updateView();
         void pollWindow();
 
