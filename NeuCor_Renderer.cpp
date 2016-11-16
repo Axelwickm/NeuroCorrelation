@@ -277,7 +277,6 @@ void NeuCor_Renderer::updateView(){
     // Run brain if runRate != -1
     if (runRate != -1){
         brain->runSpeed = fabs(deltaTime*runRate*1000.0);
-        std::cout<<"dT = "<< brain->runSpeed<<std::endl;
         brain->run();
     }
 
