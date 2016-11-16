@@ -24,6 +24,11 @@ NeuCor::NeuCor(int n_neurons) {
 
 NeuCor::~NeuCor(){}
 
+void NeuCor::setInputRateArray(float* inputs, unsigned arraySize){
+    inputArray = inputs;
+    inputArraySize = arraySize;
+}
+
 void NeuCor::makeConnections(){
     for (int n = 0; n<neurons.size(); n++){
         neurons.at(n).makeConnections();
@@ -319,10 +324,11 @@ void NeuCor::run(){
     if (runAll){
         for (auto &neu: neurons) queSimulation(&neu, 0.0);
     }
-    if ((int) round(currentTime-5.0)%100==0 && rand()/RAND_MAX < 0.8){
-        neurons.at(0).givePotential(20.0*runSpeed);
+
+    for (unsigned i = 0; i<inputArraySize && i<neurons.size(); i++){
+        neurons.at(i).givePotential(inputArray[i]*runSpeed);
+        queSimulation(&neurons.at(i), 0.0);
     }
-    queSimulation(&neurons.at(0), 0.0);
     float const targetTime = currentTime + runSpeed;
     while (simulationQue.size() != 0){
         currentTime = simulationQue.top().stime;

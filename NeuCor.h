@@ -36,6 +36,7 @@ class NeuCor {
         float runSpeed;
         bool runAll;
 
+        void setInputRateArray(float* inputs, unsigned arraySize);
 
         void createNeuron(coord3 position);
         void makeConnections();
@@ -63,6 +64,9 @@ class NeuCor {
     private:
         std::priority_queue<simulation, std::vector<simulation>, std::greater<simulation>> simulationQue;
         float currentTime = 0.0;
+
+        float* inputArray;
+        unsigned inputArraySize;
 
         std::vector<std::size_t> freeNeuronIDs;
 };
