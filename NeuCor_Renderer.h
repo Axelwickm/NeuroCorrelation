@@ -20,6 +20,7 @@ class NeuCor_Renderer
         void updateView();
         void pollWindow();
 
+        void setRunRate(float msPerS);
         typedef void (*CallbackType)();
         void setDestructCallback(CallbackType f);
     protected:
@@ -46,6 +47,8 @@ class NeuCor_Renderer
 
         GLFWwindow* window;
         CallbackType destructCallback;
+
+        float runRate;
 
         int width, height;
         double lastTime;

@@ -130,6 +130,7 @@ NeuCor_Renderer::NeuCor_Renderer(NeuCor* _brain)
 :camPos(5,5,5), camDir(0,0,0), camUp(0,1,0), camHA(0.75), camVA(3.8), lastTime(0), deltaTime(1)
 {
     brain = _brain;
+    runRate = -1;
     /* Initiates GLFW & OpenGL*/
     initGLFW();
     initOpenGL(window);
@@ -272,6 +273,14 @@ void NeuCor_Renderer::updateView(){
     double currentTime = glfwGetTime();
     deltaTime = float(lastTime - currentTime);
     lastTime = currentTime;
+
+    // Run brain if runRate != -1
+    if (runRate != -1){
+        brain->runSpeed = fabs(deltaTime*runRate*1000.0);
+        std::cout<<"dT = "<< brain->runSpeed<<std::endl;
+        brain->run();
+    }
+
 
     updateCamPos();
 
@@ -455,6 +464,9 @@ void NeuCor_Renderer::pollWindow(){
 }
 void NeuCor_Renderer::setDestructCallback(CallbackType callbackF){
     destructCallback = callbackF;
+}
+void NeuCor_Renderer::setRunRate(float msPerS){
+    runRate = msPerS;
 }
 
 
