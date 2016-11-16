@@ -36,9 +36,6 @@ class NeuCor {
         float runSpeed;
         bool runAll;
 
-        std::vector<coord3> positions;
-        std::vector<float> potAct;
-
 
         void createNeuron(coord3 position);
         void makeConnections();
@@ -50,6 +47,9 @@ class NeuCor {
 
         void queSimulation(simulator* s, const float time);
         float getTime() const;
+
+        std::vector<coord3> positions;
+        std::vector<float> potAct;
 
         std::tuple<std::size_t, std::size_t> registerNeuron(coord3 pos, float potential, float activity);
         std::size_t getFreeID() const;
