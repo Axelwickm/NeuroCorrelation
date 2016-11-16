@@ -445,7 +445,7 @@ void Synapse::run(){
 }
 void Synapse::fire(float polW, float depolFac, float deltaStart){
     AP_polW = polW, AP_depolFac = depolFac, AP_deltaStart = deltaStart;
-    AP_depolFac*=10.0;
+    AP_depolFac*=2.0;
 
     AP_fireTime = length*6.0;
     parentNet->queSimulation(this, AP_fireTime);
