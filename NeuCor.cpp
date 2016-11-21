@@ -178,7 +178,6 @@ Neuron::Neuron(NeuCor* p, coord3 position)
     vesicles = buffer * 0.75;
     lastFire = NAN;
 
-    lastAP = 0;
     setPotential(baselevel);
 }
 Neuron::~Neuron(){
@@ -343,29 +342,29 @@ void Neuron::run(){
     if (!exists()) return;
 
     // Determine time
-    float timeC = parentNet->getTime();
-    float deltaT = timeC - lastRan;
-    lastRan = timeC;
+    float currentT = parentNet->getTime();
+    float deltaT = currentT - lastRan;
+    lastRan = currentT;
 
     if (deltaT == 0) return;
 
-    charge_passive(deltaT, timeC);
-    charge_thresholdCheck(deltaT);
-
-    AP(timeC);
+    charge_passive(deltaT, currentT);
+    charge_thresholdCheck(deltaT, currentT);
+    AP(currentT);
 
     trace *= powf(0.6, deltaT);
 
     //vesicles_uptake(deltaT);
 
-    if (ownID == 40 && true)
-        std::cout<<potential()<<std::endl;
+    int randomID = rand()%parentNet->neurons.size();
+    //randomID = 111;
+    if (ownID == randomID && false)
+        std::cout<<randomID<<"  - "<<potential()<<std::endl;
 
 }
 
 void Neuron::fire(){
     lastFire = parentNet->getTime();
-    lastAP = -0.05;
     trace = fmin(trace + potential(), 5.0);
 
     for (size_t s = 0; s < outSynapses.size(); s++){
@@ -377,7 +376,6 @@ void Neuron::fire(){
     }
 
     //vesicles -=  potential();
-    //setPotential(baselevel);
 }
 void Neuron::transfer(){
     for (auto syn: inSynapses){
@@ -388,29 +386,23 @@ void Neuron::givePotential(float pot){
     setPotential(potential()+pot);
 }
 
-void Neuron::charge_passive(float deltaT, float timeC){
+void Neuron::charge_passive(float deltaT, float currentT){
     float newPot;
-
-    float poto = potential();
-
     float synapseSum = 0.0;
+
     for (auto syn: inSynapses){
         auto s = parentNet->getSynapse(syn.first, syn.second);
-        float timeOffset = (timeC - s->AP_fireTime);
-        if (timeOffset <= 0.0 || s->AP_fireTime == 0) continue;
+        float timeOffset = currentT - s->AP_fireTime;
+        if (timeOffset <= 0.0 || s->AP_fireTime == 0){if (ownID==-1) std::cout<<"0 ";continue;}
 
         float synapseIntegral = sqrt(3.1459/2.0)*s->AP_polW*s->AP_depolFac
             * pow(recharge, timeOffset-s->AP_deltaStart)
             * exp(0.5*pow(s->AP_polW,2.0)*pow(log(recharge),2.0))
             * (erf((pow(s->AP_polW,2.0)*log(recharge)-s->AP_deltaStart+timeOffset) / (sqrt(2.0)*s->AP_polW))
                 - erf((pow(s->AP_polW,2.0)*log(recharge)-s->AP_deltaStart) / (sqrt(2.0)*s->AP_polW)));
-
         synapseSum += synapseIntegral;
 
-        if (ownID == 40 && false)
-            std::cout<<synapseSum<<std::endl;
-
-        if (synapseIntegral == 0) s->AP_fireTime = 0;
+        if (4.1 < timeOffset) s->AP_fireTime = 0;
     }
 
     newPot = ((float) potential()-baselevel) * powf(recharge, deltaT) + baselevel + synapseSum;
@@ -418,8 +410,8 @@ void Neuron::charge_passive(float deltaT, float timeC){
     setPotential(newPot);
 }
 
-void Neuron::charge_thresholdCheck(float deltaT){
-    if (threshold < potential() && fabs(lastAP) < 0.04 && 0.0 < vesicles) fire();
+void Neuron::charge_thresholdCheck(float deltaT, float currentT){
+    if (threshold < potential() && (lastFire != lastFire || 4.1 < (float) currentT-lastFire) && 0.0 < vesicles) fire();
 }
 
 void Neuron::vesicles_uptake(float deltaT){
@@ -427,16 +419,13 @@ void Neuron::vesicles_uptake(float deltaT){
 }
 
 void Neuron::AP(float currentT){
-    if (lastFire != lastFire) return;
+    if (lastFire != lastFire || 4.1 < (float) currentT-lastFire) return;
 
     float currentAP = AP_h
         * (exp(-powf(((float) currentT-lastFire) - AP_deltaStart,               2.0)/(2.0*AP_depolW*AP_depolW))
-        -  exp(-powf(((float) currentT-lastFire) - AP_deltaStart - AP_deltaPol, 2.0)/(2.0*AP_polW*AP_polW)) * AP_depolFac );
-
-    currentAP = currentAP - lastAP;
-    lastAP = currentAP + lastAP;
-
-    setPotential(potential() + currentAP);
+        -  exp(-powf(((float) currentT-lastFire) - AP_deltaStart - AP_deltaPol, 2.0)/(2.0*AP_polW*AP_polW)) * AP_depolFac ) + baselevel
+        + (threshold - baselevel)*fmax(1.0+lastFire-currentT, 0.0);
+    setPotential(currentAP);
 }
 
 
@@ -450,6 +439,7 @@ void Synapse::run(){
     lastSpikeArrival = parentNet->getTime();
 }
 void Synapse::fire(float polW, float depolFac, float deltaStart){
+    if (AP_fireTime != 0) return;
     AP_polW = polW, AP_depolFac = depolFac, AP_deltaStart = deltaStart;
     AP_depolFac*=2.0;
 

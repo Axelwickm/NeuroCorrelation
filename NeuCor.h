@@ -134,13 +134,12 @@ class Neuron: public simulator {
         float vesicles, reuptake, buffer;
         float AP_h, AP_depolW, AP_polW, AP_deltaPol, AP_depolFac, AP_deltaStart;
 
-        void charge_passive(float deltaT, float timeC);
-        void charge_thresholdCheck(float deltaT);
+        void charge_passive(float deltaT, float currentT);
+        void charge_thresholdCheck(float deltaT, float currentT);
 
         void vesicles_uptake(float deltaT);
 
         void AP(float currentT);
-        float lastAP;
 };
 
 class Synapse: public simulator {
