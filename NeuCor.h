@@ -169,6 +169,7 @@ class Synapse: public simulator {
         float lastSpikeArrival;
 
         float AP_polW, AP_depolFac, AP_deltaStart, AP_fireTime;
+        float AP_speed;
     private:
         float length;
         float strength;

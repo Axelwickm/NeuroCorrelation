@@ -266,6 +266,7 @@ Synapse::Synapse(NeuCor* p, std::size_t parent, std::size_t target)
     length = n2.getDist(n1);
 
     AP_polW = 0, AP_depolFac = 0, AP_deltaStart = 0, AP_fireTime = 0;
+    AP_speed = 2.0;
 }
 Synapse::Synapse(const Synapse &other):simulator(other.parentNet){
     // Simulator member update
@@ -318,12 +319,12 @@ void Synapse::flipDirection(){
 }
 float Synapse::getPrePot() const {
     if (AP_fireTime != 0.0)
-        return float(AP_fireTime - parentNet->getTime())/(length*6.0);
+        return float(AP_fireTime - parentNet->getTime())/(length*AP_speed);
     else return 0.0;}
 
 float Synapse::getPostPot() const {
     if (AP_fireTime != 0.0 && parentNet->getTime() < AP_fireTime)
-        return float(parentNet->getTime() - lastSpikeStart)/(length*6.0);
+        return float(parentNet->getTime() - lastSpikeStart)/(length*AP_speed);
     else return 0.0;}
 
 /* Simulation related methods */
@@ -452,7 +453,7 @@ void Synapse::fire(float polW, float depolFac, float deltaStart){
     AP_polW = polW, AP_depolFac = depolFac, AP_deltaStart = deltaStart;
     AP_depolFac*=2.0;
 
-    AP_fireTime = length*6.0;
+    AP_fireTime = length*AP_speed;
     parentNet->queSimulation(this, AP_fireTime);
     AP_fireTime += parentNet->getTime();
 
