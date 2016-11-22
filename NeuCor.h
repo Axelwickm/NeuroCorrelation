@@ -68,6 +68,7 @@ class NeuCor {
         float* inputArray;
         unsigned inputArraySize;
 
+        unsigned totalGenNeurons;
         std::vector<std::size_t> freeNeuronIDs;
 };
 

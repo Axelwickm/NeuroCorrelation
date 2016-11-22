@@ -10,12 +10,16 @@
 NeuCor::NeuCor(int n_neurons) {
     runSpeed = 1.0;
     runAll = false;
+    totalGenNeurons = 0;
 
+    totalGenNeurons = n_neurons;
     for (int n = 0; n<n_neurons; n++){
         coord3 d;
         d.setNAN();
         createNeuron(d);
     }
+    totalGenNeurons = 0;
+
     for (int n = 0; n<n_neurons; n++){
         std::cout<<"Making connections for "<<n<<std::endl;
         neurons.at(n).makeConnections();
@@ -36,23 +40,27 @@ void NeuCor::makeConnections(){
 }
 
 void NeuCor::createNeuron(coord3 position){
-    #define SPAWN_SIZE 3.0
+    #define SPAWN_DENSITY 3.6
+    #define SPAWN_SIZE 2.0
     #define SPAWN_SPHERE true
+
+    float spawnSize = SPAWN_SIZE;
 
     //std::cout<<"Free neurons: "<<freeNeuronIDs.size()<<std::endl;
     if (position.x != position.x && SPAWN_SPHERE){
-
+        if (totalGenNeurons != 0 ) spawnSize = powf(totalGenNeurons/(1.3333*3.1459*SPAWN_DENSITY),0.33333)*2.0;
         do {
-            position.x = ((float) rand()/RAND_MAX-0.5)*SPAWN_SIZE;
-            position.y = ((float) rand()/RAND_MAX-0.5)*SPAWN_SIZE;
-            position.z = ((float) rand()/RAND_MAX-0.5)*SPAWN_SIZE;
-        } while ( pow(position.x,2) + pow(position.y,2) + pow(position.z,2) > pow(SPAWN_SIZE/2.0,2.0) );
+            position.x = ((float) rand()/RAND_MAX-0.5)*spawnSize;
+            position.y = ((float) rand()/RAND_MAX-0.5)*spawnSize;
+            position.z = ((float) rand()/RAND_MAX-0.5)*spawnSize;
+        } while ( pow(position.x,2) + pow(position.y,2) + pow(position.z,2) > pow(spawnSize/2.0,2.0) );
 
     }
     else if (position.x != position.x){
-        position.x = ((float) rand()/RAND_MAX-0.5)*SPAWN_SIZE;
-        position.y = ((float) rand()/RAND_MAX-0.5)*SPAWN_SIZE;
-        position.z = ((float) rand()/RAND_MAX-0.5)*SPAWN_SIZE;
+        if (totalGenNeurons != 0 ) spawnSize =powf(totalGenNeurons/SPAWN_DENSITY,0.33333);
+        position.x = ((float) rand()/RAND_MAX-0.5)*spawnSize;
+        position.y = ((float) rand()/RAND_MAX-0.5)*spawnSize;
+        position.z = ((float) rand()/RAND_MAX-0.5)*spawnSize;
     }
 
     if (freeNeuronIDs.size() == 0 || false){
