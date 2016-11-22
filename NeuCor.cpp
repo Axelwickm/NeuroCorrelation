@@ -231,6 +231,7 @@ void Neuron::makeConnections(){
             }
             if (allowed){
                 outSynapses.emplace_back(parentNet, ownID, i);
+                if (rand()%2 == 0) outSynapses.back().flipDirection();
             }
         }
     }
