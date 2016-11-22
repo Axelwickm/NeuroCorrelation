@@ -12,10 +12,13 @@ void windowDestroy() {
 }
 
 int main(int argc, char* args[]){
-    srand(time(NULL));
-    srand(6542);
+    #define USE_RUNSPEED true
+    #define SEED 6542
 
-    NeuCor brain(120);/*
+    srand(time(NULL));
+    if (SEED != -1) srand(6542);
+
+    NeuCor brain(5000);/*
     coord3 d;
     d.x = 0;
     d.y = 0;
@@ -28,11 +31,12 @@ int main(int argc, char* args[]){
     brain.makeConnections();*/
 
     NeuCor_Renderer brainRenderer(&brain);
-    brainRenderer.setRunRate(0.005);
+    if (!USE_RUNSPEED) brainRenderer.setRunRate(0.005);
     brainRenderer.setDestructCallback(windowDestroy);
 
     brain.runAll = true;
-    //brain.runSpeed = 0.1;
+    if (USE_RUNSPEED) brain.runSpeed = 0.06;
+
 
     float inputs[] = {2.0,8.0};
     brain.setInputRateArray(inputs, 2);
@@ -41,7 +45,7 @@ int main(int argc, char* args[]){
     unsigned t = 0;
     do {
         t++;
-        //brain.run();
+        if (USE_RUNSPEED) brain.run();
         brainRenderer.pollWindow();
         brainRenderer.updateView();
     } while (!windowDestroyed);
