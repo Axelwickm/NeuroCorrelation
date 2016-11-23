@@ -16,9 +16,9 @@ int main(int argc, char* args[]){
     #define SEED 6542
 
     srand(time(NULL));
-    if (SEED != -1) srand(6542);
+    if (SEED != -1) srand(SEED);
 
-    NeuCor brain(5000);/*
+    NeuCor brain(500);/*
     coord3 d;
     d.x = 0;
     d.y = 0;
