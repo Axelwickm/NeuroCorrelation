@@ -366,6 +366,9 @@ void Neuron::run(){
 
     //vesicles_uptake(deltaT);
 
+    //y=sqrt(pi/2)*w*f*l^(x-o)*e^(0.5*w^2*log(l)^2)*(erf((w^2*log(l)-o+x)/(sqrt(2)*w))-erf((w^2*log(l)-o)/(sqrt(2)*w)))
+    //y/(sqrt(pi/2)*w*f*e^(0.5*w^2*log(l)^2))=l^(x-o)*(erf((w^2*log(l)-o+x)/(sqrt(2)*w))-erf((w^2*log(l)-o)/(sqrt(2)*w)))
+
     int randomID = rand()%parentNet->neurons.size();
     randomID = 111;
     if (ownID == randomID && true)
