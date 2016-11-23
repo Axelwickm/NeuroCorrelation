@@ -367,9 +367,9 @@ void Neuron::run(){
     //vesicles_uptake(deltaT);
 
     int randomID = rand()%parentNet->neurons.size();
-    //randomID = 111;
-    if (ownID == randomID && false)
-        std::cout<<randomID<<"  - "<<potential()<<std::endl;
+    randomID = 111;
+    if (ownID == randomID && true)
+        std::cout<<randomID<<"  -  "<<currentT<<"   "<<potential()<<std::endl;
 
 }
 
