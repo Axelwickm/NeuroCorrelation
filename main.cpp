@@ -35,10 +35,10 @@ int main(int argc, char* args[]){
     brainRenderer.setDestructCallback(windowDestroy);
 
     brain.runAll = true;
-    if (USE_RUNSPEED) brain.runSpeed = 0.06;
+    if (USE_RUNSPEED) brain.runSpeed = 0.05;
 
 
-    float inputs[] = {2.0,8.0};
+    float inputs[] = {20.0, 40.0};
     brain.setInputRateArray(inputs, 2);
 
     std::cout<<"Starting program loop\n";
