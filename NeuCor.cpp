@@ -181,6 +181,7 @@ Neuron::Neuron(NeuCor* p, coord3 position)
     buffer = 5.0;
 
     AP_h = 100.0, AP_depolW = 0.3, AP_polW = 0.6, AP_deltaPol = 1.16, AP_depolFac = 0.2, AP_deltaStart = 1.0;
+    AP_cutoff = 3.0;
 
     trace = 0.0;
     vesicles = buffer * 0.75;
@@ -421,7 +422,7 @@ void Neuron::charge_passive(float deltaT, float currentT){
                 - erf((pow(s->AP_polW,2.0)*log(recharge)-s->AP_deltaStart) / (sqrt(2.0)*s->AP_polW)));
         synapseSum += synapseIntegral;
 
-        if (4.1 < timeOffset) s->AP_fireTime = 0;
+        if (AP_cutoff < timeOffset) s->AP_fireTime = 0;
     }
 
     newPot = ((float) potential()-baselevel) * powf(recharge, deltaT) + baselevel + synapseSum;
@@ -430,7 +431,7 @@ void Neuron::charge_passive(float deltaT, float currentT){
 }
 
 void Neuron::charge_thresholdCheck(float deltaT, float currentT){
-    if (threshold < potential() && (lastFire != lastFire || 4.1 < (float) currentT-lastFire) && 0.0 < vesicles) fire();
+    if (threshold < potential() && (lastFire != lastFire || AP_cutoff < (float) currentT-lastFire) && 0.0 < vesicles) fire();
 }
 
 void Neuron::vesicles_uptake(float deltaT){
@@ -438,7 +439,7 @@ void Neuron::vesicles_uptake(float deltaT){
 }
 
 void Neuron::AP(float currentT){
-    if (lastFire != lastFire || 4.1 < (float) currentT-lastFire) return;
+    if (lastFire != lastFire || AP_cutoff < (float) currentT-lastFire) return;
 
     float currentAP = AP_h
         * (exp(-powf(((float) currentT-lastFire) - AP_deltaStart,               2.0)/(2.0*AP_depolW*AP_depolW))

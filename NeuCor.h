@@ -134,6 +134,7 @@ class Neuron: public simulator {
         float baselevel, threshold, recharge;
         float vesicles, reuptake, buffer;
         float AP_h, AP_depolW, AP_polW, AP_deltaPol, AP_depolFac, AP_deltaStart;
+        float AP_cutoff;
 
         void charge_passive(float deltaT, float currentT);
         void charge_thresholdCheck(float deltaT, float currentT);
