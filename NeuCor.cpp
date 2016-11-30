@@ -174,7 +174,7 @@ Neuron::Neuron(NeuCor* p, coord3 position)
 
     baselevel = -70.0;
     threshold = -55.0;
-    recharge = 0.93;
+    recharge = 0.5;
 
     //reuptake = (float) rand()/RAND_MAX;
     reuptake = 0.5;
