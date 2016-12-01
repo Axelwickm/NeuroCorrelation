@@ -400,7 +400,7 @@ void Neuron::run(){
 
     trace *= powf(0.6, deltaT);
 
-    //vesicles_uptake(deltaT);
+    vesicles_uptake(deltaT);
 
     //y=sqrt(pi/2)*w*f*l^(x-o)*e^(0.5*w^2*log(l)^2)*(erf((w^2*log(l)-o+x)/(sqrt(2)*w))-erf((w^2*log(l)-o)/(sqrt(2)*w)))
     //y/(sqrt(pi/2)*w*f*e^(0.5*w^2*log(l)^2))=l^(x-o)*(erf((w^2*log(l)-o+x)/(sqrt(2)*w))-erf((w^2*log(l)-o)/(sqrt(2)*w)))
@@ -424,7 +424,7 @@ void Neuron::fire(){
         parentNet->getSynapse(syn->first, syn->second)->targetFire();
     }
 
-    //vesicles -=  potential();
+    //vesicles -= 5.0;
 }
 void Neuron::transfer(){
     for (auto syn: inSynapses){
@@ -490,7 +490,7 @@ void Synapse::run(){
 void Synapse::fire(float polW, float depolFac, float deltaStart){
     if (AP_fireTime != 0) return;
     AP_polW = polW, AP_depolFac = depolFac, AP_deltaStart = deltaStart;
-    AP_depolFac*=5.0;
+    AP_depolFac *= 12.0;
 
     AP_fireTime = length*AP_speed;
     parentNet->queSimulation(this, AP_fireTime);

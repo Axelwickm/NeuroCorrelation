@@ -13,8 +13,7 @@ void windowDestroy() {
 
 int main(int argc, char* args[]){
     #define USE_RUNSPEED true
-    #define SEED 6542
-
+    #define SEED 8423
     srand(time(NULL));
     if (SEED != -1) srand(SEED);
 
@@ -31,21 +30,25 @@ int main(int argc, char* args[]){
     brain.makeConnections();*/
 
     NeuCor_Renderer brainRenderer(&brain);
-    if (!USE_RUNSPEED) brainRenderer.setRunRate(0.005);
+    if (!USE_RUNSPEED) brainRenderer.setRunRate(0.1);
     brainRenderer.setDestructCallback(windowDestroy);
 
     brain.runAll = true;
-    if (USE_RUNSPEED) brain.runSpeed = 0.05;
+    if (USE_RUNSPEED) brain.runSpeed = 0.1;
 
 
-    float inputs[] = {20.0, 40.0};
-    brain.setInputRateArray(inputs, 2);
+    float inputs[] = {100.0};
+    brain.setInputRateArray(inputs, 1);
 
     std::cout<<"Starting program loop\n";
     unsigned t = 0;
     do {
         t++;
         if (USE_RUNSPEED) brain.run();
+
+        if (sin(brain.getTime()/100.0) > 0.0) inputs[0] = 250;
+        else inputs[0] = 0;
+
         brainRenderer.pollWindow();
         brainRenderer.updateView();
     } while (!windowDestroyed);
