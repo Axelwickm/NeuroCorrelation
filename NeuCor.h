@@ -36,6 +36,7 @@ class NeuCor {
         void run();
         float runSpeed;
         bool runAll;
+        float getTime() const;
 
         void setInputRateArray(float* inputs, unsigned arraySize);
 
@@ -49,7 +50,6 @@ class NeuCor {
         friend class NeuCor_Renderer;
 
         void queSimulation(simulator* s, const float time);
-        float getTime() const;
 
         std::vector<coord3> positions;
         std::vector<float> potAct;
