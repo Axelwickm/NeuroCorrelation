@@ -24,6 +24,7 @@ struct coord3 {
 
 struct simulation;
 class simulator;
+class InputFirer;
 class Neuron;
 class Synapse;
 
@@ -44,6 +45,7 @@ class NeuCor {
         friend class simulator;
         friend class Neuron;
         friend class Synapse;
+        friend class InputFirer;
         friend class NeuCor_Renderer;
 
         void queSimulation(simulator* s, const float time);
@@ -67,6 +69,7 @@ class NeuCor {
 
         float* inputArray;
         unsigned inputArraySize;
+        std::vector<InputFirer> inputHandler;
 
         unsigned totalGenNeurons;
         std::vector<std::size_t> freeNeuronIDs;
@@ -82,10 +85,9 @@ struct simulation {
 class simulator {
     public:
         simulator(NeuCor* p);
+        NeuCor* parentNet;
 
         virtual void run() = 0;
-
-        NeuCor* parentNet;
 
         bool exists() const;
         void exterminate();
@@ -95,6 +97,15 @@ class simulator {
         float lastRan;
     private:
         bool deleted;
+};
+
+class InputFirer: public simulator {
+    public:
+        InputFirer(NeuCor* p, unsigned i);
+
+        void run();
+        void schedule(float deltaT, float frequency);
+        const unsigned index;
 };
 
 class Neuron: public simulator {

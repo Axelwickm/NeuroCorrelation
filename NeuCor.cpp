@@ -31,6 +31,19 @@ NeuCor::~NeuCor(){}
 void NeuCor::setInputRateArray(float* inputs, unsigned arraySize){
     inputArray = inputs;
     inputArraySize = arraySize;
+
+    int inputHanderSizeChange = std::min(inputArraySize, neurons.size()) - inputHandler.size();
+    if (0 < inputHanderSizeChange){
+        for (unsigned i = 0; i<inputHanderSizeChange; i++){
+            InputFirer firer(this, inputHandler.size());
+            inputHandler.push_back(firer);
+        }
+    }
+    else if (inputHanderSizeChange < 0){
+        for (unsigned i = 0; i<-inputHanderSizeChange; i++){
+            inputHandler.pop_back();
+        }
+    }
 }
 
 void NeuCor::makeConnections(){
@@ -162,6 +175,23 @@ bool simulator::exists() const {
 }
 void simulator::exterminate(){
     deleted = true;
+}
+
+InputFirer::InputFirer(NeuCor* p, unsigned i)
+:simulator(p), index(i) {}
+
+void InputFirer::run(){
+    parentNet->getNeuron(index)->fire();
+}
+
+void InputFirer::schedule(float deltaT, float frequency){
+    float lastFire = parentNet->getNeuron(index)->lastFire;
+    if (lastFire != lastFire) lastFire = 0;
+    float currentT = parentNet->getTime();
+
+    for (float fireTime = lastFire + 1000.0/frequency; fireTime < currentT + deltaT; fireTime += 1000.0/frequency){
+        parentNet->queSimulation(this, fireTime-currentT);
+    }
 }
 
 Neuron::Neuron(NeuCor* p, coord3 position)
@@ -341,9 +371,8 @@ void NeuCor::run(){
         for (auto &neu: neurons) queSimulation(&neu, 0.0);
     }
 
-    for (unsigned i = 0; i<inputArraySize && i<neurons.size(); i++){
-        neurons.at(i).givePotential(inputArray[i]*runSpeed);
-        queSimulation(&neurons.at(i), 0.0);
+    for (auto &handler: inputHandler){
+        handler.schedule(runSpeed, inputArray[handler.index]);
     }
     float const targetTime = currentTime + runSpeed;
     while (simulationQue.size() != 0){
