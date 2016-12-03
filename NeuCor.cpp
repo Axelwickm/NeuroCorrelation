@@ -290,7 +290,9 @@ Synapse::Synapse(NeuCor* p, std::size_t parent, std::size_t target)
 
     lastSpikeArrival = 0.0;
 
-    strength = (float) rand()/RAND_MAX*2.0 - 0.0;
+    strength = (float) rand()/RAND_MAX*2.0 + 0.5;
+
+    if ((float) rand()/RAND_MAX < 0.0) strength = -strength;
 
     coord3 n1 = parentNet->getNeuron(target)->position();
     coord3 n2 = parentNet->getNeuron(parent)->position();
