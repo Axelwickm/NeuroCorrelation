@@ -169,7 +169,7 @@ class Synapse: public simulator {
         friend class Neuron;
         friend class NeuCor_Renderer;
 
-        void targetFire();
+        void STDP();
         float getPrePot() const;
         float getPostPot() const;
 

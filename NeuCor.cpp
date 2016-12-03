@@ -423,7 +423,7 @@ void Neuron::fire(){
     }
 
     for (auto syn = inSynapses.begin(); syn != inSynapses.end(); syn++){
-        parentNet->getSynapse(syn->first, syn->second)->targetFire();
+        parentNet->getSynapse(syn->first, syn->second)->STDP();
     }
 
     //vesicles -= 5.0;
@@ -489,7 +489,7 @@ void Synapse::run(){
 
     lastSpikeArrival = parentNet->getTime();
 
-    targetFire();
+    STDP();
 }
 void Synapse::fire(float polW, float depolFac, float deltaStart){
     if (AP_fireTime != 0) return;
@@ -504,7 +504,7 @@ void Synapse::fire(float polW, float depolFac, float deltaStart){
     lastSpikeStart = parentNet->getTime();
 }
 
-void Synapse::targetFire(){
+void Synapse::STDP(){
     float traceT = parentNet->getNeuron(tN)->trace;
     float traceS = powf(0.75,parentNet->getTime()-lastSpikeArrival);
 
