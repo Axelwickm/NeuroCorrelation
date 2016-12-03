@@ -396,11 +396,11 @@ void Neuron::run(){
 
     if (deltaT == 0) return;
 
+    trace *= powf(0.75, deltaT);
+
     charge_passive(deltaT, currentT);
     charge_thresholdCheck(deltaT, currentT);
     AP(currentT);
-
-    trace *= powf(0.6, deltaT);
 
     vesicles_uptake(deltaT);
 
@@ -409,14 +409,14 @@ void Neuron::run(){
 
     int randomID = rand()%parentNet->neurons.size();
     randomID = 111;
-    if (ownID == randomID && true)
+    if (ownID == randomID && false)
         std::cout<<randomID<<"  -  "<<currentT<<"   "<<potential()<<std::endl;
 
 }
 
 void Neuron::fire(){
     lastFire = parentNet->getTime();
-    trace = fmin(trace + potential(), 5.0);
+    trace = 1.0;
 
     for (size_t s = 0; s < outSynapses.size(); s++){
         outSynapses.at(s).fire(AP_polW, AP_depolFac, AP_deltaStart);
