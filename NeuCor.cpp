@@ -353,7 +353,7 @@ void Synapse::flipDirection(){
 float Synapse::getPrePot() const {
     if (AP_fireTime != 0.0){
         float val = float(AP_fireTime - parentNet->getTime())/(length*AP_speed);
-        return -10.0*(4.0*powf(val,2)+4.0*val)/(-4.2*val+4.5);
+        return -10.0*(4.0*powf(val,2)+4.0*val)/(-4.2*val+4.5)*fabs(strength);
     }
     else return 0.0;
 }
@@ -361,7 +361,7 @@ float Synapse::getPrePot() const {
 float Synapse::getPostPot() const {
     if (AP_fireTime != 0.0 && parentNet->getTime() < AP_fireTime){
         float val = float(parentNet->getTime() - lastSpikeStart)/(length*AP_speed);
-        return -10.0*(4.0*powf(val,2)+4.0*val)/(-5.3*val-0.222);
+        return -10.0*(4.0*powf(val,2)+4.0*val)/(-5.3*val-0.222)*fabs(strength);
     }
     else return 0.0;
 }
