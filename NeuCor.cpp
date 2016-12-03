@@ -488,11 +488,14 @@ void Synapse::run(){
     parentNet->queSimulation(parentNet->getNeuron(tN), 0.1);
 
     lastSpikeArrival = parentNet->getTime();
+
+    targetFire();
 }
 void Synapse::fire(float polW, float depolFac, float deltaStart){
     if (AP_fireTime != 0) return;
     AP_polW = polW, AP_depolFac = depolFac, AP_deltaStart = deltaStart;
     AP_depolFac *= 12.0;
+    AP_depolFac *= strength;
 
     AP_fireTime = length*AP_speed;
     parentNet->queSimulation(this, AP_fireTime);
@@ -502,34 +505,17 @@ void Synapse::fire(float polW, float depolFac, float deltaStart){
 }
 
 void Synapse::targetFire(){
-    Neuron* parent = parentNet->getNeuron(pN);
-    Neuron* target = parentNet->getNeuron(tN);
-
-    float traceP =  parent->trace * powf(0.6, parentNet->getTime() - parentNet->getNeuron(pN)->lastRan);
     float traceT = parentNet->getNeuron(tN)->trace;
     float traceS = powf(0.75,parentNet->getTime()-lastSpikeArrival);
 
-    if (false){
+    float weightChange = (traceS - traceT);
 
-        /*
-        if (deltaTime != 0)
-            strength += (float) deltaTime/powf(deltaTime, 2.0)/0.5;
-        else
-            strength += -0.5;*/
-        float pFire = traceP*(parentNet->getTime() - parent->lastFire);
-        float tFire = traceT*(parentNet->getTime() - target->lastFire);
-        std::cout<<strength<<"   "<<pN<<" ---->  "<<tN<<"   ";
-        //strength += strength*pFire - strength*tFire;
-        std::cout<<strength<<std::endl;
-    }
-    else if (false){
-         //std::cout<<traceS<<std::endl;
-         if (0.02<traceS) strength += 0.1;
-         else strength -= 0.1;
-    }
-    else if (true){
-        strength += 0.1;
-    }
-    strength = fmax(fmin(strength, 5.0), 0.0);
-    //std::cout<<(parentNet->getTime() - target->lastFire)<<std::endl;
+    if (strength < 0) weightChange = (traceT - traceS);
+    strength += weightChange;
+
+    //std::cout<<"Delta w = "<<weightChange<<std::endl;
+
+    strength = fmax(fmin(strength, 3.0), 0.0);
+
+    if (rand()%80 == 0) std::cout<<"S "<<strength<<std::endl;
 }
