@@ -317,6 +317,7 @@ void NeuCor_Renderer::updateView(){
 
     std::vector<coord3> connections;
     std::vector<float> synPot;
+    synPot.reserve(brain->neurons.size()*8.0);
     for (auto &neu : brain->neurons){
         for (auto &syn : neu.outSynapses){
             connections.push_back(brain->getNeuron(syn.pN)->position());
