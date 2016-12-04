@@ -316,6 +316,7 @@ Synapse::Synapse(const Synapse &other):simulator(other.parentNet){
     strength = other.strength;
 
     AP_polW = 0, AP_depolFac = 0, AP_deltaStart = 0, AP_fireTime = 0;
+    AP_speed = 2.0;
 }
 Synapse& Synapse::operator= (const Synapse &other){
     // Simulator member update
@@ -330,6 +331,7 @@ Synapse& Synapse::operator= (const Synapse &other){
     strength = other.strength;
 
     AP_polW = 0, AP_depolFac = 0, AP_deltaStart = 0, AP_fireTime = 0;
+    AP_speed = 2.0;
 }
 Synapse::~Synapse(){
 
