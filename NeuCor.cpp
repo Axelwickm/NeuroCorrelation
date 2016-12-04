@@ -185,6 +185,8 @@ void InputFirer::run(){
 }
 
 void InputFirer::schedule(float deltaT, float frequency){
+    if (frequency == 0) return;
+
     float lastFire = parentNet->getNeuron(index)->lastFire;
     if (lastFire != lastFire) lastFire = 0;
     float currentT = parentNet->getTime();
@@ -292,7 +294,7 @@ Synapse::Synapse(NeuCor* p, std::size_t parent, std::size_t target)
 
     strength = (float) rand()/RAND_MAX*2.0 + 0.5;
 
-    if ((float) rand()/RAND_MAX < 0.0) strength = -strength;
+    if ((float) rand()/RAND_MAX < 0.15) strength = -strength;
 
     coord3 n1 = parentNet->getNeuron(target)->position();
     coord3 n2 = parentNet->getNeuron(parent)->position();
@@ -423,7 +425,7 @@ void Neuron::fire(){
     }
 
     for (auto syn = inSynapses.begin(); syn != inSynapses.end(); syn++){
-        parentNet->getSynapse(syn->first, syn->second)->STDP();
+        parentNet->getSynapse(syn->first, syn->second)->synapticPlasticity();
     }
 
     //vesicles -= 5.0;
@@ -444,7 +446,7 @@ void Neuron::charge_passive(float deltaT, float currentT){
     for (auto syn: inSynapses){
         auto s = parentNet->getSynapse(syn.first, syn.second);
         float timeOffset = currentT - s->AP_fireTime;
-        if (timeOffset <= 0.0 || s->AP_fireTime == 0){if (ownID==-1) std::cout<<"0 ";continue;}
+        if (timeOffset <= 0.0 || s->AP_fireTime == 0){continue;}
 
         float synapseIntegral = sqrt(3.1459/2.0)*s->AP_polW*s->AP_depolFac
             * pow(recharge, timeOffset-s->AP_deltaStart)
@@ -489,7 +491,7 @@ void Synapse::run(){
 
     lastSpikeArrival = parentNet->getTime();
 
-    STDP();
+    synapticPlasticity();
 }
 void Synapse::fire(float polW, float depolFac, float deltaStart){
     if (AP_fireTime != 0) return;
@@ -504,18 +506,26 @@ void Synapse::fire(float polW, float depolFac, float deltaStart){
     lastSpikeStart = parentNet->getTime();
 }
 
-void Synapse::STDP(){
+void Synapse::synapticPlasticity(){
+    return;
     float traceT = parentNet->getNeuron(tN)->trace;
     float traceS = powf(0.75,parentNet->getTime()-lastSpikeArrival);
 
-    float weightChange = (traceS - traceT);
-
-    if (strength < 0) weightChange = (traceT - traceS);
+    float weightChange = STDP(traceS - traceT);
     strength += weightChange;
 
     //std::cout<<"Delta w = "<<weightChange<<std::endl;
 
     strength = fmax(fmin(strength, 3.0), 0.0);
 
-    if (rand()%80 == 0) std::cout<<"S "<<strength<<std::endl;
+    //if (rand()%80 == 0) std::cout<<"S "<<strength<<std::endl;
+}
+inline float Synapse::STDP(float deltaT){
+    #define TIME_CONSTANT 10.0
+
+    if (0.0 < deltaT)
+        return exp(-deltaT/TIME_CONSTANT);
+    else if (deltaT < 0.0)
+        return -exp(deltaT/TIME_CONSTANT);
+    return 0.0;
 }

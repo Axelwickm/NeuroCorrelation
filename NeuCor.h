@@ -169,7 +169,9 @@ class Synapse: public simulator {
         friend class Neuron;
         friend class NeuCor_Renderer;
 
-        void STDP();
+        void synapticPlasticity();
+        inline float STDP(float deltaT);
+
         float getPrePot() const;
         float getPostPot() const;
 
