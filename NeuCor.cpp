@@ -513,7 +513,7 @@ void Synapse::synapticPlasticity(){
     float traceT = parentNet->getNeuron(tN)->trace;
     float traceS = powf(0.75,parentNet->getTime()-lastSpikeArrival);
 
-    float weightChange = STDP(traceS - traceT);
+    float weightChange = STDP(traceS - traceT)*0.5;
     strength += weightChange;
 
     //std::cout<<"Delta w = "<<weightChange<<std::endl;
