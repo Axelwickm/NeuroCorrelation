@@ -508,4 +508,13 @@ void NeuCor_Renderer::updateCamPos(){
     if (glfwGetKey(window, GLFW_KEY_A ) == GLFW_PRESS){
         camPos += right * GLfloat(deltaTime * 1 * speedMult);
     }
+
+    if (glfwGetKey(window, GLFW_KEY_PERIOD ) == GLFW_PRESS){
+        brain->runSpeed = powf(brain->runSpeed, 0.99);
+        std::cout<<"Run-speed: "<<brain->runSpeed<<std::endl;
+    }
+    if (glfwGetKey(window, GLFW_KEY_COMMA ) == GLFW_PRESS){
+        brain->runSpeed = powf(brain->runSpeed, 1.01);
+        std::cout<<"Run-speed: "<<brain->runSpeed<<std::endl;
+    }
 }
