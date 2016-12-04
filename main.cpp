@@ -32,11 +32,11 @@ int main(int argc, char* args[]){
     */
 
     NeuCor_Renderer brainRenderer(&brain);
-    if (!USE_RUNSPEED) brainRenderer.setRunRate(0.1);
+    if (USE_REAL_RUNSPEED) brainRenderer.realRunspeed = true;
     brainRenderer.setDestructCallback(windowDestroy);
 
     brain.runAll = true;
-    if (USE_RUNSPEED) brain.runSpeed = 0.05;
+    brain.runSpeed = 0.05;
 
 
     float inputs[] = {100.0};
@@ -46,7 +46,7 @@ int main(int argc, char* args[]){
     unsigned t = 0;
     do {
         t++;
-        if (USE_RUNSPEED) brain.run();
+        if (!USE_REAL_RUNSPEED) brain.run();
 
         if (sin(brain.getTime()/40.0) > 0.0) inputs[0] = 250;
         else inputs[0] = 0;
