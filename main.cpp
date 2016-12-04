@@ -12,8 +12,9 @@ void windowDestroy() {
 }
 
 int main(int argc, char* args[]){
-    #define USE_RUNSPEED true
+    #define USE_REAL_RUNSPEED false
     #define SEED 8423
+
     srand(time(NULL));
     if (SEED != -1) srand(SEED);
 
