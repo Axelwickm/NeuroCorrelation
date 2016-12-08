@@ -30,6 +30,14 @@ void glfw_ErrorCallback(int error, const char* description){
 static void glfw_KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) glfwSetWindowShouldClose(window, GL_TRUE);
 }
+void cursor_enter_callback(GLFWwindow* window, int entered){
+if (entered)    {
+        std::cout<<"Cursor enter\n";
+    }
+    else    {
+        std::cout<<"Cursor leave\n";
+    }
+}
 
 GLuint LoadShaders(const char * vertex_file_path,const char * fragment_file_path){
 
@@ -177,11 +185,13 @@ void NeuCor_Renderer::initGLFW(){
     glfwSwapInterval(1);
 
     glfwSetKeyCallback(window, glfw_KeyCallback);
+
+    glfwSetCursorEnterCallback(window, cursor_enter_callback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-
     glfwPollEvents();
     glfwSetCursorPos(window, width/2, height /2);
+    cursorX = width/2.0;
+    cursorY = height/2.0;
 }
 void NeuCor_Renderer::initOpenGL(GLFWwindow* window){
     glEnable(GL_CULL_FACE);
@@ -470,14 +480,13 @@ void NeuCor_Renderer::setDestructCallback(CallbackType callbackF){
     destructCallback = callbackF;
 }
 
-
 void NeuCor_Renderer::updateCamPos(){
     double xpos, ypos;
     glfwGetCursorPos(window, &xpos, &ypos);
-    glfwSetCursorPos(window, width/2, height/2);
 
-    camHA += 0.08 * deltaTime * float(width/2 - xpos );
-    camVA  -= 0.08 * deltaTime * float( height/2 - ypos );
+    camHA += 0.15 * deltaTime * float(cursorX-xpos);
+    camVA  -= 0.15 * deltaTime * float(cursorY-ypos);
+    cursorX = xpos; cursorY = ypos;
 
     camDir = glm::vec3 (
         cos(camVA) * sin(camHA),

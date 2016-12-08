@@ -46,6 +46,7 @@ class NeuCor_Renderer
         glm::vec3 camDir;
         glm::vec3 camUp;
         float camHA,camVA;
+        double cursorX, cursorY;
 
         GLFWwindow* window;
         CallbackType destructCallback;
