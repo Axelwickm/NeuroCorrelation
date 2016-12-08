@@ -18,13 +18,18 @@ class NeuCor_Renderer
         ~NeuCor_Renderer();
 
         float getDeltaTime();
+        bool realRunspeed; // Makes brain's runSpeed define simulation's speed by ms/s
 
         void updateView();
         void pollWindow();
 
-        bool realRunspeed; // Makes brain's runSpeed define simulation's speed by ms/s
         typedef void (*CallbackType)();
         void setDestructCallback(CallbackType f);
+
+        enum callbackErrand {MOUSE_ENTER};
+
+        template<typename ... callbackParameters>
+        void inputCallback(callbackErrand errand, callbackParameters ... params);
     protected:
     private:
         void updateCamPos();

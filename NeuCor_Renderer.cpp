@@ -22,6 +22,8 @@ using namespace glm;
 
 #include <picopng.cpp>
 
+std::map<GLFWwindow*, NeuCor_Renderer*> windowRegistry;
+
 /* glfw error function helper */
 void glfw_ErrorCallback(int error, const char* description){
     fputs(description, stderr);
@@ -36,8 +38,22 @@ if (entered)    {
     }
     else    {
         std::cout<<"Cursor leave\n";
+        windowRegistry.at(window)->inputCallback(NeuCor_Renderer::MOUSE_ENTER, 5,6,8);
     }
 }
+
+template<typename ... callbackParameters>
+void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ... params){
+    auto&& TTparams = std::forward_as_tuple(params...);
+
+    switch (errand){
+
+    case (MOUSE_ENTER):
+        std::cout<<std::get<1>(TTparams)<<std::endl;
+        break;
+    }
+
+};
 
 GLuint LoadShaders(const char * vertex_file_path,const char * fragment_file_path){
 
@@ -171,11 +187,13 @@ void NeuCor_Renderer::initGLFW(){
 
     /* Create window */
     window = glfwCreateWindow(900, 900, "Neural Correlation", NULL, NULL);
-    glfwGetWindowSize(window, &width, &height);
     if (!window) {
         glfwTerminate();
         exit(EXIT_FAILURE);
     }
+    windowRegistry[window] = this; // Adds window to global registry
+
+    glfwGetWindowSize(window, &width, &height);
     glfwMakeContextCurrent(window);
     glewExperimental = true; // Needed in core profile
     if (glewInit() != GLEW_OK) {
