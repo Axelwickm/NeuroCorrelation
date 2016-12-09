@@ -17,9 +17,6 @@ using namespace glm;
 #include <vector>
 #include <stdlib.h>
 
-#include <boost/any.hpp>
-#include <boost/fusion/include/boost_tuple.hpp>
-#include <boost/fusion/algorithm/iteration/for_each.hpp>
 
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -355,8 +352,8 @@ void NeuCor_Renderer::updateView(){
                 synPot.push_back(syn.getPostPot());
             }
             else if (renderMode == RENDER_PLASTICITY){
-                synPot.push_back(syn.weight);
-                synPot.push_back(syn.weight);
+                synPot.push_back(syn.getWeight());
+                synPot.push_back(syn.getWeight());
             }
         }
     }

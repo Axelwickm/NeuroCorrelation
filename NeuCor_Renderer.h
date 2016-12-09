@@ -8,8 +8,6 @@
 #define GLFW_INCLUDE_GLU
 #include <GLFW/glfw3.h>
 
-#include <boost/any.hpp>
-
 #include <glm/glm.hpp>
 using namespace glm;
 
