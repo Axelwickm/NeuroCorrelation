@@ -8,6 +8,8 @@
 #define GLFW_INCLUDE_GLU
 #include <GLFW/glfw3.h>
 
+#include <boost/any.hpp>
+
 #include <glm/glm.hpp>
 using namespace glm;
 
@@ -26,7 +28,7 @@ class NeuCor_Renderer
         typedef void (*CallbackType)();
         void setDestructCallback(CallbackType f);
 
-        enum callbackErrand {MOUSE_ENTER};
+        enum callbackErrand {KEY_ACTION, MOUSE_ENTER};
 
         template<typename ... callbackParameters>
         void inputCallback(callbackErrand errand, callbackParameters ... params);
@@ -52,6 +54,7 @@ class NeuCor_Renderer
         glm::vec3 camUp;
         float camHA,camVA;
         double cursorX, cursorY;
+        bool cursorOnScreen;
 
         GLFWwindow* window;
         CallbackType destructCallback;

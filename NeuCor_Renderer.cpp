@@ -17,6 +17,10 @@ using namespace glm;
 #include <vector>
 #include <stdlib.h>
 
+#include <boost/any.hpp>
+#include <boost/fusion/include/boost_tuple.hpp>
+#include <boost/fusion/algorithm/iteration/for_each.hpp>
+
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -30,29 +34,30 @@ void glfw_ErrorCallback(int error, const char* description){
 }
 /* glfw key callback function helper */
 static void glfw_KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) glfwSetWindowShouldClose(window, GL_TRUE);
+    windowRegistry.at(window)->inputCallback(NeuCor_Renderer::KEY_ACTION, window, key, scancode, action, mods);
 }
 void cursor_enter_callback(GLFWwindow* window, int entered){
-if (entered)    {
-        std::cout<<"Cursor enter\n";
-    }
-    else    {
-        std::cout<<"Cursor leave\n";
-        windowRegistry.at(window)->inputCallback(NeuCor_Renderer::MOUSE_ENTER, 5,6,8);
-    }
+    windowRegistry.at(window)->inputCallback(NeuCor_Renderer::MOUSE_ENTER, window, entered, -1, -1, -1);
 }
+
+
+
 
 template<typename ... callbackParameters>
 void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ... params){
-    auto&& TTparams = std::forward_as_tuple(params...);
+    std::tuple<callbackParameters...> TTparams(params... );
 
     switch (errand){
 
+    case (KEY_ACTION):
+        if (std::get<1>(TTparams) == GLFW_KEY_ESCAPE && std::get<3>(TTparams) == GLFW_PRESS) glfwSetWindowShouldClose(std::get<0>(TTparams), GL_TRUE);
+        break;
+
     case (MOUSE_ENTER):
-        std::cout<<std::get<1>(TTparams)<<std::endl;
+        if (std::get<1>(TTparams) == 1) cursorOnScreen = true;
+        else cursorOnScreen = false;
         break;
     }
-
 };
 
 GLuint LoadShaders(const char * vertex_file_path,const char * fragment_file_path){
@@ -210,6 +215,7 @@ void NeuCor_Renderer::initGLFW(){
     glfwSetCursorPos(window, width/2, height /2);
     cursorX = width/2.0;
     cursorY = height/2.0;
+    cursorOnScreen = true;
 }
 void NeuCor_Renderer::initOpenGL(GLFWwindow* window){
     glEnable(GL_CULL_FACE);
@@ -482,6 +488,8 @@ void NeuCor_Renderer::updateView(){
  }
 void NeuCor_Renderer::pollWindow(){
     glfwPollEvents();
+    if (cursorOnScreen) glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    else glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
     int temp_width, temp_height;
     glfwGetWindowSize(window, &temp_width, &temp_height);
