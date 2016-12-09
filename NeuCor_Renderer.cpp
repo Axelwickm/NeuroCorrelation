@@ -510,8 +510,10 @@ void NeuCor_Renderer::updateCamPos(){
     double xpos, ypos;
     glfwGetCursorPos(window, &xpos, &ypos);
 
-    camHA += 0.15 * deltaTime * float(cursorX-xpos);
-    camVA  -= 0.15 * deltaTime * float(cursorY-ypos);
+    if (cursorOnScreen) {
+        camHA += 0.15 * deltaTime * float(cursorX-xpos);
+        camVA  -= 0.15 * deltaTime * float(cursorY-ypos);
+    }
     cursorX = xpos; cursorY = ypos;
 
     camDir = glm::vec3 (
