@@ -365,7 +365,7 @@ float Synapse::getPrePot() const {
     if (AP_fireTime != 0.0){
         float val = float(parentNet->getTime() - lastSpikeStart)/(length*AP_speed);
         AP_RENDER_BEHAVIOUR;
-        return val;
+        return val*strength;
     }
     else return 0.0;
 }
@@ -374,7 +374,7 @@ float Synapse::getPostPot() const {
     if (AP_fireTime != 0.0 && parentNet->getTime() < AP_fireTime){
         float val = float(AP_fireTime - parentNet->getTime())/(length*AP_speed);
         AP_RENDER_BEHAVIOUR;
-        return val;
+        return val*strength;
     }
     else return 0.0;
 }
@@ -520,7 +520,6 @@ void Synapse::fire(float polW, float depolFac, float deltaStart){
 }
 
 void Synapse::synapticPlasticity(){
-    return;
     float traceT = parentNet->getNeuron(tN)->trace;
     float traceS = powf(0.75,parentNet->getTime()-lastSpikeArrival);
 
@@ -534,7 +533,7 @@ void Synapse::synapticPlasticity(){
     //if (rand()%80 == 0) std::cout<<"S "<<strength<<std::endl;
 }
 inline float Synapse::STDP(float deltaT){
-    #define TIME_CONSTANT 10.0
+    #define TIME_CONSTANT 7.5
 
     if (0.0 < deltaT)
         return exp(-deltaT/TIME_CONSTANT);
