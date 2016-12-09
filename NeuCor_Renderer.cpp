@@ -51,6 +51,10 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
 
     case (KEY_ACTION):
         if (std::get<1>(TTparams) == GLFW_KEY_ESCAPE && std::get<3>(TTparams) == GLFW_PRESS) glfwSetWindowShouldClose(std::get<0>(TTparams), GL_TRUE);
+        if (std::get<1>(TTparams) == GLFW_KEY_M && std::get<3>(TTparams) == GLFW_PRESS){
+            renderMode = static_cast<renderingModes>(renderMode+1);
+            if (renderMode == renderingModes::Count) renderMode = static_cast<renderingModes>(renderMode-(int) renderingModes::Count);
+        }
         break;
 
     case (MOUSE_ENTER):
@@ -189,9 +193,11 @@ void NeuCor_Renderer::initGLFW(){
     glfwWindowHint(GLFW_SAMPLES, 4); // 4x antialiasing
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // We want OpenGL 3.3
 
+    renderMode = renderingModes::RENDER_VOLTAGE;
+
 
     /* Create window */
-    window = glfwCreateWindow(900, 900, "Neural Correlation", NULL, NULL);
+    window = glfwCreateWindow(1000, 1000, "Neural Correlation", NULL, NULL);
     if (!window) {
         glfwTerminate();
         exit(EXIT_FAILURE);
@@ -366,8 +372,14 @@ void NeuCor_Renderer::updateView(){
             }
             if (PRINT_CONNECTIONS_EVERY_FRAME) std::cout<<syn.pN<<" "<<connections.at(connections.size()-2).x<<" -> "<<syn.tN<<" "<<connections.back().x<<" | ";
 
-            synPot.push_back(syn.getPostPot());
-            synPot.push_back(syn.getPrePot());
+            if (renderMode == RENDER_VOLTAGE){
+                synPot.push_back(syn.getPostPot());
+                synPot.push_back(syn.getPrePot());
+            }
+            else if (renderMode == RENDER_PLASTICITY){
+                synPot.push_back(syn.strength);
+                synPot.push_back(syn.strength);
+            }
         }
     }
     if (PRINT_CONNECTIONS_EVERY_FRAME) std::cout<<std::endl;

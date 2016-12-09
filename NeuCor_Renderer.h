@@ -21,6 +21,8 @@ class NeuCor_Renderer
 
         float getDeltaTime();
         bool realRunspeed; // Makes brain's runSpeed define simulation's speed by ms/s
+        enum renderingModes { RENDER_VOLTAGE, RENDER_PLASTICITY, Count};
+        renderingModes renderMode;
 
         void updateView();
         void pollWindow();
@@ -29,7 +31,6 @@ class NeuCor_Renderer
         void setDestructCallback(CallbackType f);
 
         enum callbackErrand {KEY_ACTION, MOUSE_ENTER};
-
         template<typename ... callbackParameters>
         void inputCallback(callbackErrand errand, callbackParameters ... params);
     protected:
