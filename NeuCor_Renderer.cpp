@@ -560,8 +560,7 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
         break;
 
     case (MOUSE_ENTER):
-        if (std::get<1>(TTparams) == 1) cursorOnScreen = true;
-        else cursorOnScreen = false;
+        cursorOnScreen = std::get<1>(TTparams);
         break;
     }
 };
