@@ -381,6 +381,10 @@ float Synapse::getPostPot() const {
 
 #undef AP_RENDER_BEHAVIOUR
 
+float Synapse::getWeight() const {
+    return weight;
+}
+
 /* Simulation related methods */
 
 void NeuCor::run(){
