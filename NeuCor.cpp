@@ -354,10 +354,18 @@ void Synapse::flipDirection(){
         }
     }
 }
+
+#define AP_RENDER_BEHAVIOUR;                                \
+    val = fmin(fmax(val,0.0),0.7);                           \
+    if (val < 0.5) val = 8.0*1000.0*powf(val/5.0,3.0);        \
+    else val = 8.0*powf(3.5-5*val,2.0);
+
+
 float Synapse::getPrePot() const {
     if (AP_fireTime != 0.0){
         float val = float(AP_fireTime - parentNet->getTime())/(length*AP_speed);
-        return -10.0*(4.0*powf(val,2)+4.0*val)/(-4.2*val+4.5)*fabs(strength);
+        AP_RENDER_BEHAVIOUR;
+        return val;
     }
     else return 0.0;
 }
@@ -365,10 +373,14 @@ float Synapse::getPrePot() const {
 float Synapse::getPostPot() const {
     if (AP_fireTime != 0.0 && parentNet->getTime() < AP_fireTime){
         float val = float(parentNet->getTime() - lastSpikeStart)/(length*AP_speed);
-        return -10.0*(4.0*powf(val,2)+4.0*val)/(-5.3*val-0.222)*fabs(strength);
+        if (pN == 0 && tN == 4) std::cout<<val<<std::endl;
+        AP_RENDER_BEHAVIOUR;
+        return val;
     }
     else return 0.0;
 }
+
+#undef AP_RENDER_BEHAVIOUR
 
 /* Simulation related methods */
 
