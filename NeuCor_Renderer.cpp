@@ -485,8 +485,6 @@ void NeuCor_Renderer::updateView(){
  }
 void NeuCor_Renderer::pollWindow(){
     glfwPollEvents();
-    if (cursorOnScreen) glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    else glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
     int temp_width, temp_height;
     glfwGetWindowSize(window, &temp_width, &temp_height);
@@ -571,6 +569,8 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
 
     case (MOUSE_ENTER):
         cursorOnScreen = std::get<1>(TTparams);
+        if (cursorOnScreen) glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        else glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         break;
     }
 };
