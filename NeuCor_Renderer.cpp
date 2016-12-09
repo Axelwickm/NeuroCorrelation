@@ -351,8 +351,8 @@ void NeuCor_Renderer::updateView(){
 
 
             if (renderMode == RENDER_VOLTAGE){
-                synPot.push_back(syn.getPostPot());
                 synPot.push_back(syn.getPrePot());
+                synPot.push_back(syn.getPostPot());
             }
             else if (renderMode == RENDER_PLASTICITY){
                 synPot.push_back(syn.strength);
