@@ -41,29 +41,6 @@ void cursor_enter_callback(GLFWwindow* window, int entered){
 }
 
 
-
-
-template<typename ... callbackParameters>
-void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ... params){
-    std::tuple<callbackParameters...> TTparams(params... );
-
-    switch (errand){
-
-    case (KEY_ACTION):
-        if (std::get<1>(TTparams) == GLFW_KEY_ESCAPE && std::get<3>(TTparams) == GLFW_PRESS) glfwSetWindowShouldClose(std::get<0>(TTparams), GL_TRUE);
-        if (std::get<1>(TTparams) == GLFW_KEY_M && std::get<3>(TTparams) == GLFW_PRESS){
-            renderMode = static_cast<renderingModes>(renderMode+1);
-            if (renderMode == renderingModes::Count) renderMode = static_cast<renderingModes>(renderMode-(int) renderingModes::Count);
-        }
-        break;
-
-    case (MOUSE_ENTER):
-        if (std::get<1>(TTparams) == 1) cursorOnScreen = true;
-        else cursorOnScreen = false;
-        break;
-    }
-};
-
 GLuint LoadShaders(const char * vertex_file_path,const char * fragment_file_path){
 
 	// Create the shaders
@@ -372,6 +349,7 @@ void NeuCor_Renderer::updateView(){
             }
             if (PRINT_CONNECTIONS_EVERY_FRAME) std::cout<<syn.pN<<" "<<connections.at(connections.size()-2).x<<" -> "<<syn.tN<<" "<<connections.back().x<<" | ";
 
+
             if (renderMode == RENDER_VOLTAGE){
                 synPot.push_back(syn.getPostPot());
                 synPot.push_back(syn.getPrePot());
@@ -567,3 +545,23 @@ void NeuCor_Renderer::updateCamPos(){
         std::cout<<"Run-speed: "<<brain->runSpeed<<std::endl;
     }
 }
+template<typename ... callbackParameters>
+void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ... params){
+    std::tuple<callbackParameters...> TTparams(params... );
+
+    switch (errand){
+
+    case (KEY_ACTION):
+        if (std::get<1>(TTparams) == GLFW_KEY_ESCAPE && std::get<3>(TTparams) == GLFW_PRESS) glfwSetWindowShouldClose(std::get<0>(TTparams), GL_TRUE);
+        if (std::get<1>(TTparams) == GLFW_KEY_M && std::get<3>(TTparams) == GLFW_PRESS){
+            renderMode = static_cast<renderingModes>(renderMode+1);
+            if (renderMode == renderingModes::Count) renderMode = static_cast<renderingModes>(renderMode-(int) renderingModes::Count);
+        }
+        break;
+
+    case (MOUSE_ENTER):
+        if (std::get<1>(TTparams) == 1) cursorOnScreen = true;
+        else cursorOnScreen = false;
+        break;
+    }
+};
