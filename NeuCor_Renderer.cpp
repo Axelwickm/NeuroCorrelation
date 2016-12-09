@@ -355,8 +355,8 @@ void NeuCor_Renderer::updateView(){
                 synPot.push_back(syn.getPostPot());
             }
             else if (renderMode == RENDER_PLASTICITY){
-                synPot.push_back(syn.strength);
-                synPot.push_back(syn.strength);
+                synPot.push_back(syn.weight);
+                synPot.push_back(syn.weight);
             }
         }
     }

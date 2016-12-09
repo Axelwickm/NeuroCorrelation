@@ -292,9 +292,9 @@ Synapse::Synapse(NeuCor* p, std::size_t parent, std::size_t target)
 
     lastSpikeArrival = 0.0;
 
-    strength = (float) rand()/RAND_MAX*2.0 + 0.5;
+    weight = (float) rand()/RAND_MAX*2.0 + 0.5;
 
-    if ((float) rand()/RAND_MAX < 0.15) strength = -strength;
+    if ((float) rand()/RAND_MAX < 0.15) weight = -weight;
 
     coord3 n1 = parentNet->getNeuron(target)->position();
     coord3 n2 = parentNet->getNeuron(parent)->position();
@@ -313,7 +313,7 @@ Synapse::Synapse(const Synapse &other):simulator(other.parentNet){
     lastSpikeArrival = other.lastSpikeArrival;
 
     length = other.length;
-    strength = other.strength;
+    weight = other.weight;
 
     AP_polW = 0, AP_depolFac = 0, AP_deltaStart = 0, AP_fireTime = 0;
     AP_speed = 2.0;
@@ -328,7 +328,7 @@ Synapse& Synapse::operator= (const Synapse &other){
     lastSpikeArrival = other.lastSpikeArrival;
 
     length = other.length;
-    strength = other.strength;
+    weight = other.weight;
 
     AP_polW = 0, AP_depolFac = 0, AP_deltaStart = 0, AP_fireTime = 0;
     AP_speed = 2.0;
@@ -365,7 +365,7 @@ float Synapse::getPrePot() const {
     if (AP_fireTime != 0.0){
         float val = float(parentNet->getTime() - lastSpikeStart)/(length*AP_speed);
         AP_RENDER_BEHAVIOUR;
-        return val*strength;
+        return val*weight;
     }
     else return 0.0;
 }
@@ -374,7 +374,7 @@ float Synapse::getPostPot() const {
     if (AP_fireTime != 0.0 && parentNet->getTime() < AP_fireTime){
         float val = float(AP_fireTime - parentNet->getTime())/(length*AP_speed);
         AP_RENDER_BEHAVIOUR;
-        return val*strength;
+        return val*weight;
     }
     else return 0.0;
 }
@@ -510,7 +510,7 @@ void Synapse::fire(float polW, float depolFac, float deltaStart){
     if (AP_fireTime != 0) return;
     AP_polW = polW, AP_depolFac = depolFac, AP_deltaStart = deltaStart;
     AP_depolFac *= 12.0;
-    AP_depolFac *= strength;
+    AP_depolFac *= weight;
 
     AP_fireTime = length*AP_speed;
     parentNet->queSimulation(this, AP_fireTime);
@@ -524,13 +524,13 @@ void Synapse::synapticPlasticity(){
     float traceS = powf(0.75,parentNet->getTime()-lastSpikeArrival);
 
     float weightChange = STDP(traceS - traceT)*0.5;
-    strength += weightChange;
+    weight += weightChange;
 
     //std::cout<<"Delta w = "<<weightChange<<std::endl;
 
-    strength = fmax(fmin(strength, 3.0), 0.0);
+    weight = fmax(fmin(weight, 3.0), 0.0);
 
-    //if (rand()%80 == 0) std::cout<<"S "<<strength<<std::endl;
+    //if (rand()%80 == 0) std::cout<<"S "<<weight<<std::endl;
 }
 inline float Synapse::STDP(float deltaT){
     #define TIME_CONSTANT 7.5

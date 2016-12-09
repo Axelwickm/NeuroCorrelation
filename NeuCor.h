@@ -186,6 +186,6 @@ class Synapse: public simulator {
         float AP_speed;
     private:
         float length;
-        float strength;
+        float weight;
 };
 #endif // NEUCOR_H
