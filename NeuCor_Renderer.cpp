@@ -328,9 +328,6 @@ void NeuCor_Renderer::updateView(){
     }
 
 
-    // Render synapses
-    glUseProgram(synapseProgramID);
-
     std::vector<coord3> connections;
     std::vector<float> synPot;
     synPot.reserve(brain->neurons.size()*8.0);
@@ -355,9 +352,21 @@ void NeuCor_Renderer::updateView(){
                 synPot.push_back(syn.getWeight());
                 synPot.push_back(syn.getWeight());
             }
+            else if (renderMode == RENDER_ACTIVITY){
+                synPot.push_back(fmin(fmax((neu.lastFire - activityComparisonTime)/5.0, 0.0), 1.0));
+                synPot.push_back(fmin(fmax((brain->getNeuron(syn.tN)->lastFire - activityComparisonTime)/5.0, 0.0), 1.0));
+            }
         }
     }
     if (PRINT_CONNECTIONS_EVERY_FRAME) std::cout<<std::endl;
+
+    if (renderMode == RENDER_NOSYNAPSES) goto renderNeurons; // Skip rendering synapses
+
+    // Render synapses
+    renderSynapses:
+
+    glUseProgram(synapseProgramID);
+
 
     glBindBuffer(GL_ARRAY_BUFFER, synapse_PT_buffer);
     glBufferSubData(GL_ARRAY_BUFFER, 0, connections.size() * sizeof(coord3), NULL);
@@ -403,6 +412,7 @@ void NeuCor_Renderer::updateView(){
 
 
     // Render neurons
+    renderNeurons:
 
     glUseProgram(neuronProgramID);
 
@@ -554,6 +564,8 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
         if (std::get<1>(TTparams) == GLFW_KEY_M && std::get<3>(TTparams) == GLFW_PRESS){
             renderMode = static_cast<renderingModes>(renderMode+1);
             if (renderMode == renderingModes::Count) renderMode = static_cast<renderingModes>(renderMode-(int) renderingModes::Count);
+
+            if (renderMode == renderingModes::RENDER_ACTIVITY) activityComparisonTime = brain->getTime();
         }
         break;
 

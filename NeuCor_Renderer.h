@@ -19,8 +19,9 @@ class NeuCor_Renderer
 
         float getDeltaTime();
         bool realRunspeed; // Makes brain's runSpeed define simulation's speed by ms/s
-        enum renderingModes { RENDER_VOLTAGE, RENDER_PLASTICITY, Count};
+        enum renderingModes { RENDER_VOLTAGE, RENDER_PLASTICITY, RENDER_ACTIVITY, RENDER_NOSYNAPSES, Count};
         renderingModes renderMode;
+        float activityComparisonTime;
 
         void updateView();
         void pollWindow();
