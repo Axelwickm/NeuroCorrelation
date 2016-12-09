@@ -174,6 +174,7 @@ class Synapse: public simulator {
 
         float getPrePot() const;
         float getPostPot() const;
+        float getWeight() const;
 
         void flipDirection();
 
