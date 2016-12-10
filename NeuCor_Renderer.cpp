@@ -345,8 +345,8 @@ void NeuCor_Renderer::updateView(){
 
 
             if (renderMode == RENDER_VOLTAGE){
-                synPot.push_back(syn.getPrePot());
-                synPot.push_back(syn.getPostPot());
+                synPot.push_back(syn.getPrePot()+0.03);
+                synPot.push_back(syn.getPostPot()+0.03);
             }
             else if (renderMode == RENDER_PLASTICITY){
                 synPot.push_back(syn.getWeight());
@@ -526,19 +526,19 @@ void NeuCor_Renderer::updateCamPos(){
     float speedMult = 5;
     // Move forward
     if (glfwGetKey(window, GLFW_KEY_W ) == GLFW_PRESS){
-        camPos -= camDir * GLfloat(deltaTime * 1 * speedMult);
+        camPos -= camDir * GLfloat(deltaTime * speedMult);
     }
     // Move backward
     if (glfwGetKey(window, GLFW_KEY_S ) == GLFW_PRESS){
-        camPos += camDir * GLfloat(deltaTime * 1 * speedMult);
+        camPos += camDir * GLfloat(deltaTime * speedMult);
     }
     // Strafe right
     if (glfwGetKey(window, GLFW_KEY_D ) == GLFW_PRESS){
-        camPos -= right * GLfloat(deltaTime * 1 * speedMult);
+        camPos -= right * GLfloat(deltaTime *  speedMult);
     }
     // Strafe left
     if (glfwGetKey(window, GLFW_KEY_A ) == GLFW_PRESS){
-        camPos += right * GLfloat(deltaTime * 1 * speedMult);
+        camPos += right * GLfloat(deltaTime * speedMult);
     }
     // Slow down time
     if (glfwGetKey(window, GLFW_KEY_PERIOD ) == GLFW_PRESS){
