@@ -558,12 +558,41 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
     switch (errand){
 
     case (KEY_ACTION):
-        if (std::get<1>(TTparams) == GLFW_KEY_ESCAPE && std::get<3>(TTparams) == GLFW_PRESS) glfwSetWindowShouldClose(std::get<0>(TTparams), GL_TRUE);
-        if (std::get<1>(TTparams) == GLFW_KEY_M && std::get<3>(TTparams) == GLFW_PRESS){
+        if (std::get<1>(TTparams) == GLFW_KEY_ESCAPE && std::get<3>(TTparams) == GLFW_PRESS) glfwSetWindowShouldClose(std::get<0>(TTparams), GL_TRUE); // Close window on escape-key press
+        if (std::get<1>(TTparams) == GLFW_KEY_M && std::get<3>(TTparams) == GLFW_PRESS){ // Iterate to next rendering mode on M-key press
             renderMode = static_cast<renderingModes>(renderMode+1);
             if (renderMode == renderingModes::Count) renderMode = static_cast<renderingModes>(renderMode-(int) renderingModes::Count);
 
             if (renderMode == renderingModes::RENDER_ACTIVITY) activityComparisonTime = brain->getTime();
+        }
+        if (std::get<1>(TTparams) == GLFW_KEY_Z && std::get<3>(TTparams) == GLFW_PRESS){ // Print distribution of synaptic weights in console
+            float span = 0.4, range_min = -3.0, range_max = 3.0;
+
+            std::vector<int> weightDistribution;
+            weightDistribution.resize(float(range_max-range_min)/0.4, 0);
+
+            int maxVal = 0, leftOut = 0;
+            for (auto &neu : brain->neurons){
+                for (auto &syn : neu.outSynapses){
+                    int spanIndex = floor((syn.getWeight()-range_min)/span);
+                    if (spanIndex < 0 || spanIndex >= weightDistribution.size()){
+                        leftOut++;
+                        continue;
+                    }
+                    weightDistribution.at(spanIndex)++;
+                    maxVal = max(maxVal, weightDistribution.at(spanIndex));
+                }
+            }
+            maxVal /= 20.0;
+
+
+            std::cout<<"Synaptic weight distribution, "<<range_min<<" -> "<<range_max<<std::endl;
+            for (int val : weightDistribution){
+                std::cout<<"| ";
+                for (int i = 0; i<val/maxVal; i++) std::cout<<"#";
+                std::cout<<std::endl;
+            }
+            std::cout<<"Left out: "<<leftOut<<std::endl;
         }
         break;
 
