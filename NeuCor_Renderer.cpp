@@ -562,6 +562,7 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
         if (std::get<1>(TTparams) == GLFW_KEY_M && std::get<3>(TTparams) == GLFW_PRESS){ // Iterate to next rendering mode on M-key press
             renderMode = static_cast<renderingModes>(renderMode+1);
             if (renderMode == renderingModes::Count) renderMode = static_cast<renderingModes>(renderMode-(int) renderingModes::Count);
+            std::cout<<"Rendering mode: "<<renderingModeNames.at(renderMode)<<std::endl;
 
             if (renderMode == renderingModes::RENDER_ACTIVITY) activityComparisonTime = brain->getTime();
         }

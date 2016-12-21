@@ -4,6 +4,9 @@
 /*  .h & .cpp includes  */
 #include <NeuCor.h>
 
+#include <string>
+#include <vector>
+
 #include <GL/glew.h>
 #define GLFW_INCLUDE_GLU
 #include <GLFW/glfw3.h>
@@ -19,7 +22,9 @@ class NeuCor_Renderer
 
         float getDeltaTime();
         bool realRunspeed; // Makes brain's runSpeed define simulation's speed by ms/s
+
         enum renderingModes { RENDER_VOLTAGE, RENDER_PLASTICITY, RENDER_ACTIVITY, RENDER_NOSYNAPSES, Count};
+        std::vector<std::string> renderingModeNames = {"Voltage", "Plasticity", "Activity", "No synapses"};
         renderingModes renderMode;
         float activityComparisonTime;
 
