@@ -529,10 +529,9 @@ void Synapse::synapticPlasticity(){
 
     float weightChange = STDP(traceS - traceT)*0.5;
     weight += weightChange;
+    weight = fmax(fmin(weight, 3.0), -3.0);
 
     //std::cout<<"Delta w = "<<weightChange<<std::endl;
-
-    weight = fmax(fmin(weight, 3.0), 0.0);
 
     //if (rand()%80 == 0) std::cout<<"S "<<weight<<std::endl;
 }
