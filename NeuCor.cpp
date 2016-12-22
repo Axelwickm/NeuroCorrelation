@@ -164,6 +164,43 @@ void NeuCor::deleteSynapse(std::size_t fromID, std::size_t toID){
     }
 }
 
+void NeuCor::printSynapseWeightDist() const {
+    float const span = 0.28, range_min = -3.0, range_max = 3.0;
+    int const longestRow = 20;
+
+    std::vector<int> weightDistribution;
+    weightDistribution.resize(float(range_max-range_min)/span, 0);
+
+    int maxVal = 0, leftOut = 0;
+    for (auto &neu : neurons){
+        for (auto &syn : neu.outSynapses){
+            int spanIndex = floor((syn.getWeight()-range_min)/span);
+            if (spanIndex < 0 || spanIndex >= weightDistribution.size()){
+                leftOut++;
+                std::cout<<syn.getWeight()<<std::endl;
+                continue;
+            }
+            weightDistribution.at(spanIndex)++;
+            maxVal = std::max(maxVal, weightDistribution.at(spanIndex));
+        }
+    }
+    maxVal /= longestRow;
+
+
+    std::cout.precision(2);
+    std::cout<<"Synaptic weight distribution, "<<range_min<<" -> "<<range_max<<std::endl;
+    for (int i = 0; i < weightDistribution.size(); i++){
+        if (0.0 < range_min+span*i)
+            std::cout<<std::fixed<<" "<<(range_min+span*i)<<" | ";
+        else std::cout<<std::fixed<<(range_min+span*i)<<" | ";
+        for (int j = 0; j<weightDistribution.at(i)/maxVal; j++) std::cout<<"#";
+        std::cout<<std::endl;
+    }
+    std::cout.unsetf(std::ios::fixed);
+    std::cout.precision(6);
+    std::cout<<"Left out: "<<leftOut<<"  "<<5.0<<std::endl;
+}
+
 simulator::simulator(NeuCor* p){
     deleted = false;
 
@@ -213,7 +250,7 @@ Neuron::Neuron(NeuCor* p, coord3 position)
     buffer = 5.0;
 
     AP_h = 100.0, AP_depolW = 0.3, AP_polW = 0.6, AP_deltaPol = 1.16, AP_depolFac = 0.2, AP_deltaStart = 1.0;
-    AP_cutoff = 3.0;
+    AP_cutoff = 4.0;
 
     trace = 0.0;
     vesicles = buffer * 0.75;
@@ -355,12 +392,11 @@ void Synapse::flipDirection(){
     }
 }
 
+
 #define AP_RENDER_BEHAVIOUR;                                \
     val = fmin(fmax(val,0.0),0.7);                           \
     if (val < 0.5) val = 8.0*1000.0*powf(val/5.0,3.0);        \
     else val = 8.0*powf(3.5-5*val,2.0);
-
-
 float Synapse::getPrePot() const {
     if (AP_fireTime != 0.0){
         float val = float(parentNet->getTime() - lastSpikeStart)/(length*AP_speed);
@@ -378,6 +414,7 @@ float Synapse::getPostPot() const {
     }
     else return 0.0;
 }
+
 
 #undef AP_RENDER_BEHAVIOUR
 
