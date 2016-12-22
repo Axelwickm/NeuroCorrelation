@@ -567,10 +567,11 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
             if (renderMode == renderingModes::RENDER_ACTIVITY) activityComparisonTime = brain->getTime();
         }
         if (std::get<1>(TTparams) == GLFW_KEY_Z && std::get<3>(TTparams) == GLFW_PRESS){ // Print distribution of synaptic weights in console
-            float span = 0.4, range_min = -3.0, range_max = 3.0;
+            float const span = 0.2, range_min = -3.0, range_max = 3.0;
+            int const longestRow = 20;
 
             std::vector<int> weightDistribution;
-            weightDistribution.resize(float(range_max-range_min)/0.4, 0);
+            weightDistribution.resize(float(range_max-range_min)/span, 0);
 
             int maxVal = 0, leftOut = 0;
             for (auto &neu : brain->neurons){
@@ -578,13 +579,14 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
                     int spanIndex = floor((syn.getWeight()-range_min)/span);
                     if (spanIndex < 0 || spanIndex >= weightDistribution.size()){
                         leftOut++;
+                        std::cout<<syn.getWeight()<<std::endl;
                         continue;
                     }
                     weightDistribution.at(spanIndex)++;
                     maxVal = max(maxVal, weightDistribution.at(spanIndex));
                 }
             }
-            maxVal /= 20.0;
+            maxVal /= longestRow;
 
 
             std::cout<<"Synaptic weight distribution, "<<range_min<<" -> "<<range_max<<std::endl;
