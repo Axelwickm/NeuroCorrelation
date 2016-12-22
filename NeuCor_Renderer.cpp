@@ -567,35 +567,7 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
             if (renderMode == renderingModes::RENDER_ACTIVITY) activityComparisonTime = brain->getTime();
         }
         if (std::get<1>(TTparams) == GLFW_KEY_Z && std::get<3>(TTparams) == GLFW_PRESS){ // Print distribution of synaptic weights in console
-            float const span = 0.2, range_min = -3.0, range_max = 3.0;
-            int const longestRow = 20;
-
-            std::vector<int> weightDistribution;
-            weightDistribution.resize(float(range_max-range_min)/span, 0);
-
-            int maxVal = 0, leftOut = 0;
-            for (auto &neu : brain->neurons){
-                for (auto &syn : neu.outSynapses){
-                    int spanIndex = floor((syn.getWeight()-range_min)/span);
-                    if (spanIndex < 0 || spanIndex >= weightDistribution.size()){
-                        leftOut++;
-                        std::cout<<syn.getWeight()<<std::endl;
-                        continue;
-                    }
-                    weightDistribution.at(spanIndex)++;
-                    maxVal = max(maxVal, weightDistribution.at(spanIndex));
-                }
-            }
-            maxVal /= longestRow;
-
-
-            std::cout<<"Synaptic weight distribution, "<<range_min<<" -> "<<range_max<<std::endl;
-            for (int val : weightDistribution){
-                std::cout<<"| ";
-                for (int i = 0; i<val/maxVal; i++) std::cout<<"#";
-                std::cout<<std::endl;
-            }
-            std::cout<<"Left out: "<<leftOut<<std::endl;
+            brain->printSynapseWeightDist();
         }
         break;
 

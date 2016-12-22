@@ -42,6 +42,8 @@ class NeuCor {
 
         void createNeuron(coord3 position);
         void makeConnections();
+
+        void printSynapseWeightDist() const;
     protected:
         friend class simulator;
         friend class Neuron;
