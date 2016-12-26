@@ -104,10 +104,13 @@ class simulator {
 class InputFirer: public simulator {
     public:
         InputFirer(NeuCor* p, unsigned i);
+        coord3 a;
+        coord3 b;
 
         void run();
         void schedule(float deltaT, float frequency);
         const unsigned index;
+        std::vector<std::size_t> near;
 };
 
 class Neuron: public simulator {

@@ -219,10 +219,24 @@ void simulator::exterminate(){
 }
 
 InputFirer::InputFirer(NeuCor* p, unsigned i)
-:simulator(p), index(i) {}
+:simulator(p), index(i) {
+    a.x = (float) rand()/RAND_MAX, a.y = (float) rand()/RAND_MAX, a.z = (float) rand()/RAND_MAX;
+    float longitude = 2.0*3.1459*(float) rand()/RAND_MAX;
+    float latitude = acos(2.0*(float) rand()/RAND_MAX-1.0);
+    b.x = a.x+sqrt(1.0-pow(cos(longitude),2.0))*cos(latitude);
+    b.y = a.y+sqrt(1.0-pow(cos(longitude),2.0))*sin(latitude);
+    b.z = a.z+cos(longitude);
+
+    for (auto &neu: parentNet->neurons){
+        if (neu.position().getDist(a) < 0.5){
+            near.push_back(neu.getID());
+        }
+    }
+}
 
 void InputFirer::run(){
-    parentNet->getNeuron(index)->fire();
+    for (auto neuID: near)
+        parentNet->getNeuron(neuID)->fire();
 }
 
 void InputFirer::schedule(float deltaT, float frequency){
@@ -555,7 +569,7 @@ void Synapse::run(){
 void Synapse::fire(float polW, float depolFac, float deltaStart){
     if (AP_fireTime != 0) return;
     AP_polW = polW, AP_depolFac = depolFac, AP_deltaStart = deltaStart;
-    AP_depolFac *= 12.0;
+    AP_depolFac *= 2.0;
     AP_depolFac *= weight;
 
     AP_fireTime = length*AP_speed;
