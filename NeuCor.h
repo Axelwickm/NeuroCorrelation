@@ -137,6 +137,7 @@ class Neuron: public simulator {
         float potential() const;
         void setPotential(float p);
         float activity() const;
+        std::size_t getID() const;
 
         float trace, lastFire;
 

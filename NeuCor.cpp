@@ -324,6 +324,7 @@ void Neuron::setPosition(coord3 newPos){parentNet->positions.at(pos) = newPos;}
 float Neuron::potential() const { return parentNet->potAct.at(PA); }
 void Neuron::setPotential(float p){parentNet->potAct.at(PA) = p;}
 float Neuron::activity() const { return parentNet->potAct.at(PA + 1); }
+std::size_t Neuron::getID() const { return ownID;}
 
 Synapse::Synapse(NeuCor* p, std::size_t parent, std::size_t target)
 :simulator(p) {
