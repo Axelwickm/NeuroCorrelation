@@ -70,7 +70,7 @@ void NeuCor::createNeuron(coord3 position){
 
     }
     else if (position.x != position.x){
-        if (totalGenNeurons != 0 ) spawnSize =powf(totalGenNeurons/SPAWN_DENSITY,0.33333);
+        if (totalGenNeurons != 0 ) spawnSize = powf(totalGenNeurons/SPAWN_DENSITY,0.33333);
         position.x = ((float) rand()/RAND_MAX-0.5)*spawnSize;
         position.y = ((float) rand()/RAND_MAX-0.5)*spawnSize;
         position.z = ((float) rand()/RAND_MAX-0.5)*spawnSize;
@@ -363,7 +363,7 @@ Synapse::Synapse(NeuCor* p, std::size_t parent, std::size_t target)
 
     weight = (float) rand()/RAND_MAX*2.0 + 0.5;
 
-    if ((float) rand()/RAND_MAX < 0.15) weight = -weight;
+    if ((float) rand()/RAND_MAX < 0.2) weight = -weight;
 
     coord3 n1 = parentNet->getNeuron(target)->position();
     coord3 n2 = parentNet->getNeuron(parent)->position();
