@@ -120,8 +120,7 @@ void NeuCor::queSimulation(simulator* s, const float time){
     simulationQue.emplace(s, currentTime + time);
 }
 void NeuCor::resetActivities(){
-    std::cout<<"Resetting all neurons' activity.\n";
-    for (auto neu: neurons) neu.resetActivity();
+    for (auto &neu: neurons) neu.resetActivity();
 }
 
 Neuron* NeuCor::getNeuron(std::size_t ID) {
@@ -494,7 +493,7 @@ void Neuron::run(){
     vesicles_uptake(deltaT);
 
     // Update activity
-    setActivity((float) firings/((float) lastFire-activityStartTime));
+    setActivity(firings/((float) currentT-activityStartTime));
 
     //y=sqrt(pi/2)*w*f*l^(x-o)*e^(0.5*w^2*log(l)^2)*(erf((w^2*log(l)-o+x)/(sqrt(2)*w))-erf((w^2*log(l)-o)/(sqrt(2)*w)))
     //y/(sqrt(pi/2)*w*f*e^(0.5*w^2*log(l)^2))=l^(x-o)*(erf((w^2*log(l)-o+x)/(sqrt(2)*w))-erf((w^2*log(l)-o)/(sqrt(2)*w)))
