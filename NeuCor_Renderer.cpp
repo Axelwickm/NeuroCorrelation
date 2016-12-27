@@ -563,8 +563,6 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
             renderMode = static_cast<renderingModes>(renderMode+1);
             if (renderMode == renderingModes::Count) renderMode = static_cast<renderingModes>(renderMode-(int) renderingModes::Count);
             std::cout<<"Rendering mode: "<<renderingModeNames.at(renderMode)<<std::endl;
-
-            if (renderMode == renderingModes::RENDER_ACTIVITY) activityComparisonTime = brain->getTime();
         }
         if (std::get<1>(TTparams) == GLFW_KEY_Z && std::get<3>(TTparams) == GLFW_PRESS){ // Print distribution of synaptic weights in console
             brain->printSynapseWeightDist();

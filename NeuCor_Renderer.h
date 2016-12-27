@@ -26,7 +26,6 @@ class NeuCor_Renderer
         enum renderingModes { RENDER_VOLTAGE, RENDER_PLASTICITY, RENDER_ACTIVITY, RENDER_NOSYNAPSES, Count};
         std::vector<std::string> renderingModeNames = {"Voltage", "Plasticity", "Activity", "No synapses"};
         renderingModes renderMode;
-        float activityComparisonTime;
 
         void updateView();
         void pollWindow();
