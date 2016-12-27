@@ -349,8 +349,8 @@ void NeuCor_Renderer::updateView(){
                 synPot.push_back(syn.getPostPot()+0.03);
             }
             else if (renderMode == RENDER_PLASTICITY){
-                synPot.push_back(syn.getWeight());
-                synPot.push_back(syn.getWeight());
+                synPot.push_back(syn.getWeight()/2.0);
+                synPot.push_back(syn.getWeight()/2.0);
             }
             else if (renderMode == RENDER_ACTIVITY){
                 synPot.push_back(fmin(fmax((neu.lastFire - activityComparisonTime)/5.0, 0.0), 1.0));
