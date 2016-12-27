@@ -493,6 +493,9 @@ void Neuron::run(){
 
     vesicles_uptake(deltaT);
 
+    // Update activity
+    setActivity((float) firings/((float) lastFire-activityStartTime));
+
     //y=sqrt(pi/2)*w*f*l^(x-o)*e^(0.5*w^2*log(l)^2)*(erf((w^2*log(l)-o+x)/(sqrt(2)*w))-erf((w^2*log(l)-o)/(sqrt(2)*w)))
     //y/(sqrt(pi/2)*w*f*e^(0.5*w^2*log(l)^2))=l^(x-o)*(erf((w^2*log(l)-o+x)/(sqrt(2)*w))-erf((w^2*log(l)-o)/(sqrt(2)*w)))
 
@@ -507,7 +510,6 @@ void Neuron::fire(){
     lastFire = parentNet->getTime();
     trace = 1.0;
     firings++;
-    setActivity(firings/(lastFire-activityStartTime));
 
     for (size_t s = 0; s < outSynapses.size(); s++){
         outSynapses.at(s).fire(AP_polW, AP_depolFac, AP_deltaStart);
