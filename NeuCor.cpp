@@ -119,6 +119,10 @@ float NeuCor::getTime() const {return currentTime;}
 void NeuCor::queSimulation(simulator* s, const float time){
     simulationQue.emplace(s, currentTime + time);
 }
+void NeuCor::resetActivities(){
+    std::cout<<"Resetting all neurons' activity.\n";
+    for (auto neu: neurons) neu.resetActivity();
+}
 
 Neuron* NeuCor::getNeuron(std::size_t ID) {
     return &neurons.at(ID);
@@ -347,6 +351,7 @@ float Neuron::potential() const { return parentNet->potAct.at(PA); }
 void Neuron::setPotential(float p){parentNet->potAct.at(PA) = p;}
 float Neuron::activity() const { return parentNet->potAct.at(PA + 1); }
 void Neuron::setActivity(float a){parentNet->potAct.at(PA+1) = a;}
+void Neuron::resetActivity(){firings = 0; activityStartTime = parentNet->getTime(); setActivity(0.0);}
 std::size_t Neuron::getID() const { return ownID;}
 
 Synapse::Synapse(NeuCor* p, std::size_t parent, std::size_t target)

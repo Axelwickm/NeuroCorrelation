@@ -55,6 +55,7 @@ class NeuCor {
 
         std::vector<coord3> positions;
         std::vector<float> potAct;
+        void resetActivities();
 
         std::tuple<std::size_t, std::size_t> registerNeuron(coord3 pos, float potential, float activity);
         std::size_t getFreeID() const;
@@ -141,6 +142,7 @@ class Neuron: public simulator {
         void setPotential(float p);
         float activity() const;
         void setActivity(float a);
+        void resetActivity();
         std::size_t getID() const;
 
         float trace, lastFire;
