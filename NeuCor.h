@@ -140,6 +140,7 @@ class Neuron: public simulator {
         float potential() const;
         void setPotential(float p);
         float activity() const;
+        void setActivity(float a);
         std::size_t getID() const;
 
         float trace, lastFire;
@@ -152,6 +153,9 @@ class Neuron: public simulator {
         float vesicles, reuptake, buffer;
         float AP_h, AP_depolW, AP_polW, AP_deltaPol, AP_depolFac, AP_deltaStart;
         float AP_cutoff;
+
+        float activityStartTime;
+        unsigned firings;
 
         void charge_passive(float deltaT, float currentT);
         void charge_thresholdCheck(float deltaT, float currentT);

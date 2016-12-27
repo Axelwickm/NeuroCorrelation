@@ -353,8 +353,8 @@ void NeuCor_Renderer::updateView(){
                 synPot.push_back(syn.getWeight()/2.0);
             }
             else if (renderMode == RENDER_ACTIVITY){
-                synPot.push_back(fmin(fmax((neu.lastFire - activityComparisonTime)/5.0, 0.0), 1.0));
-                synPot.push_back(fmin(fmax((brain->getNeuron(syn.tN)->lastFire - activityComparisonTime)/5.0, 0.0), 1.0));
+                synPot.push_back(brain->getNeuron(syn.pN)->activity());
+                synPot.push_back(brain->getNeuron(syn.tN)->activity());
             }
         }
     }

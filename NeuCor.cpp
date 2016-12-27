@@ -228,7 +228,7 @@ InputFirer::InputFirer(NeuCor* p, unsigned i)
     b.z = a.z+cos(longitude);
 
     for (auto &neu: parentNet->neurons){
-        if (neu.position().getDist(a) < 0.5){
+        if (neu.position().getDist(a) < 0.75){
             near.push_back(neu.getID());
         }
     }
@@ -270,6 +270,10 @@ Neuron::Neuron(NeuCor* p, coord3 position)
     AP_h = 100.0, AP_depolW = 0.3, AP_polW = 0.6, AP_deltaPol = 1.16, AP_depolFac = 0.2, AP_deltaStart = 1.0;
     AP_cutoff = 4.0;
 
+    activityStartTime = parentNet->getTime();
+    firings = 0;
+    setActivity(0);
+
     trace = 0.0;
     vesicles = buffer * 0.75;
     lastFire = NAN;
@@ -294,6 +298,10 @@ Neuron& Neuron::operator=(const Neuron& other){
     lastFire = other.lastFire;
 
     deleted = other.deleted;
+
+    activityStartTime = other.activityStartTime;
+    firings = other.firings;
+    setActivity(0);
 }
 void Neuron::makeConnections(){
     if (!exists()) return;
@@ -338,6 +346,7 @@ void Neuron::setPosition(coord3 newPos){parentNet->positions.at(pos) = newPos;}
 float Neuron::potential() const { return parentNet->potAct.at(PA); }
 void Neuron::setPotential(float p){parentNet->potAct.at(PA) = p;}
 float Neuron::activity() const { return parentNet->potAct.at(PA + 1); }
+void Neuron::setActivity(float a){parentNet->potAct.at(PA+1) = a;}
 std::size_t Neuron::getID() const { return ownID;}
 
 Synapse::Synapse(NeuCor* p, std::size_t parent, std::size_t target)
@@ -492,6 +501,8 @@ void Neuron::run(){
 void Neuron::fire(){
     lastFire = parentNet->getTime();
     trace = 1.0;
+    firings++;
+    setActivity(firings/(lastFire-activityStartTime));
 
     for (size_t s = 0; s < outSynapses.size(); s++){
         outSynapses.at(s).fire(AP_polW, AP_depolFac, AP_deltaStart);
