@@ -217,6 +217,7 @@ void NeuCor_Renderer::initGLFW(){
     cursorX = width/2.0;
     cursorY = height/2.0;
     navigationMode = true;
+    mouseInWindow = true;
 }
 void NeuCor_Renderer::initOpenGL(GLFWwindow* window){
     glEnable(GL_CULL_FACE);
@@ -501,7 +502,7 @@ void NeuCor_Renderer::updateView(){
     glDisableVertexAttribArray(1);
     glDisableVertexAttribArray(2);
 
-    if (navigationMode) glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    if (navigationMode && mouseInWindow) glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     else glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
 
@@ -542,7 +543,7 @@ void NeuCor_Renderer::updateCamPos(){
     double xpos, ypos;
     glfwGetCursorPos(window, &xpos, &ypos);
 
-    if (navigationMode) {
+    if (navigationMode && mouseInWindow) {
         camHA += 0.15 * deltaTime * float(cursorX-xpos);
         camVA  -= 0.15 * deltaTime * float(cursorY-ypos);
     }
@@ -605,13 +606,10 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
         if (std::get<1>(TTparams) == GLFW_KEY_N && std::get<3>(TTparams) == GLFW_PRESS){ // Reset all activity start times
             brain->resetActivities();
         }
-        if (std::get<1>(TTparams) == GLFW_KEY_Z && std::get<3>(TTparams) == GLFW_PRESS){ // Print distribution of synaptic weights in console
-            brain->printSynapseWeightDist();
-        }
         break;
 
     case (MOUSE_ENTER):
-        navigationMode = std::get<1>(TTparams);
+        mouseInWindow = std::get<1>(TTparams);
         break;
     }
 }
