@@ -157,6 +157,9 @@ NeuCor_Renderer::NeuCor_Renderer(NeuCor* _brain)
     runBrainOnUpdate = true;
     paused = false;
     realRunspeed = false;
+
+
+    maxTimeline = 15.0; // ms
     /* Initiates GLFW, OpenGL & ImGui*/
     initGLFW();
     initOpenGL(window);
@@ -323,7 +326,7 @@ void NeuCor_Renderer::updateView(){
         brain->run();
         brain->runSpeed = staticRunSpeed;
     }
-    else if (runBrainOnUpdate) brain->run();
+    else if (runBrainOnUpdate && !paused) brain->run();
 
 
     updateCamPos();
@@ -511,6 +514,22 @@ void NeuCor_Renderer::updateView(){
     else glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
 
+    if (selectedNeurons.size() != 0 && !paused){
+        float brainTime = brain->getTime();
+        std::vector<neuronSnapshot> snapshot;
+        snapshot.reserve(selectedNeurons.size());
+        for (auto neuID: selectedNeurons) {
+            Neuron* neu = brain->getNeuron(neuID);
+            neuronSnapshot neuSnap;
+            snapshot.emplace_back();
+            snapshot.back().id = neuID;
+            snapshot.back().time = brainTime;
+            snapshot.back().voltage = neu->potential();
+
+        }
+        timeline.push_back(snapshot);
+        while (maxTimeline < brainTime - timeline.front().back().time) timeline.pop_front();
+    }
     if (!navigationMode) renderInterface();
 
     glfwSwapBuffers(window);
@@ -522,45 +541,57 @@ void NeuCor_Renderer::renderInterface(){
 
     ImGui::ShowTestWindow();
 
-    // Time window
-    ImGui::Begin("Time");
+    {   // Time-Window
 
-    bool loadedPaused = false;
-    if (paused){
-        loadedPaused = true;
-        ImGui::PushStyleColor(ImGuiCol_FrameBg, ImColor::HSV(0.0f, 0.7f, 0.7f));
-        ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImColor::HSV(0.0f, 0.6f, 0.5f));
-        ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImColor::HSV(0.0f, 0.7f, 0.5f));
-        ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImColor::HSV(0.0f, 0.7f, 0.5f));
+        ImGuiWindowFlags window_flags = 0;
+        window_flags |= ImGuiWindowFlags_NoResize;
+        window_flags |= ImGuiWindowFlags_AlwaysAutoResize;
+        ImGui::Begin("Time", NULL, window_flags);
 
-        if (ImGui::Button("Run")){
-            paused = false;
+        bool loadedPaused = false;
+        if (paused && runBrainOnUpdate){
+            loadedPaused = true;
+            ImGui::PushStyleColor(ImGuiCol_FrameBg, ImColor::HSV(0.0f, 0.7f, 0.7f));
+            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImColor::HSV(0.0f, 0.6f, 0.5f));
+            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImColor::HSV(0.0f, 0.7f, 0.5f));
+            ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImColor::HSV(0.0f, 0.7f, 0.5f));
+
+            if (ImGui::Button("Run")){
+                paused = false;
+            }
         }
-    }
-    else {
-        if (ImGui::Button("Pause")){
-            paused = true;
+        else if (runBrainOnUpdate){
+            if (ImGui::Button("Pause")){
+                paused = true;
+            }
         }
-    }
-    ImGui::SameLine();
-    if (!realRunspeed)
-        ImGui::SliderFloat("Speed", &brain->runSpeed, 0.0, 1.0, "%.4f ms per run", 2.0f);
-    else
-        ImGui::SliderFloat("Speed", &brain->runSpeed, 0.0, 10.0, "%.4f ms/s ", 2.0f);
-    if (loadedPaused) ImGui::PopStyleColor(4);
+        ImGui::SameLine();
+        if (!realRunspeed)
+            ImGui::SliderFloat("Speed", &brain->runSpeed, 0.0, 1.0, "%.4f ms per run", 2.0f);
+        else
+            ImGui::SliderFloat("Speed", &brain->runSpeed, 0.0, 10.0, "%.4f ms/s ", 2.0f);
+        if (loadedPaused) ImGui::PopStyleColor(4);
 
+        if (runBrainOnUpdate){
+            ImGui::Checkbox("Real time", &realRunspeed);
+            ImGui::SameLine(); ImGui::TextDisabled("[?]");
+            if (ImGui::IsItemHovered()) {
+                ImGui::BeginTooltip();
+                ImGui::PushTextWrapPos(450.0f);
+                ImGui::TextUnformatted("Makes simulation speed dependent on real time. Speed is defined by: simulation time / real time (ms/s).");
+                ImGui::PopTextWrapPos();
+                ImGui::EndTooltip();
+            }
+        }
 
-    ImGui::Checkbox("Real time", &realRunspeed);
-    ImGui::SameLine(); ImGui::TextDisabled("[?]");
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::BeginTooltip();
-        ImGui::PushTextWrapPos(450.0f);
-        ImGui::TextUnformatted("Makes simulation speed dependent on real time. Speed is defined by: simulation time / real time (ms/s).");
-        ImGui::PopTextWrapPos();
-        ImGui::EndTooltip();
+        ImGui::Separator();
+        float voltageData[timeline.size()];
+        for (int i = 0; i<timeline.size(); i++){
+            voltageData[i] = timeline.at(i).at(0).voltage;
+        }
+        ImGui::PlotLines("Neuron voltage", voltageData, timeline.size(), 0, "", -90.0f, 50.0f, ImVec2(400, 400));
+        ImGui::End();
     }
-    ImGui::End();
 
 
     ImGui::Render();

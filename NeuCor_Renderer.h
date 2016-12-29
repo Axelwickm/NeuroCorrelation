@@ -6,6 +6,7 @@
 
 #include <string>
 #include <vector>
+#include <deque>
 
 #include <GL/glew.h>
 #define GLFW_INCLUDE_GLU
@@ -28,6 +29,15 @@ class NeuCor_Renderer
         enum renderingModes { RENDER_VOLTAGE, RENDER_PLASTICITY, RENDER_ACTIVITY, RENDER_NOSYNAPSES, Count};
         std::vector<std::string> renderingModeNames = {"Voltage", "Plasticity", "Activity", "No synapses"};
         renderingModes renderMode;
+
+        struct neuronSnapshot { // For plotting
+            int id;
+            float time;
+            float voltage;
+        };
+        std::vector<int> selectedNeurons;
+        std::deque<std::vector<neuronSnapshot> > timeline;
+        float maxTimeline;
 
         void updateView();
         void pollWindow();
