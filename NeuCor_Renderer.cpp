@@ -158,6 +158,8 @@ NeuCor_Renderer::NeuCor_Renderer(NeuCor* _brain)
     paused = false;
     realRunspeed = false;
 
+    FPS = 0;
+
 
     maxTimeline = 15.0; // ms
     /* Initiates GLFW, OpenGL & ImGui*/
@@ -319,6 +321,7 @@ void NeuCor_Renderer::updateView(){
     double currentTime = glfwGetTime();
     deltaTime = float(currentTime - lastTime);
     lastTime = currentTime;
+    FPS = (FPS*20.0+1.0/deltaTime)/21.0; // Makes FPS change slower
 
     if (runBrainOnUpdate && realRunspeed && !paused){
         float staticRunSpeed = brain->runSpeed;
@@ -679,7 +682,7 @@ void NeuCor_Renderer::renderModule(graphicsModule module, bool windowed){
             renderMode = static_cast<renderingModes>((renderMode+1)%renderingModes::Count);
         if (glfwGetKey(window, GLFW_KEY_M ) == GLFW_PRESS) ImGui::PopStyleColor(3);
 
-        ImGui::Text("FPS: %f", round(1.0/deltaTime));
+        ImGui::Text("FPS: %i", (int) round(FPS));
 
     } break;
 

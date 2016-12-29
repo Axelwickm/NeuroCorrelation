@@ -84,6 +84,7 @@ class NeuCor_Renderer
         int width, height;
         double lastTime;
         float deltaTime;
+        float FPS;
         void initGLFW();
         void initOpenGL(GLFWwindow* window);
         void loadResources();
