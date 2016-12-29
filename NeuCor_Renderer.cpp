@@ -37,7 +37,7 @@ static void glfw_KeyCallback(GLFWwindow* window, int key, int scancode, int acti
     ImGui_ImplGlfwGL3_KeyCallback(window, key, scancode, action, mods);
 }
 void glfw_CharCallback(GLFWwindow* window, unsigned int c){
-     windowRegistry.at(window)->inputCallback(NeuCor_Renderer::CHAR, window, (int) c, -1, -1, -1);
+     windowRegistry.at(window)->inputCallback(NeuCor_Renderer::CHAR_ACTION, window, (int) c, -1, -1, -1);
      ImGui_ImplGlfwGL3_CharCallback(window, c);
 }
 void glfw_MouseButtonCallback(GLFWwindow* window, int button, int action, int mods){
@@ -670,8 +670,14 @@ void NeuCor_Renderer::renderModule(graphicsModule module, bool windowed){
         if(ImGui::Button("<"))
             renderMode = static_cast<renderingModes>((renderMode-1+renderingModes::Count)%renderingModes::Count);
         ImGui::SameLine(); ImGui::Text(renderingModeNames.at(renderMode).data()); ImGui::SameLine(150,0);
+        if (glfwGetKey(window, GLFW_KEY_M ) == GLFW_PRESS){
+            ImGui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(2.0f, 0.6f, 0.6f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(2.0f, 0.7f, 0.7f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(2.0f, 0.8f, 0.8f));
+        }
         if(ImGui::Button(">"))
             renderMode = static_cast<renderingModes>((renderMode+1)%renderingModes::Count);
+        if (glfwGetKey(window, GLFW_KEY_M ) == GLFW_PRESS) ImGui::PopStyleColor(3);
 
     } break;
 
@@ -745,13 +751,16 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
             navigationMode = !navigationMode;
             if (navigationMode) glfwSetCursorPos(window, width/2.0, height/2.0);
         }
-        if (std::get<1>(TTparams) == GLFW_KEY_M && std::get<3>(TTparams) == GLFW_PRESS){ // Iterate to next rendering mode on M-key press
+        if (std::get<1>(TTparams) == GLFW_KEY_N && std::get<3>(TTparams) == GLFW_PRESS){ // Reset all activity start times
+            brain->resetActivities();
+        }
+        break;
+
+    case (CHAR_ACTION):
+        if (std::get<1>(TTparams) == 109 || std::get<1>(TTparams) == 77){ // Iterate to next rendering mode on M-key press
             renderMode = static_cast<renderingModes>(renderMode+1);
             if (renderMode == renderingModes::Count) renderMode = static_cast<renderingModes>(renderMode-(int) renderingModes::Count);
             std::cout<<"Rendering mode: "<<renderingModeNames.at(renderMode)<<std::endl;
-        }
-        if (std::get<1>(TTparams) == GLFW_KEY_N && std::get<3>(TTparams) == GLFW_PRESS){ // Reset all activity start times
-            brain->resetActivities();
         }
         break;
 

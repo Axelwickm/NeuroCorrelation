@@ -38,7 +38,7 @@ class NeuCor_Renderer
         typedef void (*CallbackType)();
         void setDestructCallback(CallbackType f);
 
-        enum callbackErrand {KEY_ACTION, CHAR, MOUSE_BUTTON, MOUSE_SCROLL, MOUSE_ENTER };
+        enum callbackErrand {KEY_ACTION, CHAR_ACTION, MOUSE_BUTTON, MOUSE_SCROLL, MOUSE_ENTER };
         template<typename ... callbackParameters>
         void inputCallback(callbackErrand errand, callbackParameters ... params);
     protected:
