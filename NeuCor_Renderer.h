@@ -33,7 +33,7 @@ class NeuCor_Renderer
         typedef void (*CallbackType)();
         void setDestructCallback(CallbackType f);
 
-        enum callbackErrand {KEY_ACTION, MOUSE_ENTER};
+        enum callbackErrand {KEY_ACTION, CHAR, MOUSE_BUTTON, MOUSE_SCROLL, MOUSE_ENTER };
         template<typename ... callbackParameters>
         void inputCallback(callbackErrand errand, callbackParameters ... params);
     protected:
@@ -58,7 +58,7 @@ class NeuCor_Renderer
         glm::vec3 camUp;
         float camHA,camVA;
         double cursorX, cursorY;
-        bool cursorOnScreen;
+        bool navigationMode;
 
         GLFWwindow* window;
         CallbackType destructCallback;

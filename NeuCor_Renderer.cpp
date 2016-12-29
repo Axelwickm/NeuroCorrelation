@@ -34,8 +34,21 @@ void glfw_ErrorCallback(int error, const char* description){
 /* glfw key callback function helper */
 static void glfw_KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     windowRegistry.at(window)->inputCallback(NeuCor_Renderer::KEY_ACTION, window, key, scancode, action, mods);
+    ImGui_ImplGlfwGL3_KeyCallback(window, key, scancode, action, mods);
 }
-void cursor_enter_callback(GLFWwindow* window, int entered){
+void glfw_CharCallback(GLFWwindow* window, unsigned int c){
+     windowRegistry.at(window)->inputCallback(NeuCor_Renderer::CHAR, window, (int) c, -1, -1, -1);
+     ImGui_ImplGlfwGL3_CharCallback(window, c);
+}
+void glfw_MouseButtonCallback(GLFWwindow* window, int button, int action, int mods){
+    windowRegistry.at(window)->inputCallback(NeuCor_Renderer::MOUSE_BUTTON, window, button, action, mods, -1);
+    ImGui_ImplGlfwGL3_MouseButtonCallback(window, button, action, mods);
+}
+void glfw_ScrollCallback(GLFWwindow* window, double xoffset, double yoffset){
+    windowRegistry.at(window)->inputCallback(NeuCor_Renderer::MOUSE_SCROLL, window, (int) xoffset*1000, (int) yoffset*1000, -1, -1);
+    ImGui_ImplGlfwGL3_ScrollCallback(window, xoffset, yoffset);
+}
+void glfw_CursorCallback(GLFWwindow* window, int entered){
     windowRegistry.at(window)->inputCallback(NeuCor_Renderer::MOUSE_ENTER, window, entered, -1, -1, -1);
 }
 
@@ -193,14 +206,17 @@ void NeuCor_Renderer::initGLFW(){
     glfwSwapInterval(1);
 
     glfwSetKeyCallback(window, glfw_KeyCallback);
+    glfwSetCharCallback(window, glfw_CharCallback);
+    glfwSetMouseButtonCallback(window, glfw_MouseButtonCallback);
+    glfwSetScrollCallback(window, glfw_ScrollCallback);
 
-    glfwSetCursorEnterCallback(window, cursor_enter_callback);
+    glfwSetCursorEnterCallback(window, glfw_CursorCallback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwPollEvents();
     glfwSetCursorPos(window, width/2, height /2);
     cursorX = width/2.0;
     cursorY = height/2.0;
-    cursorOnScreen = true;
+    navigationMode = true;
 }
 void NeuCor_Renderer::initOpenGL(GLFWwindow* window){
     glEnable(GL_CULL_FACE);
@@ -485,11 +501,11 @@ void NeuCor_Renderer::updateView(){
     glDisableVertexAttribArray(1);
     glDisableVertexAttribArray(2);
 
-    if (cursorOnScreen) glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    if (navigationMode) glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     else glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
 
-    if (!cursorOnScreen){
+    if (!navigationMode){
         // This creates a window
         ImGui::ShowTestWindow(false);
 
@@ -526,7 +542,7 @@ void NeuCor_Renderer::updateCamPos(){
     double xpos, ypos;
     glfwGetCursorPos(window, &xpos, &ypos);
 
-    if (cursorOnScreen) {
+    if (navigationMode) {
         camHA += 0.15 * deltaTime * float(cursorX-xpos);
         camVA  -= 0.15 * deltaTime * float(cursorY-ypos);
     }
@@ -580,7 +596,7 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
 
     case (KEY_ACTION):
         if (std::get<1>(TTparams) == GLFW_KEY_ESCAPE && std::get<3>(TTparams) == GLFW_PRESS) glfwSetWindowShouldClose(std::get<0>(TTparams), GL_TRUE); // Close window on escape-key press
-        if (std::get<1>(TTparams) == GLFW_KEY_SPACE && std::get<3>(TTparams) == GLFW_PRESS) cursorOnScreen = !cursorOnScreen;
+        if (std::get<1>(TTparams) == GLFW_KEY_SPACE && std::get<3>(TTparams) == GLFW_PRESS) navigationMode = !navigationMode;
         if (std::get<1>(TTparams) == GLFW_KEY_M && std::get<3>(TTparams) == GLFW_PRESS){ // Iterate to next rendering mode on M-key press
             renderMode = static_cast<renderingModes>(renderMode+1);
             if (renderMode == renderingModes::Count) renderMode = static_cast<renderingModes>(renderMode-(int) renderingModes::Count);
@@ -595,7 +611,7 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
         break;
 
     case (MOUSE_ENTER):
-        cursorOnScreen = std::get<1>(TTparams);
+        navigationMode = std::get<1>(TTparams);
         break;
     }
-};
+}
