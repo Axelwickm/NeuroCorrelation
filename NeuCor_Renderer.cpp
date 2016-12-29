@@ -52,7 +52,7 @@ void glfw_CursorCallback(GLFWwindow* window, int entered){
     windowRegistry.at(window)->inputCallback(NeuCor_Renderer::MOUSE_ENTER, window, entered, -1, -1, -1);
 }
 void glfw_FocusCallback(GLFWwindow*window, int focused){
-
+    windowRegistry.at(window)->inputCallback(NeuCor_Renderer::MOUSE_ENTER, window, focused, -1, -1, -1);
 }
 
 GLuint LoadShaders(const char * vertex_file_path,const char * fragment_file_path){
@@ -225,8 +225,7 @@ void NeuCor_Renderer::initGLFW(){
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwPollEvents();
     glfwSetCursorPos(window, width/2, height /2);
-    cursorX = width/2.0;
-    cursorY = height/2.0;
+    cursorX = width/2.0; cursorY = height/2.0;
     navigationMode = true;
     mouseInWindow = true;
 }
@@ -611,14 +610,17 @@ void NeuCor_Renderer::updateCamPos(){
         //std::cout<<"Run-speed: "<<brain->runSpeed<<std::endl;
     }
 
-
     if (!navigationMode || !mouseInWindow) return;
 
     double xpos, ypos;
     glfwGetCursorPos(window, &xpos, &ypos);
 
+    if (cursorX != cursorX) {cursorX = xpos; cursorY = ypos; std::cout<<"Nan";}
+
     float deltaX = cursorX-xpos;
     float deltaY = cursorY-ypos;
+
+    std::cout<<deltaX<<"  "<<deltaY<<std::endl;
 
     camHA -= 0.15 * deltaTime * deltaX;
     camVA  += 0.15 * deltaTime * deltaY;
@@ -741,7 +743,11 @@ void NeuCor_Renderer::renderModule(graphicsModule module, bool windowed){
 
     }
 }
-
+void NeuCor_Renderer::resetCursor(){
+    std::cout<<"reset\n";
+    cursorX = NAN; cursorY = NAN;
+    glfwSetCursorPos(window, width/2.0, height/2.0);
+}
 
 template<typename ... callbackParameters>
 void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ... params){
@@ -753,7 +759,7 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
         if (std::get<1>(TTparams) == GLFW_KEY_ESCAPE && std::get<3>(TTparams) == GLFW_PRESS) glfwSetWindowShouldClose(std::get<0>(TTparams), GL_TRUE); // Close window on escape-key press
         if (std::get<1>(TTparams) == GLFW_KEY_SPACE && std::get<3>(TTparams) == GLFW_PRESS) {
             navigationMode = !navigationMode;
-            if (navigationMode) glfwSetCursorPos(window, width/2.0, height/2.0);
+            if (navigationMode) resetCursor();
         }
         if (std::get<1>(TTparams) == GLFW_KEY_N && std::get<3>(TTparams) == GLFW_PRESS){ // Reset all activity start times
             brain->resetActivities();
@@ -769,8 +775,9 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
         break;
 
     case (MOUSE_ENTER):
-        mouseInWindow = std::get<1>(TTparams);
-        if (mouseInWindow && navigationMode) glfwSetCursorPos(window, width/2.0, height/2.0);
+        mouseInWindow = std::get<1>(TTparams) && glfwGetWindowAttrib(window, GLFW_FOCUSED);
+        std::cout<<"Change: "<<mouseInWindow<<"  "<<mouseInWindow<<"  "<<navigationMode<<"  "<<glfwGetWindowAttrib(window, GLFW_FOCUSED)<<std::endl;
+        if (mouseInWindow && navigationMode) resetCursor();
         break;
     }
 }

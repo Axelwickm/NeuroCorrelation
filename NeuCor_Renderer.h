@@ -49,6 +49,7 @@ class NeuCor_Renderer
         enum graphicsModule {MODULE_BRAIN, MODULE_TIME, MODULE_STATS, MODULE_SELECTED_NEURONS, MODULE_CONTROLS};
         void renderModule(graphicsModule module, bool windowed);
         void updateCamPos();
+        void resetCursor();
 
         unsigned neuronCount, synapseCount;
 
