@@ -502,6 +502,7 @@ void NeuCor_Renderer::updateView(){
     glDisableVertexAttribArray(1);
     glDisableVertexAttribArray(2);
 
+    // Hide cursor if the cursor is in the window, and navigation mode is on, else show it.
     if (navigationMode && mouseInWindow) glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     else glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
@@ -540,13 +541,14 @@ void NeuCor_Renderer::setDestructCallback(CallbackType callbackF){
 }
 
 void NeuCor_Renderer::updateCamPos(){
+    if (!navigationMode || !mouseInWindow) return;
+
     double xpos, ypos;
     glfwGetCursorPos(window, &xpos, &ypos);
 
-    if (navigationMode && mouseInWindow) {
-        camHA += 0.15 * deltaTime * float(cursorX-xpos);
-        camVA  -= 0.15 * deltaTime * float(cursorY-ypos);
-    }
+    camHA += 0.15 * deltaTime * float(cursorX-xpos);
+    camVA  -= 0.15 * deltaTime * float(cursorY-ypos);
+
     cursorX = xpos; cursorY = ypos;
 
     camDir = glm::vec3 (
@@ -597,7 +599,10 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
 
     case (KEY_ACTION):
         if (std::get<1>(TTparams) == GLFW_KEY_ESCAPE && std::get<3>(TTparams) == GLFW_PRESS) glfwSetWindowShouldClose(std::get<0>(TTparams), GL_TRUE); // Close window on escape-key press
-        if (std::get<1>(TTparams) == GLFW_KEY_SPACE && std::get<3>(TTparams) == GLFW_PRESS) navigationMode = !navigationMode;
+        if (std::get<1>(TTparams) == GLFW_KEY_SPACE && std::get<3>(TTparams) == GLFW_PRESS) {
+            navigationMode = !navigationMode;
+            if (navigationMode) glfwSetCursorPos(window, width/2.0, height/2.0);
+        }
         if (std::get<1>(TTparams) == GLFW_KEY_M && std::get<3>(TTparams) == GLFW_PRESS){ // Iterate to next rendering mode on M-key press
             renderMode = static_cast<renderingModes>(renderMode+1);
             if (renderMode == renderingModes::Count) renderMode = static_cast<renderingModes>(renderMode-(int) renderingModes::Count);
@@ -610,6 +615,7 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
 
     case (MOUSE_ENTER):
         mouseInWindow = std::get<1>(TTparams);
+        if (mouseInWindow) glfwSetCursorPos(window, width/2.0, height/2.0);
         break;
     }
 }
