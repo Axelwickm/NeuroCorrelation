@@ -21,7 +21,9 @@ class NeuCor_Renderer
         ~NeuCor_Renderer();
 
         float getDeltaTime();
-        bool realRunspeed; // Makes brain's runSpeed define simulation's speed by ms/s
+        bool runBrainOnUpdate; // If the render has the responsibility to run the brain.
+        bool realRunspeed;// Makes brain's runSpeed define simulation's speed by ms/s
+        bool paused;
 
         enum renderingModes { RENDER_VOLTAGE, RENDER_PLASTICITY, RENDER_ACTIVITY, RENDER_NOSYNAPSES, Count};
         std::vector<std::string> renderingModeNames = {"Voltage", "Plasticity", "Activity", "No synapses"};

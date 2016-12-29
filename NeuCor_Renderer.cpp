@@ -151,6 +151,8 @@ NeuCor_Renderer::NeuCor_Renderer(NeuCor* _brain)
 :camPos(5,5,5), camDir(0,0,0), camUp(0,1,0), camHA(0.75), camVA(3.8), lastTime(0), deltaTime(1)
 {
     brain = _brain;
+    runBrainOnUpdate = true;
+    paused = false;
     realRunspeed = false;
     /* Initiates GLFW, OpenGL & ImGui*/
     initGLFW();
@@ -541,13 +543,28 @@ void NeuCor_Renderer::setDestructCallback(CallbackType callbackF){
 }
 
 void NeuCor_Renderer::updateCamPos(){
+    // Slow down time
+    if (glfwGetKey(window, GLFW_KEY_PERIOD ) == GLFW_PRESS){
+        brain->runSpeed = powf(brain->runSpeed, 0.99);
+        //std::cout<<"Run-speed: "<<brain->runSpeed<<std::endl;
+    }
+    // Speed up time
+    if (glfwGetKey(window, GLFW_KEY_COMMA ) == GLFW_PRESS){
+        brain->runSpeed = powf(brain->runSpeed, 1.01);
+        //std::cout<<"Run-speed: "<<brain->runSpeed<<std::endl;
+    }
+
+
     if (!navigationMode || !mouseInWindow) return;
 
     double xpos, ypos;
     glfwGetCursorPos(window, &xpos, &ypos);
 
-    camHA += 0.15 * deltaTime * float(cursorX-xpos);
-    camVA  -= 0.15 * deltaTime * float(cursorY-ypos);
+    float deltaX = cursorX-xpos;
+    float deltaY = cursorY-ypos;
+
+    camHA += 0.15 * deltaTime * deltaX;
+    camVA  -= 0.15 * deltaTime * deltaY;
 
     cursorX = xpos; cursorY = ypos;
 
@@ -579,16 +596,6 @@ void NeuCor_Renderer::updateCamPos(){
     // Strafe left
     if (glfwGetKey(window, GLFW_KEY_A ) == GLFW_PRESS){
         camPos += right * GLfloat(deltaTime * speedMult);
-    }
-    // Slow down time
-    if (glfwGetKey(window, GLFW_KEY_PERIOD ) == GLFW_PRESS){
-        brain->runSpeed = powf(brain->runSpeed, 0.99);
-        //std::cout<<"Run-speed: "<<brain->runSpeed<<std::endl;
-    }
-    // Speed up time
-    if (glfwGetKey(window, GLFW_KEY_COMMA ) == GLFW_PRESS){
-        brain->runSpeed = powf(brain->runSpeed, 1.01);
-        //std::cout<<"Run-speed: "<<brain->runSpeed<<std::endl;
     }
 }
 template<typename ... callbackParameters>
