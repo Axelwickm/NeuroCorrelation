@@ -317,12 +317,12 @@ void NeuCor_Renderer::updateView(){
     #define PRINT_CONNECTIONS_EVERY_FRAME false
 
     double currentTime = glfwGetTime();
-    deltaTime = float(lastTime - currentTime);
+    deltaTime = float(currentTime - lastTime);
     lastTime = currentTime;
 
     if (runBrainOnUpdate && realRunspeed && !paused){
         float staticRunSpeed = brain->runSpeed;
-        brain->runSpeed = fabs(staticRunSpeed*deltaTime);
+        brain->runSpeed = staticRunSpeed*deltaTime;
         brain->run();
         brain->runSpeed = staticRunSpeed;
     }
@@ -617,8 +617,8 @@ void NeuCor_Renderer::updateCamPos(){
     float deltaX = cursorX-xpos;
     float deltaY = cursorY-ypos;
 
-    camHA += 0.15 * deltaTime * deltaX;
-    camVA  -= 0.15 * deltaTime * deltaY;
+    camHA -= 0.15 * deltaTime * deltaX;
+    camVA  += 0.15 * deltaTime * deltaY;
 
     cursorX = xpos; cursorY = ypos;
 
@@ -637,19 +637,19 @@ void NeuCor_Renderer::updateCamPos(){
     float speedMult = 5;
     // Move forward
     if (glfwGetKey(window, GLFW_KEY_W ) == GLFW_PRESS){
-        camPos -= camDir * GLfloat(deltaTime * speedMult);
+        camPos += camDir * GLfloat(deltaTime * speedMult);
     }
     // Move backward
     if (glfwGetKey(window, GLFW_KEY_S ) == GLFW_PRESS){
-        camPos += camDir * GLfloat(deltaTime * speedMult);
+        camPos -= camDir * GLfloat(deltaTime * speedMult);
     }
     // Strafe right
     if (glfwGetKey(window, GLFW_KEY_D ) == GLFW_PRESS){
-        camPos -= right * GLfloat(deltaTime *  speedMult);
+        camPos += right * GLfloat(deltaTime *  speedMult);
     }
     // Strafe left
     if (glfwGetKey(window, GLFW_KEY_A ) == GLFW_PRESS){
-        camPos += right * GLfloat(deltaTime * speedMult);
+        camPos -= right * GLfloat(deltaTime * speedMult);
     }
 }
 
@@ -678,6 +678,8 @@ void NeuCor_Renderer::renderModule(graphicsModule module, bool windowed){
         if(ImGui::Button(">"))
             renderMode = static_cast<renderingModes>((renderMode+1)%renderingModes::Count);
         if (glfwGetKey(window, GLFW_KEY_M ) == GLFW_PRESS) ImGui::PopStyleColor(3);
+
+        ImGui::Text("FPS: %f", round(1.0/deltaTime));
 
     } break;
 
@@ -736,7 +738,6 @@ void NeuCor_Renderer::renderModule(graphicsModule module, bool windowed){
 
     }
 }
-
 
 
 template<typename ... callbackParameters>
