@@ -22,6 +22,8 @@ using namespace glm;
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <picopng.cpp>
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_glfw_gl3.h>
 
 std::map<GLFWwindow*, NeuCor_Renderer*> windowRegistry;
 
@@ -36,7 +38,6 @@ static void glfw_KeyCallback(GLFWwindow* window, int key, int scancode, int acti
 void cursor_enter_callback(GLFWwindow* window, int entered){
     windowRegistry.at(window)->inputCallback(NeuCor_Renderer::MOUSE_ENTER, window, entered, -1, -1, -1);
 }
-
 
 GLuint LoadShaders(const char * vertex_file_path,const char * fragment_file_path){
 
@@ -138,9 +139,11 @@ NeuCor_Renderer::NeuCor_Renderer(NeuCor* _brain)
 {
     brain = _brain;
     realRunspeed = false;
-    /* Initiates GLFW & OpenGL*/
+    /* Initiates GLFW, OpenGL & ImGui*/
     initGLFW();
     initOpenGL(window);
+    ImGui_ImplGlfwGL3_Init(window, false);
+
 
     /* Load resources */
     loadResources();
@@ -150,6 +153,7 @@ NeuCor_Renderer::NeuCor_Renderer(NeuCor* _brain)
 
 NeuCor_Renderer::~NeuCor_Renderer() {
     /* Destroy window and terminate glfw */
+    ImGui_ImplGlfwGL3_Shutdown();
     glfwDestroyWindow(window);
     glfwTerminate();
     exit(EXIT_SUCCESS);
@@ -174,6 +178,7 @@ void NeuCor_Renderer::initGLFW(){
     window = glfwCreateWindow(1000, 1000, "Neural Correlation", NULL, NULL);
     if (!window) {
         glfwTerminate();
+
         exit(EXIT_FAILURE);
     }
     windowRegistry[window] = this; // Adds window to global registry
@@ -251,6 +256,7 @@ void NeuCor_Renderer::initOpenGL(GLFWwindow* window){
     glBufferData(GL_ARRAY_BUFFER, brain->neurons.size() * 5 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
 
 }
+
 void NeuCor_Renderer::loadResources() {
     const char* filename = "neuron.png";
 
@@ -282,7 +288,9 @@ void NeuCor_Renderer::loadResources() {
 
 }
 void NeuCor_Renderer::updateView(){
-     #define PRINT_CONNECTIONS_EVERY_FRAME false
+    #define PRINT_CONNECTIONS_EVERY_FRAME false
+
+    ImGui_ImplGlfwGL3_NewFrame();
 
     double currentTime = glfwGetTime();
     deltaTime = float(lastTime - currentTime);
@@ -477,6 +485,19 @@ void NeuCor_Renderer::updateView(){
     glDisableVertexAttribArray(1);
     glDisableVertexAttribArray(2);
 
+    if (cursorOnScreen) glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    else glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
+
+    if (!cursorOnScreen){
+        // This creates a window
+        ImGui::ShowTestWindow(false);
+
+
+        // ImGui functions end here
+        ImGui::Render();
+    }
+
     glfwSwapBuffers(window);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
@@ -559,6 +580,7 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
 
     case (KEY_ACTION):
         if (std::get<1>(TTparams) == GLFW_KEY_ESCAPE && std::get<3>(TTparams) == GLFW_PRESS) glfwSetWindowShouldClose(std::get<0>(TTparams), GL_TRUE); // Close window on escape-key press
+        if (std::get<1>(TTparams) == GLFW_KEY_SPACE && std::get<3>(TTparams) == GLFW_PRESS) cursorOnScreen = !cursorOnScreen;
         if (std::get<1>(TTparams) == GLFW_KEY_M && std::get<3>(TTparams) == GLFW_PRESS){ // Iterate to next rendering mode on M-key press
             renderMode = static_cast<renderingModes>(renderMode+1);
             if (renderMode == renderingModes::Count) renderMode = static_cast<renderingModes>(renderMode-(int) renderingModes::Count);
@@ -574,8 +596,6 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
 
     case (MOUSE_ENTER):
         cursorOnScreen = std::get<1>(TTparams);
-        if (cursorOnScreen) glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        else glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         break;
     }
 };
