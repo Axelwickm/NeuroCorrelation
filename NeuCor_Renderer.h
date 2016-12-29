@@ -40,6 +40,7 @@ class NeuCor_Renderer
         void inputCallback(callbackErrand errand, callbackParameters ... params);
     protected:
     private:
+        void renderInterface();
         void updateCamPos();
 
         NeuCor* brain;

@@ -51,6 +51,9 @@ void glfw_ScrollCallback(GLFWwindow* window, double xoffset, double yoffset){
 void glfw_CursorCallback(GLFWwindow* window, int entered){
     windowRegistry.at(window)->inputCallback(NeuCor_Renderer::MOUSE_ENTER, window, entered, -1, -1, -1);
 }
+void glfw_FocusCallback(GLFWwindow*window, int focused){
+
+}
 
 GLuint LoadShaders(const char * vertex_file_path,const char * fragment_file_path){
 
@@ -211,6 +214,7 @@ void NeuCor_Renderer::initGLFW(){
     glfwSetCharCallback(window, glfw_CharCallback);
     glfwSetMouseButtonCallback(window, glfw_MouseButtonCallback);
     glfwSetScrollCallback(window, glfw_ScrollCallback);
+    glfwSetWindowFocusCallback(window, glfw_FocusCallback);
 
     glfwSetCursorEnterCallback(window, glfw_CursorCallback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -309,19 +313,17 @@ void NeuCor_Renderer::loadResources() {
 void NeuCor_Renderer::updateView(){
     #define PRINT_CONNECTIONS_EVERY_FRAME false
 
-    ImGui_ImplGlfwGL3_NewFrame();
-
     double currentTime = glfwGetTime();
     deltaTime = float(lastTime - currentTime);
     lastTime = currentTime;
 
-    // Run brain if runRate != -1
-    if (realRunspeed){
+    if (runBrainOnUpdate && realRunspeed && !paused){
         float staticRunSpeed = brain->runSpeed;
-        brain->runSpeed = fabs(deltaTime*staticRunSpeed*1000.0);
+        brain->runSpeed = fabs(staticRunSpeed*deltaTime);
         brain->run();
         brain->runSpeed = staticRunSpeed;
     }
+    else if (runBrainOnUpdate) brain->run();
 
 
     updateCamPos();
@@ -509,21 +511,65 @@ void NeuCor_Renderer::updateView(){
     else glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
 
-    if (!navigationMode){
-        // This creates a window
-        ImGui::ShowTestWindow(false);
-
-
-        // ImGui functions end here
-        ImGui::Render();
-    }
+    if (!navigationMode) renderInterface();
 
     glfwSwapBuffers(window);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
+
+void NeuCor_Renderer::renderInterface(){
+    ImGui_ImplGlfwGL3_NewFrame();
+
+    ImGui::ShowTestWindow();
+
+    // Time window
+    ImGui::Begin("Time");
+
+    bool loadedPaused = false;
+    if (paused){
+        loadedPaused = true;
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, ImColor::HSV(0.0f, 0.7f, 0.7f));
+        ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImColor::HSV(0.0f, 0.6f, 0.5f));
+        ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImColor::HSV(0.0f, 0.7f, 0.5f));
+        ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImColor::HSV(0.0f, 0.7f, 0.5f));
+
+        if (ImGui::Button("Run")){
+            paused = false;
+        }
+    }
+    else {
+        if (ImGui::Button("Pause")){
+            paused = true;
+        }
+    }
+    ImGui::SameLine();
+    if (!realRunspeed)
+        ImGui::SliderFloat("Speed", &brain->runSpeed, 0.0, 1.0, "%.4f ms per run", 2.0f);
+    else
+        ImGui::SliderFloat("Speed", &brain->runSpeed, 0.0, 10.0, "%.4f ms/s ", 2.0f);
+    if (loadedPaused) ImGui::PopStyleColor(4);
+
+
+    ImGui::Checkbox("Real time", &realRunspeed);
+    ImGui::SameLine(); ImGui::TextDisabled("[?]");
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::BeginTooltip();
+        ImGui::PushTextWrapPos(450.0f);
+        ImGui::TextUnformatted("Makes simulation speed dependent on real time. Speed is defined by: simulation time / real time (ms/s).");
+        ImGui::PopTextWrapPos();
+        ImGui::EndTooltip();
+    }
+    ImGui::End();
+
+
+    ImGui::Render();
+}
+
  float NeuCor_Renderer::getDeltaTime(){
     return deltaTime;
- }
+}
+
 void NeuCor_Renderer::pollWindow(){
     glfwPollEvents();
 
@@ -622,7 +668,7 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
 
     case (MOUSE_ENTER):
         mouseInWindow = std::get<1>(TTparams);
-        if (mouseInWindow) glfwSetCursorPos(window, width/2.0, height/2.0);
+        if (mouseInWindow && navigationMode) glfwSetCursorPos(window, width/2.0, height/2.0);
         break;
     }
 }
