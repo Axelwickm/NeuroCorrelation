@@ -358,7 +358,7 @@ void NeuCor_Renderer::updateView(){
             if (dist < shortestDist) shortestDist = dist;
         }
     }
-
+    if (renderMode == RENDER_NOSYNAPSES) synapseCount = 0;
 
     std::vector<coord3> connections;
     std::vector<float> synPot;
@@ -388,9 +388,13 @@ void NeuCor_Renderer::updateView(){
                 synPot.push_back(powf(brain->getNeuron(syn.pN)->activity(), 0.6));
                 synPot.push_back(powf(brain->getNeuron(syn.tN)->activity(), 0.6));
             }
+            else if (renderMode == RENDER_NOSYNAPSES) synapseCount++;
         }
     }
     if (PRINT_CONNECTIONS_EVERY_FRAME) std::cout<<std::endl;
+
+    neuronCount = brain->neurons.size();
+    if (renderMode != RENDER_NOSYNAPSES) synapseCount = synPot.size()/2;
 
     if (renderMode == RENDER_NOSYNAPSES) goto renderNeurons; // Skip rendering synapses
 
@@ -538,59 +542,32 @@ void NeuCor_Renderer::updateView(){
 
 void NeuCor_Renderer::renderInterface(){
     ImGui_ImplGlfwGL3_NewFrame();
+    bool renderDockItems;
+
 
     ImGui::ShowTestWindow();
 
-    {   // Time-Window
-
+    {   // Dock
         ImGuiWindowFlags window_flags = 0;
-        window_flags |= ImGuiWindowFlags_NoResize;
-        window_flags |= ImGuiWindowFlags_AlwaysAutoResize;
-        ImGui::Begin("Time", NULL, window_flags);
+        window_flags |= ImGuiWindowFlags_NoMove;
+        window_flags |= ImGuiWindowFlags_NoCollapse;
+        window_flags |= ImGuiWindowFlags_NoTitleBar;
+        window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus;
+        ImGui::SetNextWindowPos(ImVec2(0,0));
+        ImGui::SetNextWindowSizeConstraints(ImVec2(10, height), ImVec2(width/2.5, height));
+        ImGui::Begin("", NULL, window_flags);
 
-        bool loadedPaused = false;
-        if (paused && runBrainOnUpdate){
-            loadedPaused = true;
-            ImGui::PushStyleColor(ImGuiCol_FrameBg, ImColor::HSV(0.0f, 0.7f, 0.7f));
-            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImColor::HSV(0.0f, 0.6f, 0.5f));
-            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImColor::HSV(0.0f, 0.7f, 0.5f));
-            ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImColor::HSV(0.0f, 0.7f, 0.5f));
+        renderDockItems = 40 < ImGui::GetWindowWidth();
 
-            if (ImGui::Button("Run")){
-                paused = false;
-            }
-        }
-        else if (runBrainOnUpdate){
-            if (ImGui::Button("Pause")){
-                paused = true;
-            }
-        }
-        ImGui::SameLine();
-        if (!realRunspeed)
-            ImGui::SliderFloat("Speed", &brain->runSpeed, 0.0, 1.0, "%.4f ms per run", 2.0f);
-        else
-            ImGui::SliderFloat("Speed", &brain->runSpeed, 0.0, 10.0, "%.4f ms/s ", 2.0f);
-        if (loadedPaused) ImGui::PopStyleColor(4);
+        if (renderDockItems){
+            renderModule(MODULE_BRAIN, false);
 
-        if (runBrainOnUpdate){
-            ImGui::Checkbox("Real time", &realRunspeed);
-            ImGui::SameLine(); ImGui::TextDisabled("[?]");
-            if (ImGui::IsItemHovered()) {
-                ImGui::BeginTooltip();
-                ImGui::PushTextWrapPos(450.0f);
-                ImGui::TextUnformatted("Makes simulation speed dependent on real time. Speed is defined by: simulation time / real time (ms/s).");
-                ImGui::PopTextWrapPos();
-                ImGui::EndTooltip();
-            }
+            if (ImGui::TreeNode("Time")) {renderModule(MODULE_TIME, false); ImGui::TreePop();}
+            ImGui::End();
         }
-
-        ImGui::Separator();
-        float voltageData[timeline.size()];
-        for (int i = 0; i<timeline.size(); i++){
-            voltageData[i] = timeline.at(i).at(0).voltage;
+        else {
+            ImGui::End();
         }
-        ImGui::PlotLines("Neuron voltage", voltageData, timeline.size(), 0, "", -90.0f, 50.0f, ImVec2(400, 400));
-        ImGui::End();
     }
 
 
@@ -675,6 +652,87 @@ void NeuCor_Renderer::updateCamPos(){
         camPos += right * GLfloat(deltaTime * speedMult);
     }
 }
+
+void NeuCor_Renderer::renderModule(graphicsModule module, bool windowed){
+    switch (module){
+
+
+    case MODULE_BRAIN: {
+        if (windowed){
+            ImGuiWindowFlags window_flags = 0;
+            window_flags |= ImGuiWindowFlags_NoResize;
+            window_flags |= ImGuiWindowFlags_AlwaysAutoResize;
+            ImGui::Begin("Brain", NULL, window_flags);
+        }
+        ImGui::Text("Neurons: %i", neuronCount);
+        ImGui::SameLine(0, 80); ImGui::Text("Synapses: %i", synapseCount);
+
+        if(ImGui::Button("<"))
+            renderMode = static_cast<renderingModes>((renderMode-1+renderingModes::Count)%renderingModes::Count);
+        ImGui::SameLine(); ImGui::Text(renderingModeNames.at(renderMode).data()); ImGui::SameLine(150,0);
+        if(ImGui::Button(">"))
+            renderMode = static_cast<renderingModes>((renderMode+1)%renderingModes::Count);
+
+    } break;
+
+    case MODULE_TIME: {
+        if (windowed){
+            ImGuiWindowFlags window_flags = 0;
+            window_flags |= ImGuiWindowFlags_NoResize;
+            window_flags |= ImGuiWindowFlags_AlwaysAutoResize;
+            ImGui::Begin("Time", NULL, window_flags);
+        }
+
+        bool loadedPaused = false;
+        if (paused && runBrainOnUpdate){
+            loadedPaused = true;
+            ImGui::PushStyleColor(ImGuiCol_FrameBg, ImColor::HSV(0.0f, 0.7f, 0.7f));
+            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImColor::HSV(0.0f, 0.6f, 0.5f));
+            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImColor::HSV(0.0f, 0.7f, 0.5f));
+            ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImColor::HSV(0.0f, 0.7f, 0.5f));
+
+            if (ImGui::Button("Run")){
+                paused = false;
+            }
+        }
+        else if (runBrainOnUpdate){
+            if (ImGui::Button("Pause")){
+                paused = true;
+            }
+        }
+        ImGui::SameLine();
+        if (!realRunspeed)
+            ImGui::SliderFloat("Speed", &brain->runSpeed, 0.0, 1.0, "%.4f ms per run", 2.0f);
+        else
+            ImGui::SliderFloat("Speed", &brain->runSpeed, 0.0, 10.0, "%.4f ms/s ", 2.0f);
+        if (loadedPaused) ImGui::PopStyleColor(4);
+
+        if (runBrainOnUpdate){
+            ImGui::Checkbox("Real time", &realRunspeed);
+            ImGui::SameLine(); ImGui::TextDisabled("[?]");
+            if (ImGui::IsItemHovered()) {
+                ImGui::BeginTooltip();
+                ImGui::PushTextWrapPos(450.0f);
+                ImGui::TextUnformatted("Makes simulation speed dependent on real time. Speed is defined by: simulation time / real time (ms/s).");
+                ImGui::PopTextWrapPos();
+                ImGui::EndTooltip();
+            }
+        }
+
+        ImGui::Separator();
+        float voltageData[timeline.size()];
+        for (int i = 0; i<timeline.size(); i++){
+            voltageData[i] = timeline.at(i).at(0).voltage;
+        }
+        ImGui::PlotLines("Neuron voltage", voltageData, timeline.size(), 0, "", -90.0f, 50.0f, ImVec2(400, 400));
+        if (windowed) ImGui::End();
+    } break;
+
+    }
+}
+
+
+
 template<typename ... callbackParameters>
 void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ... params){
     std::tuple<callbackParameters...> TTparams(params... );

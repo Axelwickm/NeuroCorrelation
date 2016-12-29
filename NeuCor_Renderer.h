@@ -25,19 +25,12 @@ class NeuCor_Renderer
         bool runBrainOnUpdate; // If the render has the responsibility to run the brain.
         bool realRunspeed;// Makes brain's runSpeed define simulation's speed by ms/s
         bool paused;
+        std::vector<int> selectedNeurons;
 
         enum renderingModes { RENDER_VOLTAGE, RENDER_PLASTICITY, RENDER_ACTIVITY, RENDER_NOSYNAPSES, Count};
         std::vector<std::string> renderingModeNames = {"Voltage", "Plasticity", "Activity", "No synapses"};
         renderingModes renderMode;
 
-        struct neuronSnapshot { // For plotting
-            int id;
-            float time;
-            float voltage;
-        };
-        std::vector<int> selectedNeurons;
-        std::deque<std::vector<neuronSnapshot> > timeline;
-        float maxTimeline;
 
         void updateView();
         void pollWindow();
@@ -50,10 +43,22 @@ class NeuCor_Renderer
         void inputCallback(callbackErrand errand, callbackParameters ... params);
     protected:
     private:
+        NeuCor* brain;
+
         void renderInterface();
+        enum graphicsModule {MODULE_BRAIN, MODULE_TIME, MODULE_STATS, MODULE_SELECTED_NEURONS, MODULE_CONTROLS};
+        void renderModule(graphicsModule module, bool windowed);
         void updateCamPos();
 
-        NeuCor* brain;
+        unsigned neuronCount, synapseCount;
+
+        struct neuronSnapshot { // For plotting
+            int id;
+            float time;
+            float voltage;
+        };
+        std::deque<std::vector<neuronSnapshot> > timeline;
+        float maxTimeline;
 
         GLuint billboard_vertex_buffer;
         GLuint neuron_position_buffer;
