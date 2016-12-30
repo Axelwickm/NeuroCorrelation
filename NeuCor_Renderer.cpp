@@ -160,8 +160,8 @@ NeuCor_Renderer::NeuCor_Renderer(NeuCor* _brain)
 
     FPS = 0;
 
+    realTimeStats logger();
 
-    maxTimeline = 15.0; // ms
     /* Initiates GLFW, OpenGL & ImGui*/
     initGLFW();
     initOpenGL(window);
@@ -181,6 +181,13 @@ NeuCor_Renderer::NeuCor_Renderer(NeuCor* _brain)
     loadResources();
 
     destructCallback = NULL;
+}
+
+NeuCor_Renderer::realTimeStats::realTimeStats(){
+    maxTimeline = 15.0; // ms
+
+    activityUpdateTimer = 0;
+    weightUpdateTimer = 0.1; // Offset as to not use CPU at the same time
 }
 
 NeuCor_Renderer::~NeuCor_Renderer() {
@@ -369,7 +376,7 @@ void NeuCor_Renderer::updateView(){
             if (dist < shortestDist) shortestDist = dist;
         }
     }
-    if (renderMode == RENDER_NOSYNAPSES) synapseCount = 0;
+    if (renderMode == RENDER_NOSYNAPSES) logger.synapseCount = 0;
 
     std::vector<coord3> connections;
     std::vector<float> synPot;
@@ -399,13 +406,13 @@ void NeuCor_Renderer::updateView(){
                 synPot.push_back(powf(brain->getNeuron(syn.pN)->activity(), 0.6));
                 synPot.push_back(powf(brain->getNeuron(syn.tN)->activity(), 0.6));
             }
-            else if (renderMode == RENDER_NOSYNAPSES) synapseCount++;
+            else if (renderMode == RENDER_NOSYNAPSES) logger.synapseCount++;
         }
     }
     if (PRINT_CONNECTIONS_EVERY_FRAME) std::cout<<std::endl;
 
-    neuronCount = brain->neurons.size();
-    if (renderMode != RENDER_NOSYNAPSES) synapseCount = synPot.size()/2;
+    logger.neuronCount = brain->neurons.size();
+    if (renderMode != RENDER_NOSYNAPSES) logger.synapseCount = synPot.size()/2;
 
     if (renderMode == RENDER_NOSYNAPSES) goto renderNeurons; // Skip rendering synapses
 
@@ -531,19 +538,19 @@ void NeuCor_Renderer::updateView(){
 
     if (selectedNeurons.size() != 0 && !paused){
         float brainTime = brain->getTime();
-        std::vector<neuronSnapshot> snapshot;
+        std::vector<realTimeStats::neuronSnapshot> snapshot;
         snapshot.reserve(selectedNeurons.size());
         for (auto neuID: selectedNeurons) {
             Neuron* neu = brain->getNeuron(neuID);
-            neuronSnapshot neuSnap;
+            realTimeStats::neuronSnapshot neuSnap;
             snapshot.emplace_back();
             snapshot.back().id = neuID;
             snapshot.back().time = brainTime;
             snapshot.back().voltage = neu->potential();
 
         }
-        timeline.push_back(snapshot);
-        while (maxTimeline < brainTime - timeline.front().back().time) timeline.pop_front();
+        logger.timeline.push_back(snapshot);
+        while (logger.maxTimeline < brainTime - logger.timeline.front().back().time) logger.timeline.pop_front();
     }
     if (!navigationMode) renderInterface();
 
@@ -689,8 +696,8 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
         else {openTree = ImGui::TreeNode("Brain"); if (!openTree) break; activeTree = ImGui::IsItemActive();}
 
 
-        ImGui::Text("Neurons: %i", neuronCount);
-        ImGui::SameLine(0, 80); ImGui::Text("Synapses: %i", synapseCount);
+        ImGui::Text("Neurons: %i", logger.neuronCount);
+        ImGui::SameLine(0, 80); ImGui::Text("Synapses: %i", logger.synapseCount);
 
         if(ImGui::Button("<"))
             renderMode = static_cast<renderingModes>((renderMode-1+renderingModes::Count)%renderingModes::Count);
@@ -756,9 +763,107 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
     } break;
 
     case (MODULE_STATS): {
-        if (windowed) ImGui::Begin("Statistics");
+        if (windowed) {
+            ImGuiWindowFlags window_flags = 0;
+            window_flags |= ImGuiWindowFlags_NoResize;
+            window_flags |= ImGuiWindowFlags_AlwaysAutoResize;
+            ImGui::Begin("Statistics", NULL, window_flags);
+        }
         else {openTree = ImGui::TreeNode("Statistics"); if (!openTree) break; activeTree = ImGui::IsItemActive();}
-        ImGui::Text("Module isn't defined in NeuCor_Renderer::renderModule().");
+        ImGui::Text("Neuron activity distribution");
+
+            // Activity dist.
+        static float a_span = 2.0, a_range_min = 0.0, a_range_max = 50.0;
+        static float a_updatePeriod = 5.0;
+        static bool a_updatesOn = true;
+        logger.activityUpdateTimer -= deltaTime;
+
+        static std::vector<float> activityDistribution;
+        activityDistribution.resize(ceil(float(a_range_max-a_range_min)/a_span), 0);
+
+        if (logger.activityUpdateTimer <= 0 && a_updatesOn || logger.activityUpdateTimer < -100){
+            int above = 0, below = 0;
+            for (auto &neu : brain->neurons){
+                int spanIndex = ceil((neu.activity()-a_range_min)/a_span);
+                if (spanIndex < 0){
+                    below++;
+                    continue;
+                }
+                else if (spanIndex >= activityDistribution.size()){
+                    above++;
+                    continue;
+                }
+                activityDistribution.at(spanIndex)++;
+            }
+            logger.activityUpdateTimer = a_updatePeriod;
+        }
+        float* a_data = &activityDistribution[0];
+        ImGui::PlotHistogram("", a_data, activityDistribution.size(), 0, "", FLT_MAX, FLT_MAX, ImVec2(0, 200));
+
+        if (ImGui::IsItemClicked()) ImGui::OpenPopup("Activity distribution settings");
+        if (ImGui::BeginPopup("Activity distribution settings")){
+            ImGui::DragFloatRange2("range", &a_range_min, &a_range_max, 0.25f, 0.0f, 100.0f, "Min: %.1f", "Max: %.1f");
+            ImGui::DragFloat("span", &a_span, 1.0f, 1.0f, 10.0f, "%f");
+            ImGui::Separator();
+            if (!a_updatesOn) logger.activityUpdateTimer = a_updatePeriod;
+            if (ImGui::Button("Update")){
+                logger.activityUpdateTimer = -100;
+            }
+            ImGui::Checkbox("", &a_updatesOn);
+            ImGui::SameLine(); ImGui::DragFloat("Period", &a_updatePeriod, 0.2f, 0.05f, 60.0f, "%.1f s");
+            if (0.5 < a_updatePeriod) ImGui::ProgressBar(logger.activityUpdateTimer/a_updatePeriod, ImVec2(0,0), "");
+            if (ImGui::Button("Reset")){a_span = 2.0, a_range_min = 0.0, a_range_max = 50.0; a_updatePeriod = 5.0; a_updatesOn = true;}
+            ImGui::EndPopup();
+        }
+
+
+
+        // Weight distribution
+        static float w_span = 0.2, w_range_min = -3.0, w_range_max = 3.0;
+        static float w_updatePeriod = 5.0;
+        static bool w_updatesOn = true;
+        logger.weightUpdateTimer -= deltaTime;
+
+        static std::vector<float> weightDistribution;
+        weightDistribution.resize(ceil(float(w_range_max-w_range_min)/w_span), 0);
+
+        if (logger.weightUpdateTimer <= 0 && w_updatesOn || logger.weightUpdateTimer < -100){
+            int above = 0, below = 0;
+            for (auto &neu : brain->neurons){
+                for (auto &syn : neu.outSynapses){
+                    int spanIndex = ceil((syn.getWeight()-w_range_min)/w_span);
+                    if (spanIndex < 0){
+                        below++;
+                        continue;
+                    }
+                    else if (spanIndex >= weightDistribution.size()){
+                        above++;
+                        continue;
+                    }
+                    weightDistribution.at(spanIndex)++;
+                }
+            }
+            logger.weightUpdateTimer = w_updatePeriod;
+        }
+        float* w_data = &weightDistribution[0];
+        ImGui::PlotHistogram("", w_data, weightDistribution.size(), 0, "", FLT_MAX, FLT_MAX, ImVec2(0, 200));
+
+        if (ImGui::IsItemClicked()) ImGui::OpenPopup("Weight distribution settings");
+        if (ImGui::BeginPopup("Weight distribution settings")){
+            ImGui::DragFloatRange2("range", &w_range_min, &w_range_max, 0.25f, -10.0f, 10.0f, "Min: %.1f", "Max: %.1f");
+            ImGui::DragFloat("span", &w_span, 0.05f, 0.01f, 1.0f, "%f");
+            ImGui::Separator();
+            if (!w_updatesOn) logger.weightUpdateTimer = w_updatePeriod;
+            if (ImGui::Button("Update")){
+                logger.weightUpdateTimer = -100;
+            }
+            ImGui::Checkbox("", &w_updatesOn);
+            ImGui::SameLine(); ImGui::DragFloat("Period", &w_updatePeriod, 0.2f, 0.05f, 60.0f, "%.1f s");
+            if (0.5 < w_updatePeriod) ImGui::ProgressBar(logger.weightUpdateTimer/w_updatePeriod, ImVec2(0,0), "");
+            if (ImGui::Button("Reset")){w_span = 0.2, w_range_min = -3.0, w_range_max = 3.0; w_updatePeriod = 5.0; w_updatesOn = true;}
+            ImGui::EndPopup();
+        }
+
         break;
     }
 
@@ -766,11 +871,11 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
         if (windowed) ImGui::Begin("Selected neurons");
         else {openTree = ImGui::TreeNode("Selected neurons"); if (!openTree) break; activeTree = ImGui::IsItemActive();}
         ImGui::Text("Module isn't defined in NeuCor_Renderer::renderModule().");
-        float voltageData[timeline.size()];
-        for (int i = 0; i<timeline.size(); i++){
-            voltageData[i] = timeline.at(i).at(0).voltage;
+        float voltageData[logger.timeline.size()];
+        for (int i = 0; i < logger.timeline.size(); i++){
+            voltageData[i] = logger.timeline.at(i).at(0).voltage;
         }
-        ImGui::PlotLines("Neuron voltage", voltageData, timeline.size(), 0, "", -90.0f, 50.0f, ImVec2(400, 400));
+        ImGui::PlotLines("Neuron voltage", voltageData, logger.timeline.size(), 0, "", -90.0f, 50.0f, ImVec2(400, 400));
         break;
     }
 

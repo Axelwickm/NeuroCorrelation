@@ -62,15 +62,21 @@ class NeuCor_Renderer
         void updateCamPos();
         void resetCursor();
 
-        unsigned neuronCount, synapseCount;
+        struct realTimeStats {
+            realTimeStats();
+            float activityUpdateTimer, weightUpdateTimer;
 
-        struct neuronSnapshot { // For plotting
-            int id;
-            float time;
-            float voltage;
+            unsigned neuronCount, synapseCount;
+
+            struct neuronSnapshot { // For plotting
+                int id;
+                float time;
+                float voltage;
+            };
+            std::deque<std::vector<neuronSnapshot> > timeline;
+            float maxTimeline;
         };
-        std::deque<std::vector<neuronSnapshot> > timeline;
-        float maxTimeline;
+        realTimeStats logger;
 
         GLuint billboard_vertex_buffer;
         GLuint neuron_position_buffer;
