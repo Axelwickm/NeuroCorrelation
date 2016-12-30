@@ -55,3 +55,4 @@ NeuroCorrelation.cscope_file_list
 *.layout
 *.depend
 CppCheckResults.xml
+imgui.ini
