@@ -173,6 +173,7 @@ NeuCor_Renderer::NeuCor_Renderer(NeuCor* _brain)
         modules.back().type = (graphicsModule) i;
         modules.back().windowed = false;
         modules.back().snapped = false;
+        modules.back().beingDragged = false;;
     }
 
 
@@ -670,6 +671,12 @@ void NeuCor_Renderer::updateCamPos(){
 void NeuCor_Renderer::renderModule(module* mod, bool windowed){
     bool openTree = false;
     bool activeTree = false;
+    if (mod->beingDragged) {
+        ImGui::SetNextWindowPos(ImGui::GetMousePos());
+        ImGui::SetNextWindowFocus();
+        mod->beingDragged = false;
+    }
+
     switch (mod->type){
 
     case MODULE_BRAIN: {
@@ -746,13 +753,6 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
             }
         }
 
-        ImGui::Separator();
-        float voltageData[timeline.size()];
-        for (int i = 0; i<timeline.size(); i++){
-            voltageData[i] = timeline.at(i).at(0).voltage;
-        }
-        ImGui::PlotLines("Neuron voltage", voltageData, timeline.size(), 0, "", -90.0f, 50.0f, ImVec2(400, 400));
-
     } break;
 
     case (MODULE_STATS): {
@@ -766,6 +766,11 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
         if (windowed) ImGui::Begin("Selected neurons");
         else {openTree = ImGui::TreeNode("Selected neurons"); if (!openTree) break; activeTree = ImGui::IsItemActive();}
         ImGui::Text("Module isn't defined in NeuCor_Renderer::renderModule().");
+        float voltageData[timeline.size()];
+        for (int i = 0; i<timeline.size(); i++){
+            voltageData[i] = timeline.at(i).at(0).voltage;
+        }
+        ImGui::PlotLines("Neuron voltage", voltageData, timeline.size(), 0, "", -90.0f, 50.0f, ImVec2(400, 400));
         break;
     }
 
@@ -791,7 +796,7 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
         ImGui::End();
     }
     else if (openTree) {
-        if (activeTree && ImGui::GetMousePos().x > 80 && ImGui::IsMouseDragging()){mod->windowed = true;}
+        if (activeTree && ImGui::GetMousePos().x > 80 && ImGui::IsMouseDragging()){mod->windowed = true; mod->beingDragged = true;}
         ImGui::TreePop();
     }
 }

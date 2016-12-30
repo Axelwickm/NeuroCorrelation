@@ -53,6 +53,7 @@ class NeuCor_Renderer
             graphicsModule type;
             ImVec2 pos;
             bool windowed;
+            bool beingDragged;
             bool snapped;
         };
         std::vector<module> modules;
