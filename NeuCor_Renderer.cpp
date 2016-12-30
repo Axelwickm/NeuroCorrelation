@@ -21,7 +21,7 @@ using namespace glm;
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include <picopng.cpp>
+#include <picopng/picopng.cpp>
 #include <imgui_impl_glfw_gl3.h>
 
 std::map<GLFWwindow*, NeuCor_Renderer*> windowRegistry;
