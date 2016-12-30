@@ -12,7 +12,6 @@ void windowDestroy() {
 }
 
 int main(int argc, char* args[]){
-    #define USE_REAL_RUNSPEED false
     #define SEED 8423
 
     srand(time(NULL));
@@ -33,8 +32,11 @@ int main(int argc, char* args[]){
     */
 
     NeuCor_Renderer brainRenderer(&brain);
-    if (USE_REAL_RUNSPEED) brainRenderer.realRunspeed = true;
+    brainRenderer.runBrainOnUpdate = true;
+    brainRenderer.realRunspeed = false;
     brainRenderer.setDestructCallback(windowDestroy);
+
+    brainRenderer.selectedNeurons.push_back(0);
 
     brain.runAll = true;
     brain.runSpeed = 0.05;
@@ -47,9 +49,9 @@ int main(int argc, char* args[]){
     unsigned t = 0;
     do {
         t++;
-        if (!USE_REAL_RUNSPEED) brain.run();
+        if (false) brain.run();
 
-        if (sin(brain.getTime()/40.0) > 0.0) inputs[0] = 250;
+        if (sin(brain.getTime()/10.0) > 0.0) inputs[0] = 250;
         else inputs[0] = 0;
         //std::cout<<inputs[0]<<std::endl;
 
