@@ -171,7 +171,7 @@ NeuCor_Renderer::NeuCor_Renderer(NeuCor* _brain)
     for (int i = 0; i<MODULE_count; i++){
         modules.emplace_back();
         modules.back().type = (graphicsModule) i;
-        modules.back().windowed = i == 0;
+        modules.back().windowed = false
         modules.back().snapped = false;
     }
 
