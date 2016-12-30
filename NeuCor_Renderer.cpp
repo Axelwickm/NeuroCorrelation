@@ -615,12 +615,11 @@ void NeuCor_Renderer::updateCamPos(){
     double xpos, ypos;
     glfwGetCursorPos(window, &xpos, &ypos);
 
-    if (cursorX != cursorX) {cursorX = xpos; cursorY = ypos; std::cout<<"Nan";}
+    if (cursorX != cursorX) {cursorX = xpos; cursorY = ypos;}
 
     float deltaX = cursorX-xpos;
     float deltaY = cursorY-ypos;
 
-    std::cout<<deltaX<<"  "<<deltaY<<std::endl;
 
     camHA -= 0.15 * deltaTime * deltaX;
     camVA  += 0.15 * deltaTime * deltaY;
@@ -744,7 +743,6 @@ void NeuCor_Renderer::renderModule(graphicsModule module, bool windowed){
     }
 }
 void NeuCor_Renderer::resetCursor(){
-    std::cout<<"reset\n";
     cursorX = NAN; cursorY = NAN;
     glfwSetCursorPos(window, width/2.0, height/2.0);
 }
@@ -776,7 +774,6 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
 
     case (MOUSE_ENTER):
         mouseInWindow = std::get<1>(TTparams) && glfwGetWindowAttrib(window, GLFW_FOCUSED);
-        std::cout<<"Change: "<<mouseInWindow<<"  "<<mouseInWindow<<"  "<<navigationMode<<"  "<<glfwGetWindowAttrib(window, GLFW_FOCUSED)<<std::endl;
         if (mouseInWindow && navigationMode) resetCursor();
         break;
     }
