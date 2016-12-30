@@ -50,6 +50,15 @@
 		<Unit filename="NeuCor.h" />
 		<Unit filename="NeuCor_Renderer.cpp" />
 		<Unit filename="NeuCor_Renderer.h" />
+		<Unit filename="imgui/imconfig.h" />
+		<Unit filename="imgui/imgui.cpp" />
+		<Unit filename="imgui/imgui.h" />
+		<Unit filename="imgui/imgui_demo.cpp" />
+		<Unit filename="imgui/imgui_draw.cpp" />
+		<Unit filename="imgui/imgui_internal.h" />
+		<Unit filename="imgui/stb_rect_pack.h" />
+		<Unit filename="imgui/stb_textedit.h" />
+		<Unit filename="imgui/stb_truetype.h" />
 		<Unit filename="imgui_impl_glfw_gl3.cpp" />
 		<Unit filename="imgui_impl_glfw_gl3.h" />
 		<Unit filename="main.cpp" />
