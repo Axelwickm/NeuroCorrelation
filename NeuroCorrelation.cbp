@@ -50,6 +50,8 @@
 		<Unit filename="NeuCor.h" />
 		<Unit filename="NeuCor_Renderer.cpp" />
 		<Unit filename="NeuCor_Renderer.h" />
+		<Unit filename="imgui_impl_glfw_gl3.cpp" />
+		<Unit filename="imgui_impl_glfw_gl3.h" />
 		<Unit filename="main.cpp" />
 		<Unit filename="neuron.Fshader" />
 		<Unit filename="neuron.shader" />
