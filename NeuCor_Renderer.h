@@ -12,6 +12,8 @@
 #define GLFW_INCLUDE_GLU
 #include <GLFW/glfw3.h>
 
+#include <imgui/imgui.h>
+
 #include <glm/glm.hpp>
 using namespace glm;
 
@@ -46,8 +48,16 @@ class NeuCor_Renderer
         NeuCor* brain;
 
         void renderInterface();
-        enum graphicsModule {MODULE_BRAIN, MODULE_TIME, MODULE_STATS, MODULE_SELECTED_NEURONS, MODULE_CONTROLS};
-        void renderModule(graphicsModule module, bool windowed);
+        enum graphicsModule {MODULE_BRAIN, MODULE_TIME, MODULE_STATS, MODULE_SELECTED_NEURONS, MODULE_CONTROLS, MODULE_count};
+        struct module {
+            graphicsModule type;
+            ImVec2 pos;
+            bool windowed;
+            bool snapped;
+        };
+        std::vector<module> modules;
+
+        void renderModule(module* mod, bool windowed);
         void updateCamPos();
         void resetCursor();
 
