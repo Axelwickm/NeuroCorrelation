@@ -16,6 +16,7 @@ using namespace glm;
 #include <fstream>
 #include <vector>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -710,14 +711,16 @@ void NeuCor_Renderer::renderInterface(){
 }
 
 void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
+    char buffer[100];
+    std::sprintf(buffer, "Neuron %i", ID);
+
     ImGuiWindowFlags window_flags = 0;
     window_flags |= ImGuiWindowFlags_AlwaysAutoResize;
     window_flags |= ImGuiWindowFlags_NoCollapse;
-    ImGui::Begin("Neuron", open, window_flags);
+    ImGui::Begin(buffer, open, window_flags);
 
 
-
-    ImGui::Text("ID: %i", ID);
+    ImGui::Text("ID: %i          ", ID);
 
 
     ImGui::End();
@@ -928,7 +931,9 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
         int cellsPerRow = (int) std::max(floor(ImGui::GetWindowWidth()/50.0)-1 , 1.0);
         for (int i = 0; i<selectedNeurons.size(); i++){
             ImGui::PushID(i);
-            ImGui::Selectable("Neuron", &selectedNeuronsWindows.at(selectedNeurons.at(i)), 0, ImVec2(50,50));
+            char buffer[100];
+            std::sprintf(buffer, "Neuron\n%i", selectedNeurons.at(i));
+            ImGui::Selectable(buffer, &selectedNeuronsWindows.at(selectedNeurons.at(i)), 0, ImVec2(50,50));
             if ((i+1)%cellsPerRow != 0 && i != selectedNeurons.size()-1)
                 ImGui::SameLine();
             ImGui::PopID();
