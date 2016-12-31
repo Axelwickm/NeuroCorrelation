@@ -90,6 +90,8 @@ class NeuCor_Renderer
         GLuint synapse_PT_buffer;
         GLuint synapse_potential_buffer;
 
+        GLuint neuronTexID;
+        GLuint neuron_smallTexID;
         GLuint neuronProgramID;
         GLuint synapseProgramID;
         GLuint ViewProjMatrixID[2];

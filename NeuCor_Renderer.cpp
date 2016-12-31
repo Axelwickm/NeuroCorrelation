@@ -311,11 +311,10 @@ void NeuCor_Renderer::loadResources() {
     if(error != 0) std::cout << "error: " << error << std::endl;
 
 
-    unsigned char * imgData = &image[0];
+    unsigned char * neuronimgData = &image[0];
 
 
     // Create one OpenGL texture
-    GLuint neuronTexID;
     glGenTextures(1, &neuronTexID);
 
 
@@ -323,7 +322,33 @@ void NeuCor_Renderer::loadResources() {
     glBindTexture(GL_TEXTURE_2D, neuronTexID);
 
     // Give the image to OpenGL
-    glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, imgData);
+    glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, neuronimgData);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    filename = "neuron_small.png";
+
+    //load and decode
+    buffer, image;
+    loadFile(buffer, filename);
+
+    error = decodePNG(image, w, h, &buffer[0], (unsigned long)buffer.size());
+    if(error != 0) std::cout << "error: " << error << std::endl;
+
+
+    unsigned char * neuron_smallimgData = &image[0];
+
+
+    // Create one OpenGL texture
+    glGenTextures(1, &neuron_smallTexID);
+
+
+    // "Bind" the newly created texture : all future texture functions will modify this texture
+    glBindTexture(GL_TEXTURE_2D, neuron_smallTexID);
+
+    // Give the image to OpenGL
+    glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, neuron_smallimgData);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -712,6 +737,7 @@ void NeuCor_Renderer::renderInterface(){
 
 void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
     Neuron* neu = brain->getNeuron(ID);
+    float neuPot = neu->potential();
     char buffer[100];
     std::sprintf(buffer, "Neuron %i", ID);
     ImGuiWindowFlags window_flags = 0;
@@ -719,7 +745,7 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
     ImGui::Begin(buffer, open, window_flags);
 
 
-    ImGui::Text("Current voltage: %.01f mV", neu->potential());
+    ImGui::Text("Current voltage: %.01f mV", neuPot);
     ImGui::Text("Firing frequency: %.01f firings/s", neu->activity());
     ImGui::Text("Last fire: %1.f ms ago", brain->getTime() - neu->lastFire);
 
@@ -731,6 +757,10 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
     }
     ImGui::PlotLines("", voltageData, logger.timeline.size(), 0, "", -90.0f, 50.0f, ImVec2(300, 100));
 
+    ImGui::Separator();
+
+    float neuPotScaled = 0.4 + (neuPot+70.f)/200.f;
+    ImGui::Image((void*) neuron_smallTexID, ImVec2(100, 100), ImVec2(0,0), ImVec2(1,1), ImVec4(neuPotScaled,neuPotScaled, neuPotScaled, neuPotScaled));
 
     ImGui::End();
 }
