@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <deque>
+#include <map>
 
 #include <GL/glew.h>
 #define GLFW_INCLUDE_GLU
@@ -27,7 +28,8 @@ class NeuCor_Renderer
         bool runBrainOnUpdate; // If the render has the responsibility to run the brain.
         bool realRunspeed;// Makes brain's runSpeed define simulation's speed by ms/s
         bool paused;
-        std::vector<int> selectedNeurons;
+        void selectNeuron(int id, bool windowOpen);
+        void deselectNeuron(int id);
 
         enum renderingModes { RENDER_VOLTAGE, RENDER_PLASTICITY, RENDER_ACTIVITY, RENDER_NOSYNAPSES, Count};
         std::vector<std::string> renderingModeNames = {"Voltage", "Plasticity", "Activity", "No synapses"};
@@ -59,8 +61,11 @@ class NeuCor_Renderer
         std::vector<module> modules;
 
         void renderModule(module* mod, bool windowed);
+        void renderNeuronWindow(int ID, bool* open);
         void updateCamPos();
         void resetCursor();
+        std::vector<int> selectedNeurons; // Selected neuron ID, smart pointer to bool if neuon window is open
+        std::map<int, bool> selectedNeuronsWindows; // Selected neuron ID, smart pointer to bool if neuon window is open
 
         struct realTimeStats {
             realTimeStats();

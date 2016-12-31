@@ -36,7 +36,13 @@ int main(int argc, char* args[]){
     brainRenderer.realRunspeed = false;
     brainRenderer.setDestructCallback(windowDestroy);
 
-    brainRenderer.selectedNeurons.push_back(0);
+    brainRenderer.selectNeuron(153, false);
+    brainRenderer.selectNeuron(15, false);
+    brainRenderer.selectNeuron(0, false);
+    brainRenderer.selectNeuron(499, false);
+    brainRenderer.selectNeuron(100, false);
+    brainRenderer.selectNeuron(101, false);
+    brainRenderer.selectNeuron(102, false);
 
     brain.runAll = true;
     brain.runSpeed = 0.05;

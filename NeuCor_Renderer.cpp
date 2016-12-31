@@ -17,7 +17,6 @@ using namespace glm;
 #include <vector>
 #include <stdlib.h>
 
-
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -329,6 +328,35 @@ void NeuCor_Renderer::loadResources() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
 }
+
+void NeuCor_Renderer::selectNeuron(int id, bool windowOpen){
+    assert(id < brain->neurons.size());
+    if (selectedNeuronsWindows.find(id) == selectedNeuronsWindows.end()){
+        selectedNeurons.push_back(id);
+        selectedNeuronsWindows.insert(std::pair<int, bool> (id, windowOpen));
+    }
+    else {
+        std::cout<<"Neuron "<<id<<" already selected.\n";
+        selectedNeuronsWindows.at(id) = windowOpen;
+    }
+}
+
+void NeuCor_Renderer::deselectNeuron(int id){
+    assert(id < brain->neurons.size());
+    if (selectedNeuronsWindows.find(id) != selectedNeuronsWindows.end()){
+        for (std::vector<int>::iterator i = selectedNeurons.begin(); i < selectedNeurons.end(); i++){
+            if (*i == id){
+                selectedNeurons.erase(i);
+                break;
+            }
+        }
+        selectedNeuronsWindows.erase(id);
+    }
+    else {
+        std::cout<<"Neuron "<<id<<" isn't selected.\n";
+    }
+}
+
 void NeuCor_Renderer::updateView(){
     #define PRINT_CONNECTIONS_EVERY_FRAME false
 
@@ -535,6 +563,7 @@ void NeuCor_Renderer::updateView(){
     else glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
 
+
     if (selectedNeurons.size() != 0 && !paused){
         float brainTime = brain->getTime();
         std::vector<realTimeStats::neuronSnapshot> snapshot;
@@ -555,46 +584,6 @@ void NeuCor_Renderer::updateView(){
 
     glfwSwapBuffers(window);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-}
-
-void NeuCor_Renderer::renderInterface(){
-    ImGui_ImplGlfwGL3_NewFrame();
-
-    for (int i = 0; i<modules.size(); i++){ // Render modules as windows
-        if (modules[i].windowed) renderModule(&modules[i], true);
-        //std::cout<<modules[i].windowed<<"  "<<modules[i].snapped<<std::endl;
-    }
-
-    ImGui::ShowTestWindow();
-
-    {   // Dock
-        ImGuiWindowFlags window_flags = 0;
-        window_flags |= ImGuiWindowFlags_NoMove;
-        window_flags |= ImGuiWindowFlags_NoCollapse;
-        window_flags |= ImGuiWindowFlags_NoTitleBar;
-        window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus;
-        ImGui::SetNextWindowPos(ImVec2(0,0));
-        ImGui::SetNextWindowSizeConstraints(ImVec2(10, height), ImVec2(width/2.5, height));
-        ImGui::Begin("", NULL, window_flags);
-
-        if (40 < ImGui::GetWindowWidth()){
-            for (int i = 0; i<modules.size(); i++){ // Render modules in dock
-                if (!modules[i].windowed || modules[i].snapped) renderModule(&modules[i], false);
-            }
-        }
-        ImGui::End();
-
-    }
-
-
-    //std::cout<<ImGui::GetMouseDragDelta(0).x<<"  "<<ImGui::GetMouseDragDelta(0).y<<"  "<<ImGui::IsMouseHoveringAnyWindow()<<std::endl;
-
-
-    ImGui::Render();
-}
-
- float NeuCor_Renderer::getDeltaTime(){
-    return deltaTime;
 }
 
 void NeuCor_Renderer::pollWindow(){
@@ -672,6 +661,66 @@ void NeuCor_Renderer::updateCamPos(){
     if (glfwGetKey(window, GLFW_KEY_A ) == GLFW_PRESS){
         camPos -= right * GLfloat(deltaTime * speedMult);
     }
+}
+
+void NeuCor_Renderer::renderInterface(){
+    ImGui_ImplGlfwGL3_NewFrame();
+
+    for (int i = 0; i<modules.size(); i++){ // Render modules as windows
+        if (modules[i].windowed) renderModule(&modules[i], true);
+        //std::cout<<modules[i].windowed<<"  "<<modules[i].snapped<<std::endl;
+    }
+
+    ImGui::ShowTestWindow();
+
+    {   // Dock
+        ImGuiWindowFlags window_flags = 0;
+        window_flags |= ImGuiWindowFlags_NoMove;
+        window_flags |= ImGuiWindowFlags_NoCollapse;
+        window_flags |= ImGuiWindowFlags_NoTitleBar;
+        window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus;
+        ImGui::SetNextWindowPos(ImVec2(0,0));
+        ImGui::SetNextWindowSizeConstraints(ImVec2(10, height), ImVec2(width/2.5, height));
+        ImGui::Begin("", NULL, window_flags);
+
+        if (40 < ImGui::GetWindowWidth()){
+            for (int i = 0; i<modules.size(); i++){ // Render modules in dock
+                if (!modules[i].windowed || modules[i].snapped) renderModule(&modules[i], false);
+            }
+        }
+        ImGui::End();
+
+    }
+
+    // Render neuron windows which are open
+    for (auto ID: selectedNeurons){
+        bool* open = &selectedNeuronsWindows.at(ID);
+        if (*open) renderNeuronWindow(ID, open);
+    }
+
+
+    //std::cout<<ImGui::GetMouseDragDelta(0).x<<"  "<<ImGui::GetMouseDragDelta(0).y<<"  "<<ImGui::IsMouseHoveringAnyWindow()<<std::endl;
+
+
+    ImGui::Render();
+}
+
+ float NeuCor_Renderer::getDeltaTime(){
+    return deltaTime;
+}
+
+void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
+    ImGuiWindowFlags window_flags = 0;
+    window_flags |= ImGuiWindowFlags_AlwaysAutoResize;
+    window_flags |= ImGuiWindowFlags_NoCollapse;
+    ImGui::Begin("Neuron", open, window_flags);
+
+
+
+    ImGui::Text("ID: %i", ID);
+
+
+    ImGui::End();
 }
 
 void NeuCor_Renderer::renderModule(module* mod, bool windowed){
@@ -869,12 +918,31 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
     case (MODULE_SELECTED_NEURONS): {
         if (windowed) ImGui::Begin("Selected neurons");
         else {openTree = ImGui::TreeNode("Selected neurons"); if (!openTree) break; activeTree = ImGui::IsItemActive();}
-        ImGui::Text("Module isn't defined in NeuCor_Renderer::renderModule().");
-        float voltageData[logger.timeline.size()];
+
+        ImGui::Separator();
+
+        ImGui::PushStyleColor(ImGuiCol_Header, ImColor::HSV(1.57f, 1.0f, 0.68f));
+        ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImColor::HSV(1.57f, 1.0f, 0.9f));
+        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImColor::HSV(1.57f, 0.6f, 0.68f));
+
+        int cellsPerRow = (int) std::max(floor(ImGui::GetWindowWidth()/50.0)-1 , 1.0);
+        for (int i = 0; i<selectedNeurons.size(); i++){
+            ImGui::PushID(i);
+            ImGui::Selectable("Neuron", &selectedNeuronsWindows.at(selectedNeurons.at(i)), 0, ImVec2(50,50));
+            if ((i+1)%cellsPerRow != 0 && i != selectedNeurons.size()-1)
+                ImGui::SameLine();
+            ImGui::PopID();
+        }
+        ImGui::PopStyleColor(3);
+
+
+
+
+        /*float voltageData[logger.timeline.size()];
         for (int i = 0; i < logger.timeline.size(); i++){
             voltageData[i] = logger.timeline.at(i).at(0).voltage;
         }
-        ImGui::PlotLines("Neuron voltage", voltageData, logger.timeline.size(), 0, "", -90.0f, 50.0f, ImVec2(400, 400));
+        ImGui::PlotLines("Neuron voltage", voltageData, logger.timeline.size(), 0, "", -90.0f, 50.0f, ImVec2(400, 400));*/
         break;
     }
 
