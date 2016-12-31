@@ -50,7 +50,8 @@ class NeuCor_Renderer
         NeuCor* brain;
 
         void renderInterface();
-        enum graphicsModule {MODULE_BRAIN, MODULE_TIME, MODULE_STATS, MODULE_SELECTED_NEURONS, MODULE_CONTROLS, MODULE_count};
+        enum graphicsModule {MODULE_BRAIN, MODULE_TIME, MODULE_SELECTED_NEURONS, MODULE_STATS, MODULE_CONTROLS, MODULE_count};
+        bool moduleInitOpen[5] = {true, true, true, false, false};
         struct module {
             graphicsModule type;
             ImVec2 pos;

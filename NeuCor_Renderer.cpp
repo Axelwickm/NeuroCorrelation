@@ -743,6 +743,9 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
         ImGui::SetNextWindowFocus();
         mod->beingDragged = false;
     }
+    static int init = MODULE_count;
+    init--;
+    if (!windowed && 0 < init) ImGui::SetNextTreeNodeOpen(moduleInitOpen[(int) mod->type]);
 
     switch (mod->type){
 
@@ -753,7 +756,7 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
             window_flags |= ImGuiWindowFlags_AlwaysAutoResize;
             ImGui::Begin("Brain", NULL, window_flags);
         }
-        else {openTree = ImGui::TreeNode("Brain"); if (!openTree) break; activeTree = ImGui::IsItemActive();}
+        else {openTree = ImGui::CollapsingHeader("Brain"); if (!openTree) break; activeTree = ImGui::IsItemActive();}
 
 
         ImGui::Text("Neurons: %i", logger.neuronCount);
@@ -783,7 +786,7 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
             window_flags |= ImGuiWindowFlags_AlwaysAutoResize;
             ImGui::Begin("Time", NULL, window_flags);
         }
-        else {openTree = ImGui::TreeNode("Time"); if (!openTree) break; activeTree = ImGui::IsItemActive();}
+        else {openTree = ImGui::CollapsingHeader("Time"); if (!openTree) break; activeTree = ImGui::IsItemActive();}
 
         bool loadedPaused = false;
         if (paused && runBrainOnUpdate){
@@ -830,7 +833,7 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
             window_flags |= ImGuiWindowFlags_AlwaysAutoResize;
             ImGui::Begin("Statistics", NULL, window_flags);
         }
-        else {openTree = ImGui::TreeNode("Statistics"); if (!openTree) break; activeTree = ImGui::IsItemActive();}
+        else {openTree = ImGui::CollapsingHeader("Statistics"); if (!openTree) break; activeTree = ImGui::IsItemActive();}
         ImGui::Text("Neuron activity distribution");
 
             // Activity dist.
@@ -934,9 +937,7 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
             ImGui::SetNextWindowContentWidth(250);
             ImGui::Begin("Selected neurons");
         }
-        else {openTree = ImGui::TreeNode("Selected neurons"); if (!openTree) break; activeTree = ImGui::IsItemActive();}
-
-        ImGui::Separator();
+        else {openTree = ImGui::CollapsingHeader("Selected neurons"); if (!openTree) break; activeTree = ImGui::IsItemActive();}
 
         ImGui::PushStyleColor(ImGuiCol_Header, ImColor::HSV(1.57f, 1.0f, 0.68f));
         ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImColor::HSV(1.57f, 1.0f, 0.9f));
@@ -961,6 +962,8 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
         }
         ImGui::PopStyleColor(3);
 
+        ImGui::Separator();
+
         if (ImGui::Button("Deselect all")){
             while (selectedNeurons.size() != 0) deselectNeuron(selectedNeurons.at(0));
         }
@@ -972,26 +975,19 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
         if (ImGui::Button("Close all")){
             for (auto ID: selectedNeurons) selectedNeuronsWindows.at(ID) = false;
         }
-
-
-        /*float voltageData[logger.timeline.size()];
-        for (int i = 0; i < logger.timeline.size(); i++){
-            voltageData[i] = logger.timeline.at(i).at(0).voltage;
-        }
-        ImGui::PlotLines("Neuron voltage", voltageData, logger.timeline.size(), 0, "", -90.0f, 50.0f, ImVec2(400, 400));*/
         break;
     }
 
     case (MODULE_CONTROLS): {
         if (windowed) ImGui::Begin("Controls");
-        else {openTree = ImGui::TreeNode("Controls"); if (!openTree) break; activeTree = ImGui::IsItemActive();}
+        else {openTree = ImGui::CollapsingHeader("Controls"); if (!openTree) break; activeTree = ImGui::IsItemActive();}
         ImGui::Text("Module isn't defined in NeuCor_Renderer::renderModule().");
         break;
     }
 
     default: {
-        if (windowed) ImGui::Begin("Undefined");
-        else {openTree = ImGui::TreeNode("Undefined"); if (!openTree) break; activeTree = ImGui::IsItemActive();}
+        if (windowed) ImGui::CollapsingHeader("Undefined");
+        else {openTree = ImGui::CollapsingHeader("Undefined"); if (!openTree) break; activeTree = ImGui::IsItemActive();}
         ImGui::Text("Module isn't defined in NeuCor_Renderer::renderModule().");
         break;
     }
@@ -1005,7 +1001,6 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
     }
     else if (openTree) {
         if (activeTree && ImGui::GetMousePos().x > 80 && ImGui::IsMouseDragging()){mod->windowed = true; mod->beingDragged = true;}
-        ImGui::TreePop();
     }
 }
 
