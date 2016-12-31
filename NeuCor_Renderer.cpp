@@ -567,19 +567,19 @@ void NeuCor_Renderer::updateView(){
 
     if (selectedNeurons.size() != 0 && !paused){
         float brainTime = brain->getTime();
-        std::vector<realTimeStats::neuronSnapshot> snapshot;
-        snapshot.reserve(selectedNeurons.size());
+        std::map<int, realTimeStats::neuronSnapshot> snapshot;
         for (auto neuID: selectedNeurons) {
             Neuron* neu = brain->getNeuron(neuID);
-            realTimeStats::neuronSnapshot neuSnap;
-            snapshot.emplace_back();
-            snapshot.back().id = neuID;
-            snapshot.back().time = brainTime;
-            snapshot.back().voltage = neu->potential();
+            snapshot.emplace(std::make_pair(neuID, realTimeStats::neuronSnapshot()));
+            auto neuSnap = &snapshot.at(neuID);
+
+            neuSnap->id = neuID;
+            neuSnap->time = brainTime;
+            neuSnap->voltage = neu->potential();
 
         }
         logger.timeline.push_back(snapshot);
-        while (logger.maxTimeline < brainTime - logger.timeline.front().back().time) logger.timeline.pop_front();
+        while (logger.maxTimeline < brainTime - logger.timeline.front().begin()->second.time) logger.timeline.pop_front();
     }
     if (!navigationMode) renderInterface();
 
@@ -711,16 +711,25 @@ void NeuCor_Renderer::renderInterface(){
 }
 
 void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
+    Neuron* neu = brain->getNeuron(ID);
     char buffer[100];
     std::sprintf(buffer, "Neuron %i", ID);
-
     ImGuiWindowFlags window_flags = 0;
-    window_flags |= ImGuiWindowFlags_AlwaysAutoResize;
     window_flags |= ImGuiWindowFlags_NoCollapse;
     ImGui::Begin(buffer, open, window_flags);
 
 
-    ImGui::Text("ID: %i          ", ID);
+    ImGui::Text("Current voltage: %.01f mV", neu->potential());
+    ImGui::Text("Firing frequency: %.01f firings/s", neu->activity());
+    ImGui::Text("Last fire: %1.f ms ago", brain->getTime() - neu->lastFire);
+
+    ImGui::Separator();
+    ImGui::Text("Voltage graph");
+    float voltageData[logger.timeline.size()];
+    for (int i = 0; i < logger.timeline.size(); i++){
+        voltageData[i] = logger.timeline.at(i).at(ID).voltage;
+    }
+    ImGui::PlotLines("", voltageData, logger.timeline.size(), 0, "", -90.0f, 50.0f, ImVec2(300, 100));
 
 
     ImGui::End();
@@ -750,6 +759,9 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
         ImGui::Text("Neurons: %i", logger.neuronCount);
         ImGui::SameLine(0, 80); ImGui::Text("Synapses: %i", logger.synapseCount);
 
+        ImGui::Text("Brain runtime: %.001f ms", brain->getTime());
+        ImGui::Text("FPS: %i", (int) round(FPS));
+
         if(ImGui::Button("<"))
             renderMode = static_cast<renderingModes>((renderMode-1+renderingModes::Count)%renderingModes::Count);
         ImGui::SameLine(); ImGui::Text(renderingModeNames.at(renderMode).data()); ImGui::SameLine(150,0);
@@ -761,8 +773,6 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
         if(ImGui::Button(">"))
             renderMode = static_cast<renderingModes>((renderMode+1)%renderingModes::Count);
         if (glfwGetKey(window, GLFW_KEY_M ) == GLFW_PRESS) ImGui::PopStyleColor(3);
-
-        ImGui::Text("FPS: %i", (int) round(FPS));
 
     } break;
 
