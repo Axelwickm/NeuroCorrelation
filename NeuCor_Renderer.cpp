@@ -919,7 +919,11 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
     }
 
     case (MODULE_SELECTED_NEURONS): {
-        if (windowed) ImGui::Begin("Selected neurons");
+        if (windowed) {
+            ImGui::SetNextWindowSizeConstraints(ImVec2(250, 0), ImVec2(FLT_MAX, FLT_MAX));
+            ImGui::SetNextWindowContentWidth(250);
+            ImGui::Begin("Selected neurons");
+        }
         else {openTree = ImGui::TreeNode("Selected neurons"); if (!openTree) break; activeTree = ImGui::IsItemActive();}
 
         ImGui::Separator();
@@ -947,7 +951,17 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
         }
         ImGui::PopStyleColor(3);
 
-
+        if (ImGui::Button("Deselect all")){
+            while (selectedNeurons.size() != 0) deselectNeuron(selectedNeurons.at(0));
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Open all")){
+            for (auto ID: selectedNeurons) selectedNeuronsWindows.at(ID) = true;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Close all")){
+            for (auto ID: selectedNeurons) selectedNeuronsWindows.at(ID) = false;
+        }
 
 
         /*float voltageData[logger.timeline.size()];
