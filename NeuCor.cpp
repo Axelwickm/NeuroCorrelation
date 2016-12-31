@@ -457,6 +457,7 @@ float Synapse::getWeight() const {
 /* Simulation related methods */
 
 void NeuCor::run(){
+    assert(0 <= runSpeed);
     if (runAll){
         for (auto &neu: neurons) queSimulation(&neu, 0.0);
     }
