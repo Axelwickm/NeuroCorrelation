@@ -927,13 +927,20 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
         ImGui::PushStyleColor(ImGuiCol_Header, ImColor::HSV(1.57f, 1.0f, 0.68f));
         ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImColor::HSV(1.57f, 1.0f, 0.9f));
         ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImColor::HSV(1.57f, 0.6f, 0.68f));
+        ImDrawList* drawList = ImGui::GetWindowDrawList();
 
         int cellsPerRow = (int) std::max(floor(ImGui::GetWindowWidth()/50.0)-1 , 1.0);
         for (int i = 0; i<selectedNeurons.size(); i++){
             ImGui::PushID(i);
+
             char buffer[100];
             std::sprintf(buffer, "Neuron\n%i", selectedNeurons.at(i));
             ImGui::Selectable(buffer, &selectedNeuronsWindows.at(selectedNeurons.at(i)), 0, ImVec2(50,50));
+
+            float currentPot = (brain->getNeuron(selectedNeurons.at(i))->potential()+70.0)/110.0;
+            drawList->AddRectFilled(ImVec2(ImGui::GetItemRectMin().x, ImGui::GetItemRectMin().y+35.0f),
+                                    ImGui::GetItemRectMax(), ImColor::HSV(1.52f, .75f, currentPot));
+
             if ((i+1)%cellsPerRow != 0 && i != selectedNeurons.size()-1)
                 ImGui::SameLine();
             ImGui::PopID();
