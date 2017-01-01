@@ -409,7 +409,7 @@ void NeuCor_Renderer::updateView(){
         camPos+camDir,
         camUp
     );
-    glm::mat4 vp = Projection * View;
+    vp = Projection * View;
 
 
     /// POSSIBLY TODO
@@ -738,10 +738,12 @@ void NeuCor_Renderer::renderInterface(){
 void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
     Neuron* neu = brain->getNeuron(ID);
     float neuPot = neu->potential();
-    char buffer[100];
+
+        char buffer[100];
     std::sprintf(buffer, "Neuron %i", ID);
     ImGuiWindowFlags window_flags = 0;
     window_flags |= ImGuiWindowFlags_NoCollapse;
+
     ImGui::Begin(buffer, open, window_flags);
 
 
@@ -761,6 +763,31 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
 
     float neuPotScaled = 0.4 + (neuPot+70.f)/200.f;
     ImGui::Image((void*) neuron_smallTexID, ImVec2(100, 100), ImVec2(0,0), ImVec2(1,1), ImVec4(neuPotScaled,neuPotScaled, neuPotScaled, neuPotScaled));
+
+
+
+    // Render line from window to neuron
+    coord3 pos3Dc3 = neu->position();                                              // 3D vertex coordinates
+    glm::vec4 posClip = vp * glm::vec4(pos3Dc3.x, pos3Dc3.y, pos3Dc3.z, 1.0f);    // Clip coordinates
+    glm::vec3 posNDC = glm::vec3(posClip) / posClip.w;                           // NDC coordinates
+    ImVec2 screen = ImVec2(posNDC.x*width*0.5+width*0.5, -posNDC.y*height*0.5+height*0.5);
+
+    // Get closest point from window
+    ImVec2 minP = ImGui::GetWindowPos();
+    ImVec2 maxP(minP.x+ImGui::GetWindowSize().x, minP.y+ImGui::GetWindowSize().y);
+
+    ImVec2 closest = screen;
+    if (closest.x > maxP.x) closest.x = maxP.x;
+    else if (closest.x < minP.x) closest.x = minP.x;
+    if (closest.y > maxP.y) closest.y = maxP.y;
+    else if (closest.y < minP.y) closest.y = minP.y;
+
+    // Draw line. This is done inside window so that other windows can focus over it.
+    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+    draw_list->PushClipRectFullScreen();
+    draw_list->AddLine(closest, screen, ImColor(0, 90, 173, 180), 2.2f);
+    draw_list->PopClipRect();
+
 
     ImGui::End();
 }
@@ -969,7 +996,7 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
         }
         else {openTree = ImGui::CollapsingHeader("Selected neurons"); if (!openTree) break; activeTree = ImGui::IsItemActive();}
 
-        ImGui::PushStyleColor(ImGuiCol_Header, ImColor::HSV(1.57f, 1.0f, 0.68f));
+        ImGui::PushStyleColor(ImGuiCol_Header, ImColor(0, 90, 173));
         ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImColor::HSV(1.57f, 1.0f, 0.9f));
         ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImColor::HSV(1.57f, 0.6f, 0.68f));
         ImDrawList* drawList = ImGui::GetWindowDrawList();

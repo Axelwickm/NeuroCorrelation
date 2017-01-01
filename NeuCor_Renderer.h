@@ -101,6 +101,7 @@ class NeuCor_Renderer
         glm::vec3 camDir;
         glm::vec3 camUp;
         float camHA,camVA;
+        glm::mat4 vp;
         double cursorX, cursorY;
         bool navigationMode, mouseInWindow;
 
