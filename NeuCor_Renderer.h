@@ -79,7 +79,7 @@ class NeuCor_Renderer
                 float time;
                 float voltage;
             };
-            std::deque<std::map<int, neuronSnapshot> > timeline;
+            std::map<int, std::deque<neuronSnapshot> > timeline;
             float maxTimeline;
         };
         realTimeStats logger;

@@ -362,6 +362,8 @@ bool NeuCor_Renderer::selectNeuron(int id, bool windowOpen){
     if (selectedNeuronsWindows.find(id) == selectedNeuronsWindows.end()){
         selectedNeurons.push_back(id);
         selectedNeuronsWindows.insert(std::pair<int, bool> (id, windowOpen));
+        logger.timeline.insert(std::pair<int, std::deque<realTimeStats::neuronSnapshot> >(id, std::deque<realTimeStats::neuronSnapshot>()));
+
         return true;
     }
     else {
@@ -380,6 +382,7 @@ bool NeuCor_Renderer::deselectNeuron(int id){
             }
         }
         selectedNeuronsWindows.erase(id);
+        logger.timeline.erase(id);
         return true;
     }
     else {
@@ -579,19 +582,21 @@ void NeuCor_Renderer::updateView(){
 
     if (selectedNeurons.size() != 0 && !paused){
         float brainTime = brain->getTime();
-        std::map<int, realTimeStats::neuronSnapshot> snapshot;
         for (auto neuID: selectedNeurons) {
             Neuron* neu = brain->getNeuron(neuID);
-            snapshot.emplace(std::make_pair(neuID, realTimeStats::neuronSnapshot()));
-            auto neuSnap = &snapshot.at(neuID);
+            std::deque<realTimeStats::neuronSnapshot>* neuTimeline;
+            neuTimeline = &logger.timeline.at(neuID);
+
+            neuTimeline->emplace_back(realTimeStats::neuronSnapshot());
+            auto neuSnap = &neuTimeline->back();
 
             neuSnap->id = neuID;
             neuSnap->time = brainTime;
             neuSnap->voltage = neu->potential();
 
+            while (logger.maxTimeline < brainTime - neuTimeline->begin()->time)
+                neuTimeline->pop_front();
         }
-        logger.timeline.push_back(snapshot);
-        while (logger.maxTimeline < brainTime - logger.timeline.front().begin()->second.time) logger.timeline.pop_front();
     }
     if (showInterface) renderInterface();
 
@@ -746,7 +751,7 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
     Neuron* neu = brain->getNeuron(ID);
     float neuPot = neu->potential();
 
-        char buffer[100];
+    char buffer[100];
     std::sprintf(buffer, "Neuron %i", ID);
     ImGuiWindowFlags window_flags = 0;
     window_flags |= ImGuiWindowFlags_NoCollapse;
@@ -760,11 +765,13 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
 
     ImGui::Separator();
     ImGui::Text("Voltage graph");
-    float voltageData[logger.timeline.size()];
-    for (int i = 0; i < logger.timeline.size(); i++){
-        voltageData[i] = logger.timeline.at(i).at(ID).voltage;
+
+    std::deque<realTimeStats::neuronSnapshot>* neuTimeline = &logger.timeline.at(ID);
+    float voltageData[neuTimeline->size()];
+    for (int i = 0; i < neuTimeline->size(); i++){
+        voltageData[i] = neuTimeline->at(i).voltage;
     }
-    ImGui::PlotLines("", voltageData, logger.timeline.size(), 0, "", -90.0f, 50.0f, ImVec2(300, 100));
+    ImGui::PlotLines("", voltageData, neuTimeline->size(), 0, "", -90.0f, 50.0f, ImVec2(300, 100));
 
     ImGui::Separator();
 
@@ -1119,7 +1126,6 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
                     ID = neu.getID();
                 }
             }
-            std::cout<<closestDistance<<std::endl;
             if (closestDistance < minDistance){
                 if (!selectNeuron(ID, false)) deselectNeuron(ID);   // Tries to select, if false the neuron is already selected and is then deselected.
             }
