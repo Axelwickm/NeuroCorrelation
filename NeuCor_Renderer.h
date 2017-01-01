@@ -63,6 +63,7 @@ class NeuCor_Renderer
 
         void renderModule(module* mod, bool windowed);
         void renderNeuronWindow(int ID, bool* open);
+        std::pair<int, ImVec2> newNeuWinPos; // <ID,pos> If ID = NULL it isn't used
         void updateCamPos();
         void resetCursor();
         std::vector<int> selectedNeurons; // Selected neuron ID, smart pointer to bool if neuon window is open

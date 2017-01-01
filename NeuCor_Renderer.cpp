@@ -185,6 +185,7 @@ NeuCor_Renderer::NeuCor_Renderer(NeuCor* _brain)
     loadResources();
 
     destructCallback = NULL;
+    newNeuWinPos.first = NULL;
 }
 
 NeuCor_Renderer::realTimeStats::realTimeStats(){
@@ -745,14 +746,21 @@ void NeuCor_Renderer::renderInterface(){
 }
 
 void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
+    #define windowInitX 320
+    #define windowInitY 450
     Neuron* neu = brain->getNeuron(ID);
     float neuPot = neu->potential();
+
+    if (newNeuWinPos.first == ID){
+        ImGui::SetNextWindowPos(newNeuWinPos.second);
+        newNeuWinPos.first = NULL;
+    }
 
     char buffer[100];
     std::sprintf(buffer, "Neuron %i", ID);
     ImGui::PushStyleColor(ImGuiCol_TitleBgCollapsed, ImColor(116, 102, 116, (int) floor(50 + neuPot*180.0f)));
     ImGui::SetNextWindowCollapsed(true, ImGuiSetCond_Appearing);
-    ImGui::SetNextWindowSize(ImVec2(320, 450), ImGuiSetCond_Appearing);
+    ImGui::SetNextWindowSize(ImVec2(windowInitX, windowInitY), ImGuiSetCond_Appearing);
     ImGui::Begin(buffer, open, 0);
 
     ImGui::Text("Current voltage: %.01f mV", neuPot);
@@ -781,7 +789,12 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
         ImGui::PushStyleColor(ImGuiCol_Header, ImColor(116, 102, 116, (int) floor(50 + syn->getPrePot()*180.0f)));
         std::sprintf(buffer,"%i", syn->pN);
         if (ImGui::CollapsingHeader(buffer)){
-            if (ImGui::Button("Open")) selectNeuron(syn->pN, true);
+            if (ImGui::Button("Open")) {
+                selectNeuron(syn->pN, true);
+                ImVec2 currentWindowPos = ImGui::GetWindowPos();
+                newNeuWinPos.first = syn->pN;
+                newNeuWinPos.second = ImVec2(currentWindowPos.x-windowInitX-10, currentWindowPos.y-windowInitY/2.0+18);
+            }
             ImGui::SameLine(); ImGui::Text("%i -> %i", syn->pN, syn->tN);
             if (0.0f < syn->getWeight() ) ImGui::TextColored(ImColor(116, 102, 116),"EXCITATORY");
             else ImGui::TextColored(ImColor(26, 26, 116),"inhibitory");
@@ -808,7 +821,12 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
         std::sprintf(buffer,"%i", syn.tN);
         if (ImGui::CollapsingHeader(buffer)){
             ImGui::Text("%i -> %i", syn.pN, syn.tN);
-            ImGui::SameLine(); if (ImGui::Button("Open")) selectNeuron(syn.tN, true);
+            if (ImGui::Button("Open")){
+                selectNeuron(syn.tN, true);
+                ImVec2 currentWindowPos = ImGui::GetWindowPos();
+                newNeuWinPos.first = syn.tN;
+                newNeuWinPos.second = ImVec2(currentWindowPos.x+windowInitX/2.0-25, currentWindowPos.y-windowInitY/2.0+18);
+            }
             if (0.0f < syn.getWeight() ) ImGui::TextColored(ImColor(116, 102, 116),"EXCITATORY");
             else ImGui::TextColored(ImColor(26, 26, 116),"inhibitory");
             ImGui::Text("weight: %.2f", syn.getWeight());
@@ -852,9 +870,9 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
         ImGui::SetNextWindowFocus();
         mod->beingDragged = false;
     }
-    static int init = MODULE_count;
-    init--;
-    if (!windowed && 0 < init) ImGui::SetNextTreeNodeOpen(moduleInitOpen[(int) mod->type]);
+
+    // Set module treenodes initial state
+    if (!windowed) ImGui::SetNextTreeNodeOpen(moduleInitOpen[(int) mod->type], ImGuiSetCond_Once);
 
     switch (mod->type){
 
