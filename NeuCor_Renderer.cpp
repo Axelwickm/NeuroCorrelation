@@ -23,6 +23,7 @@ using namespace glm;
 
 #include <picopng/picopng.cpp>
 #include <imgui_impl_glfw_gl3.h>
+#include <imgui/imgui_internal.h>
 
 std::map<GLFWwindow*, NeuCor_Renderer*> windowRegistry;
 
@@ -1101,14 +1102,28 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
     }
 
     }
-
+    static graphicsModule justUndocked = MODULE_CONTROLS;
+    if (justUndocked == mod->type && windowed){
+        // Keep dragging window by utilizing ImGui internals
+        ImGuiContext& g = *GImGui;
+        ImGuiWindow* currentWindow = ImGui::GetCurrentWindow();
+        ImGui::FocusWindow(currentWindow);
+        g.MovedWindow = currentWindow;
+        g.MovedWindowMoveId = currentWindow->MoveId;
+        ImGui::SetActiveID(g.MovedWindowMoveId, currentWindow);
+    }
     if (windowed){
         if (mod->snapped && ImGui::IsMouseReleased(0)) {mod->snapped = false; mod->windowed = false;}
         mod->snapped = ImGui::IsMouseHoveringWindow() && ImGui::IsMouseDragging() && ImGui::GetMousePos().x < 80;
         ImGui::End();
     }
     else if (openTree) {
-        if (activeTree && ImGui::GetMousePos().x > 80 && ImGui::IsMouseDragging()){mod->windowed = true; mod->beingDragged = true;}
+        if (activeTree && ImGui::GetMousePos().x > 80 && ImGui::IsMouseDragging()){
+            mod->windowed = true;
+            mod->beingDragged = true;
+            justUndocked = mod->type;
+
+        }
     }
 }
 
