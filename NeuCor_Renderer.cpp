@@ -1102,7 +1102,7 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
     }
 
     }
-    static graphicsModule justUndocked = MODULE_CONTROLS;
+    static graphicsModule justUndocked = MODULE_count;
     if (justUndocked == mod->type && windowed){
         // Keep dragging window by utilizing ImGui internals
         ImGuiContext& g = *GImGui;
@@ -1111,6 +1111,8 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
         g.MovedWindow = currentWindow;
         g.MovedWindowMoveId = currentWindow->MoveId;
         ImGui::SetActiveID(g.MovedWindowMoveId, currentWindow);
+
+        justUndocked = MODULE_count;
     }
     if (windowed){
         if (mod->snapped && ImGui::IsMouseReleased(0)) {mod->snapped = false; mod->windowed = false;}
