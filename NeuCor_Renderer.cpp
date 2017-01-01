@@ -755,7 +755,6 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
     std::sprintf(buffer, "Neuron %i", ID);
     ImGuiWindowFlags window_flags = 0;
     window_flags |= ImGuiWindowFlags_NoCollapse;
-
     ImGui::Begin(buffer, open, window_flags);
 
 
@@ -775,9 +774,31 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
 
     ImGui::Separator();
 
-    float neuPotScaled = 0.4 + (neuPot+70.f)/200.f;
-    ImGui::Image((void*) neuron_smallTexID, ImVec2(100, 100), ImVec2(0,0), ImVec2(1,1), ImVec4(neuPotScaled,neuPotScaled, neuPotScaled, neuPotScaled));
+    float windowWidth = ImGui::GetWindowContentRegionWidth();
 
+    ImGui::BeginChild("In synapses", ImVec2(windowWidth * 0.3f, 0), ImGuiWindowFlags_HorizontalScrollbar);
+    ImGui::Text("In synapses\n   ->");
+    for (auto &syn: neu->inSynapses){
+        ImGui::Text("%i", syn.first);
+    }
+    ImGui::EndChild();
+    ImGui::SameLine();
+
+    ImGui::BeginChild("Neuron Image", ImVec2(windowWidth * 0.333f, 300), 0);
+    float neuPotScaled = 0.4 + (neuPot+70.f)/200.f;
+    float imageSize = fmin(windowWidth*0.333, 100.0f);
+    ImGui::Dummy(ImVec2(imageSize, ImGui::GetWindowContentRegionMax().y/2.0f-imageSize/2.0f)); // Vertically centred
+    ImGui::Dummy(ImVec2(fmax(windowWidth*0.16 - imageSize/2.0, 0.0f), imageSize)); ImGui::SameLine();// Horizontally centred
+    ImGui::Image((void*) neuron_smallTexID, ImVec2(imageSize, imageSize), ImVec2(0,0), ImVec2(1,1), ImVec4(neuPotScaled,neuPotScaled, neuPotScaled, neuPotScaled));
+    ImGui::EndChild();
+    ImGui::SameLine();
+
+    ImGui::BeginChild("Out synapses", ImVec2(windowWidth * 0.3f, 0), ImGuiWindowFlags_HorizontalScrollbar);
+    ImGui::Text("Out synapses\n   ->");
+    for (auto &syn: neu->outSynapses){
+        ImGui::Text("%i", syn.tN);
+    }
+    ImGui::EndChild();
 
 
     // Render line from window to neuron
