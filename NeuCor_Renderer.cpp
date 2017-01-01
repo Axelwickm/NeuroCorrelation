@@ -772,6 +772,7 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
 
     float windowWidth = ImGui::GetWindowContentRegionWidth();
 
+    ImGui::BeginChild("In synapses", ImVec2(windowWidth * 0.38f, 0), ImGuiWindowFlags_HorizontalScrollbar);
     ImGui::Text("In synapses");
     for (auto &synM: neu->inSynapses){
         Synapse* syn = brain->getSynapse(synM);
@@ -799,6 +800,7 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
     ImGui::EndChild();
     ImGui::SameLine();
 
+    ImGui::BeginChild("Out synapses", ImVec2(windowWidth * 0.38f, 0), ImGuiWindowFlags_HorizontalScrollbar);
     ImGui::Text("Out synapses");
     for (auto &syn: neu->outSynapses){
         ImGui::PushStyleColor(ImGuiCol_Header, ImColor(116, 102, 116, (int) floor(50 + syn.getPostPot()*180.0f)));
