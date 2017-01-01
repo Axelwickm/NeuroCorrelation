@@ -803,13 +803,14 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
         }
         ImGui::PopStyleColor(1);
     }
+    float childHeight = ImGui::GetWindowContentRegionMax().y;
     ImGui::EndChild();
     ImGui::SameLine();
 
     ImGui::BeginChild("Neuron Image", ImVec2(fmin(windowWidth * 0.2f, 100.f), 300), 0);
         float neuPotScaled = 0.4 + (neuPot+70.f)/200.f;
         float imageSize = fmin(windowWidth*0.2, 100.0f);
-        ImGui::Dummy(ImVec2(imageSize, ImGui::GetWindowContentRegionMax().y/2.0f-imageSize/2.0f)); // Vertically centred
+        ImGui::Dummy(ImVec2(imageSize, childHeight/2.0f-imageSize/2.0f)); // Vertically centred
         ImGui::Image((void*) neuron_smallTexID, ImVec2(imageSize, imageSize), ImVec2(0,0), ImVec2(1,1), ImVec4(neuPotScaled, neuPotScaled, neuPotScaled, neuPotScaled));
     ImGui::EndChild();
     ImGui::SameLine();
