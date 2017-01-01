@@ -628,8 +628,9 @@ void NeuCor_Renderer::updateCamPos(){
         brain->runSpeed = powf(brain->runSpeed, 1.01);
         //std::cout<<"Run-speed: "<<brain->runSpeed<<std::endl;
     }
-
-    if (!navigationMode || !mouseInWindow) return;
+    static bool firstTime = true;
+    if ((!navigationMode || !mouseInWindow) && !firstTime) return;
+    firstTime = false;
 
     double xpos, ypos;
     glfwGetCursorPos(window, &xpos, &ypos);
