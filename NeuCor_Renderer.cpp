@@ -1166,7 +1166,7 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
                 }
             }
             if (closestDistance < minDistance){
-                if (!selectNeuron(ID, false)) deselectNeuron(ID);   // Tries to select, if false the neuron is already selected and is then deselected.
+                if (!selectNeuron(ID, true)) deselectNeuron(ID);   // Tries to select, if false the neuron is already selected and is then deselected.
             }
         }
         break;
