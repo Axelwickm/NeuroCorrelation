@@ -157,7 +157,7 @@ NeuCor_Renderer::NeuCor_Renderer(NeuCor* _brain)
     paused = false;
     realRunspeed = false;
 
-    navigationMode = true;
+    navigationMode = false;
     mouseInWindow = true;
     showInterface = true;
 
