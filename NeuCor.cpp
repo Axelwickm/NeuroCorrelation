@@ -132,6 +132,9 @@ Synapse* NeuCor::getSynapse(std::size_t fromID, std::size_t toID){
         if (getNeuron(fromID)->outSynapses.at(i).tN == toID)
             return &getNeuron(fromID)->outSynapses.at(i);
 }
+Synapse* NeuCor::getSynapse(std::pair<std::size_t, std::size_t> ID){
+    return getSynapse(ID.first, ID.second);
+}
 
 void NeuCor::deleteNeuron(std::size_t ID){
     Neuron* n = getNeuron(ID);

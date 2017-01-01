@@ -63,6 +63,7 @@ class NeuCor {
         boost::container::stable_vector<Neuron> neurons;
         Neuron* getNeuron(std::size_t ID);
         Synapse* getSynapse(std::size_t toID, std::size_t fromID);
+        Synapse* getSynapse(std::pair<std::size_t, std::size_t> ID);
 
         void deleteSynapse(std::size_t toID, std::size_t fromID);
         void deleteNeuron(std::size_t ID);
