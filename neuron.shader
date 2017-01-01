@@ -19,7 +19,7 @@ void main(){
 	}
 
     vec3 vertexPosition_worldspace = particleCenter_wordspace;
-    float particleSize = min(1.0, potAct[1])/20.0;
+    float particleSize = 0.07;
 
 
 	gl_Position = VP * vec4(vertexPosition_worldspace, 1.0);
