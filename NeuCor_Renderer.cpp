@@ -736,10 +736,6 @@ void NeuCor_Renderer::renderInterface(){
         if (*open) renderNeuronWindow(ID, open);
     }
 
-
-    //std::cout<<ImGui::GetMouseDragDelta(0).x<<"  "<<ImGui::GetMouseDragDelta(0).y<<"  "<<ImGui::IsMouseHoveringAnyWindow()<<std::endl;
-
-
     ImGui::Render();
 }
 
@@ -753,9 +749,8 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
 
     char buffer[100];
     std::sprintf(buffer, "Neuron %i", ID);
-    ImGuiWindowFlags window_flags = 0;
-    window_flags |= ImGuiWindowFlags_NoCollapse;
-    ImGui::Begin(buffer, open, window_flags);
+    ImGui::PushStyleColor(ImGuiCol_TitleBgCollapsed, ImColor(116, 102, 116, (int) floor(50 + neuPot*180.0f)));
+    ImGui::Begin(buffer, open, 0);
 
 
     ImGui::Text("Current voltage: %.01f mV", neuPot);
@@ -844,8 +839,8 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
     draw_list->AddLine(closest, screen, ImColor(0, 90, 173, 180), 2.2f);
     draw_list->PopClipRect();
 
-
     ImGui::End();
+    ImGui::PopStyleColor(1);
 }
 
 void NeuCor_Renderer::renderModule(module* mod, bool windowed){
