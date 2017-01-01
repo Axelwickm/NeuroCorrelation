@@ -28,8 +28,8 @@ class NeuCor_Renderer
         bool runBrainOnUpdate; // If the render has the responsibility to run the brain.
         bool realRunspeed;// Makes brain's runSpeed define simulation's speed by ms/s
         bool paused;
-        void selectNeuron(int id, bool windowOpen);
-        void deselectNeuron(int id);
+        bool selectNeuron(int id, bool windowOpen);
+        bool deselectNeuron(int id);
 
         enum renderingModes { RENDER_VOLTAGE, RENDER_PLASTICITY, RENDER_ACTIVITY, RENDER_NOSYNAPSES, Count};
         std::vector<std::string> renderingModeNames = {"Voltage", "Plasticity", "Activity", "No synapses"};
@@ -115,7 +115,7 @@ class NeuCor_Renderer
         void initGLFW();
         void initOpenGL(GLFWwindow* window);
         void loadResources();
-        inline glm::vec3 screenCoordinates(glm::vec3 worldPos);
+        inline glm::vec3 screenCoordinates(glm::vec3 worldPos, bool nomalizedZ = false);
 };
 
 #endif // NEUCOR_RENDERER_H

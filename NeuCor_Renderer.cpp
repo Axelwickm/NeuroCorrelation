@@ -357,19 +357,20 @@ void NeuCor_Renderer::loadResources() {
 
 }
 
-void NeuCor_Renderer::selectNeuron(int id, bool windowOpen){
+bool NeuCor_Renderer::selectNeuron(int id, bool windowOpen){
     assert(id < brain->neurons.size());
     if (selectedNeuronsWindows.find(id) == selectedNeuronsWindows.end()){
         selectedNeurons.push_back(id);
         selectedNeuronsWindows.insert(std::pair<int, bool> (id, windowOpen));
+        return true;
     }
     else {
-        std::cout<<"Neuron "<<id<<" already selected.\n";
         selectedNeuronsWindows.at(id) = windowOpen;
+        return false;
     }
 }
 
-void NeuCor_Renderer::deselectNeuron(int id){
+bool NeuCor_Renderer::deselectNeuron(int id){
     assert(id < brain->neurons.size());
     if (selectedNeuronsWindows.find(id) != selectedNeuronsWindows.end()){
         for (std::vector<int>::iterator i = selectedNeurons.begin(); i < selectedNeurons.end(); i++){
@@ -379,9 +380,10 @@ void NeuCor_Renderer::deselectNeuron(int id){
             }
         }
         selectedNeuronsWindows.erase(id);
+        return true;
     }
     else {
-        std::cout<<"Neuron "<<id<<" isn't selected.\n";
+        return false;
     }
 }
 
@@ -414,23 +416,6 @@ void NeuCor_Renderer::updateView(){
     vp = Projection * View;
 
 
-    /// POSSIBLY TODO
-    // On left mouse button hold
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS and false){
-        glm::vec4 viewport(0, 0, width, height);
-        glm::vec3 nearCoord = glm::unProject(glm::vec3(width/2.0, height/2.0, 0.0), View, Projection, viewport);
-        glm::vec3 farCoord = glm::unProject(glm::vec3(width/2.0, height/2.0, 1000.0), View, Projection, viewport);
-        //std::cout<<nearCoord.x<<" "<<nearCoord.y<<" "<<nearCoord.z<<std::endl;
-
-        float shortestDist = INFINITY;
-        unsigned selectedNeu = NAN;
-        for (auto &neu: brain->neurons){
-            float dist = fabs((farCoord.y - nearCoord.y)*neu.position().x - (farCoord.x - nearCoord.x)*neu.position().y + farCoord.x*nearCoord.y - farCoord.y*nearCoord.x);
-            std::cout<<sqrt(powf((double) farCoord.y - nearCoord.y, 2.0) - powf((double) farCoord.y - nearCoord.y, 2.0))<<std::endl;
-            dist /= sqrt(powf(farCoord.y - nearCoord.y, 2.0) - powf(farCoord.y - nearCoord.y, 2.0));
-            if (dist < shortestDist) shortestDist = dist;
-        }
-    }
     if (renderMode == RENDER_NOSYNAPSES) logger.synapseCount = 0;
 
     std::vector<coord3> connections;
@@ -691,15 +676,23 @@ void NeuCor_Renderer::updateCamPos(){
     }
 }
 
-inline glm::vec3 NeuCor_Renderer::screenCoordinates(glm::vec3 worldPos){
+inline glm::vec3 NeuCor_Renderer::screenCoordinates(glm::vec3 worldPos, bool nomalizedZ){
     glm::vec4 posClip = vp * glm::vec4(worldPos.x, worldPos.y, worldPos.z, 1.0f );
     glm::vec3 posNDC = glm::vec3(posClip) / posClip.w;
-    GLfloat dR[2]; // Depth range
-    glGetFloatv(GL_DEPTH_RANGE, &dR[0]);
-    return glm::vec3(
-        posNDC.x*width*0.5+width*0.5,
-        -posNDC.y*height*0.5+height*0.5,
-        (dR[1]-dR[0])/2.0*posNDC.z + (dR[1]+dR[0])/2.0);
+    if (nomalizedZ){
+        GLfloat dR[2]; // Depth range
+        glGetFloatv(GL_DEPTH_RANGE, &dR[0]);
+        return glm::vec3(
+            posNDC.x*width*0.5+width*0.5,
+            -posNDC.y*height*0.5+height*0.5,
+            (dR[1]-dR[0])/2.0*posNDC.z + (dR[1]+dR[0])/2.0);
+    }
+    else {
+        return glm::vec3(
+            posNDC.x*width*0.5+width*0.5,
+            -posNDC.y*height*0.5+height*0.5,
+            posNDC.z);
+    }
 }
 
 void NeuCor_Renderer::renderInterface(){
@@ -1105,6 +1098,33 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
             std::cout<<"Rendering mode: "<<renderingModeNames.at(renderMode)<<std::endl;
         }
         break;
+
+    case (MOUSE_BUTTON):
+        if (std::get<1>(TTparams) == GLFW_MOUSE_BUTTON_LEFT && std::get<2>(TTparams) == GLFW_PRESS && !navigationMode && !ImGui::IsMouseHoveringAnyWindow()){ // Neuron selection
+            #define minDistance 10.0
+
+            double xpos, ypos;
+            glfwGetCursorPos(window, &xpos, &ypos);
+            glm::vec2 cursorPos (xpos, ypos);
+
+            float closestDistance = INFINITY;
+            std::size_t ID;
+            for (auto &neu: brain->neurons){
+                coord3 neuronPos = neu.position();
+                glm::vec3 screenPos = screenCoordinates(glm::vec3(neuronPos.x, neuronPos.y, neuronPos.z));
+                float flatDist = glm::distance(cursorPos, glm::vec2(screenPos));
+                if (flatDist < closestDistance){
+                    closestDistance = flatDist;
+                    ID = neu.getID();
+                }
+            }
+            std::cout<<closestDistance<<std::endl;
+            if (closestDistance < minDistance){
+                if (!selectNeuron(ID, false)) deselectNeuron(ID);   // Tries to select, if false the neuron is already selected and is then deselected.
+            }
+        }
+        break;
+
 
     case (MOUSE_ENTER):
         mouseInWindow = std::get<1>(TTparams) && glfwGetWindowAttrib(window, GLFW_FOCUSED);
