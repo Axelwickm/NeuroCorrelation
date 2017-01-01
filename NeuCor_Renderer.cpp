@@ -750,8 +750,9 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
     char buffer[100];
     std::sprintf(buffer, "Neuron %i", ID);
     ImGui::PushStyleColor(ImGuiCol_TitleBgCollapsed, ImColor(116, 102, 116, (int) floor(50 + neuPot*180.0f)));
+    ImGui::SetNextWindowCollapsed(true, ImGuiSetCond_Appearing);
+    ImGui::SetNextWindowSize(ImVec2(320, 450), ImGuiSetCond_Appearing);
     ImGui::Begin(buffer, open, 0);
-
 
     ImGui::Text("Current voltage: %.01f mV", neuPot);
     ImGui::Text("Firing frequency: %.01f firings/s", neu->activity());
@@ -771,7 +772,6 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
 
     float windowWidth = ImGui::GetWindowContentRegionWidth();
 
-    ImGui::BeginChild("In synapses", ImVec2(windowWidth * 0.3f, 0), ImGuiWindowFlags_HorizontalScrollbar);
     ImGui::Text("In synapses");
     for (auto &synM: neu->inSynapses){
         Synapse* syn = brain->getSynapse(synM);
@@ -783,7 +783,7 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
             ImGui::SameLine(); ImGui::Text("%i -> %i", syn->pN, syn->tN);
             if (0.0f < syn->getWeight() ) ImGui::TextColored(ImColor(116, 102, 116),"EXCITATORY");
             else ImGui::TextColored(ImColor(26, 26, 116),"inhibitory");
-            ImGui::Text("weight: %f", syn->getWeight());
+            ImGui::Text("weight: %.2f", syn->getWeight());
 
         }
         ImGui::PopStyleColor(1);
@@ -791,16 +791,14 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
     ImGui::EndChild();
     ImGui::SameLine();
 
-    ImGui::BeginChild("Neuron Image", ImVec2(windowWidth * 0.333f, 300), 0);
-    float neuPotScaled = 0.4 + (neuPot+70.f)/200.f;
-    float imageSize = fmin(windowWidth*0.333, 100.0f);
-    ImGui::Dummy(ImVec2(imageSize, ImGui::GetWindowContentRegionMax().y/2.0f-imageSize/2.0f)); // Vertically centred
-    ImGui::Dummy(ImVec2(fmax(windowWidth*0.16 - imageSize/2.0, 0.0f), imageSize)); ImGui::SameLine();// Horizontally centred
-    ImGui::Image((void*) neuron_smallTexID, ImVec2(imageSize, imageSize), ImVec2(0,0), ImVec2(1,1), ImVec4(neuPotScaled,neuPotScaled, neuPotScaled, neuPotScaled));
+    ImGui::BeginChild("Neuron Image", ImVec2(fmin(windowWidth * 0.2f, 100.f), 300), 0);
+        float neuPotScaled = 0.4 + (neuPot+70.f)/200.f;
+        float imageSize = fmin(windowWidth*0.2, 100.0f);
+        ImGui::Dummy(ImVec2(imageSize, ImGui::GetWindowContentRegionMax().y/2.0f-imageSize/2.0f)); // Vertically centred
+        ImGui::Image((void*) neuron_smallTexID, ImVec2(imageSize, imageSize), ImVec2(0,0), ImVec2(1,1), ImVec4(neuPotScaled, neuPotScaled, neuPotScaled, neuPotScaled));
     ImGui::EndChild();
     ImGui::SameLine();
 
-    ImGui::BeginChild("Out synapses", ImVec2(windowWidth * 0.3f, 0), ImGuiWindowFlags_HorizontalScrollbar);
     ImGui::Text("Out synapses");
     for (auto &syn: neu->outSynapses){
         ImGui::PushStyleColor(ImGuiCol_Header, ImColor(116, 102, 116, (int) floor(50 + syn.getPostPot()*180.0f)));
@@ -810,7 +808,7 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
             ImGui::SameLine(); if (ImGui::Button("Open")) selectNeuron(syn.tN, true);
             if (0.0f < syn.getWeight() ) ImGui::TextColored(ImColor(116, 102, 116),"EXCITATORY");
             else ImGui::TextColored(ImColor(26, 26, 116),"inhibitory");
-            ImGui::Text("weight: %f", syn.getWeight());
+            ImGui::Text("weight: %.2f", syn.getWeight());
 
         }
         ImGui::PopStyleColor(1);
