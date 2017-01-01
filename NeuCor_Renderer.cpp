@@ -777,9 +777,21 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
     float windowWidth = ImGui::GetWindowContentRegionWidth();
 
     ImGui::BeginChild("In synapses", ImVec2(windowWidth * 0.3f, 0), ImGuiWindowFlags_HorizontalScrollbar);
-    ImGui::Text("In synapses\n   ->");
-    for (auto &syn: neu->inSynapses){
-        ImGui::Text("%i", syn.first);
+    ImGui::Text("In synapses");
+    for (auto &synM: neu->inSynapses){
+        Synapse* syn = brain->getSynapse(synM);
+
+        ImGui::PushStyleColor(ImGuiCol_Header, ImColor(116, 102, 116, (int) floor(50 + syn->getPrePot()*180.0f)));
+        std::sprintf(buffer,"%i", syn->pN);
+        if (ImGui::CollapsingHeader(buffer)){
+            if (ImGui::Button("Open")) selectNeuron(syn->pN, true);
+            ImGui::SameLine(); ImGui::Text("%i -> %i", syn->pN, syn->tN);
+            if (0.0f < syn->getWeight() ) ImGui::TextColored(ImColor(116, 102, 116),"EXCITATORY");
+            else ImGui::TextColored(ImColor(26, 26, 116),"inhibitory");
+            ImGui::Text("weight: %f", syn->getWeight());
+
+        }
+        ImGui::PopStyleColor(1);
     }
     ImGui::EndChild();
     ImGui::SameLine();
@@ -794,9 +806,19 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
     ImGui::SameLine();
 
     ImGui::BeginChild("Out synapses", ImVec2(windowWidth * 0.3f, 0), ImGuiWindowFlags_HorizontalScrollbar);
-    ImGui::Text("Out synapses\n   ->");
+    ImGui::Text("Out synapses");
     for (auto &syn: neu->outSynapses){
-        ImGui::Text("%i", syn.tN);
+        ImGui::PushStyleColor(ImGuiCol_Header, ImColor(116, 102, 116, (int) floor(50 + syn.getPostPot()*180.0f)));
+        std::sprintf(buffer,"%i", syn.tN);
+        if (ImGui::CollapsingHeader(buffer)){
+            ImGui::Text("%i -> %i", syn.pN, syn.tN);
+            ImGui::SameLine(); if (ImGui::Button("Open")) selectNeuron(syn.tN, true);
+            if (0.0f < syn.getWeight() ) ImGui::TextColored(ImColor(116, 102, 116),"EXCITATORY");
+            else ImGui::TextColored(ImColor(26, 26, 116),"inhibitory");
+            ImGui::Text("weight: %f", syn.getWeight());
+
+        }
+        ImGui::PopStyleColor(1);
     }
     ImGui::EndChild();
 
