@@ -115,6 +115,7 @@ class NeuCor_Renderer
         void initGLFW();
         void initOpenGL(GLFWwindow* window);
         void loadResources();
+        inline glm::vec3 screenCoordinates(glm::vec3 worldPos);
 };
 
 #endif // NEUCOR_RENDERER_H

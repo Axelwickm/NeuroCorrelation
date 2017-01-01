@@ -691,6 +691,17 @@ void NeuCor_Renderer::updateCamPos(){
     }
 }
 
+inline glm::vec3 NeuCor_Renderer::screenCoordinates(glm::vec3 worldPos){
+    glm::vec4 posClip = vp * glm::vec4(worldPos.x, worldPos.y, worldPos.z, 1.0f );
+    glm::vec3 posNDC = glm::vec3(posClip) / posClip.w;
+    GLfloat dR[2]; // Depth range
+    glGetFloatv(GL_DEPTH_RANGE, &dR[0]);
+    return glm::vec3(
+        posNDC.x*width*0.5+width*0.5,
+        -posNDC.y*height*0.5+height*0.5,
+        (dR[1]-dR[0])/2.0*posNDC.z + (dR[1]+dR[0])/2.0);
+}
+
 void NeuCor_Renderer::renderInterface(){
     ImGui_ImplGlfwGL3_NewFrame();
 
@@ -769,10 +780,9 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
 
 
     // Render line from window to neuron
-    coord3 pos3Dc3 = neu->position();                                              // 3D vertex coordinates
-    glm::vec4 posClip = vp * glm::vec4(pos3Dc3.x, pos3Dc3.y, pos3Dc3.z, 1.0f);    // Clip coordinates
-    glm::vec3 posNDC = glm::vec3(posClip) / posClip.w;                           // NDC coordinates
-    ImVec2 screen = ImVec2(posNDC.x*width*0.5+width*0.5, -posNDC.y*height*0.5+height*0.5);
+    coord3 pos3D = neu->position();
+    glm::vec3 screenGLM = screenCoordinates(glm::vec3(pos3D.x, pos3D.y, pos3D.z));
+    ImVec2 screen(screenGLM.x, screenGLM.y);
 
     // Get closest point from window
     ImVec2 minP = ImGui::GetWindowPos();
