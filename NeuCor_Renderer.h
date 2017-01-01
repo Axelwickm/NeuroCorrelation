@@ -103,7 +103,7 @@ class NeuCor_Renderer
         float camHA,camVA;
         glm::mat4 vp;
         double cursorX, cursorY;
-        bool navigationMode, mouseInWindow;
+        bool navigationMode, mouseInWindow, showInterface;
 
         GLFWwindow* window;
         CallbackType destructCallback;

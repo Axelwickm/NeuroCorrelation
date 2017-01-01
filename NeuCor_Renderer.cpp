@@ -157,6 +157,10 @@ NeuCor_Renderer::NeuCor_Renderer(NeuCor* _brain)
     paused = false;
     realRunspeed = false;
 
+    navigationMode = true;
+    mouseInWindow = true;
+    showInterface = true;
+
     FPS = 0;
 
     realTimeStats logger();
@@ -241,8 +245,6 @@ void NeuCor_Renderer::initGLFW(){
     glfwPollEvents();
     glfwSetCursorPos(window, width/2, height /2);
     cursorX = width/2.0; cursorY = height/2.0;
-    navigationMode = true;
-    mouseInWindow = true;
 }
 void NeuCor_Renderer::initOpenGL(GLFWwindow* window){
     glEnable(GL_CULL_FACE);
@@ -606,7 +608,7 @@ void NeuCor_Renderer::updateView(){
         logger.timeline.push_back(snapshot);
         while (logger.maxTimeline < brainTime - logger.timeline.front().begin()->second.time) logger.timeline.pop_front();
     }
-    if (!navigationMode) renderInterface();
+    if (showInterface) renderInterface();
 
     glfwSwapBuffers(window);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -1076,7 +1078,10 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
         if (std::get<1>(TTparams) == GLFW_KEY_ESCAPE && std::get<3>(TTparams) == GLFW_PRESS) glfwSetWindowShouldClose(std::get<0>(TTparams), GL_TRUE); // Close window on escape-key press
         if (std::get<1>(TTparams) == GLFW_KEY_SPACE && std::get<3>(TTparams) == GLFW_PRESS) {
             navigationMode = !navigationMode;
+
             if (navigationMode) resetCursor();
+            if (navigationMode && glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) showInterface = false;
+            else showInterface = true;
         }
         if (std::get<1>(TTparams) == GLFW_KEY_N && std::get<3>(TTparams) == GLFW_PRESS){ // Reset all activity start times
             brain->resetActivities();
