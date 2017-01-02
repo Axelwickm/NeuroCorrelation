@@ -1097,7 +1097,11 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
             std::sprintf(buffer, "Neuron\n%i", selectedNeurons.at(i));
             ImGui::Selectable(buffer, &selectedNeuronsWindows.at(selectedNeurons.at(i)), 0, ImVec2(50,50));
 
-            float currentPot = (brain->getNeuron(selectedNeurons.at(i))->potential()+70.0)/110.0;
+            float currentPot;
+            if (renderMode == RENDER_ACTIVITY)
+                currentPot = log(brain->getNeuron(selectedNeurons.at(i))->activity()+1.0);
+            else
+                currentPot = (brain->getNeuron(selectedNeurons.at(i))->potential()+70.0)/110.0;
             drawList->AddRectFilled(ImVec2(ImGui::GetItemRectMin().x, ImGui::GetItemRectMin().y+35.0f),
                                     ImGui::GetItemRectMax(), ImColor::HSV(1.52f, .75f, currentPot));
 
