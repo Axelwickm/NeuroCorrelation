@@ -448,8 +448,8 @@ void NeuCor_Renderer::updateView(){
                 synPot.push_back(syn.getWeight()/2.0);
             }
             else if (renderMode == RENDER_ACTIVITY){
-                synPot.push_back(powf(brain->getNeuron(syn.pN)->activity(), 0.6));
-                synPot.push_back(powf(brain->getNeuron(syn.tN)->activity(), 0.6));
+                synPot.push_back(log(brain->getNeuron(syn.pN)->activity()+1.f));
+                synPot.push_back(log(brain->getNeuron(syn.tN)->activity()+1.f));
             }
             else if (renderMode == RENDER_NOSYNAPSES) logger.synapseCount++;
         }
@@ -781,7 +781,7 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
     ImGui::Begin(buffer, open, 0);
 
     ImGui::Text("Current voltage: %.01f mV", neuPot);
-    ImGui::Text("Firing frequency: %.01f firings/s", neu->activity());
+    ImGui::Text("Firing frequency: %.1f Hz", neu->activity());
     ImGui::Text("Last fire: %1.f ms ago", brain->getTime() - neu->lastFire);
 
     ImGui::Separator();
