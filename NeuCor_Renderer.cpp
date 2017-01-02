@@ -1104,6 +1104,7 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
             char buffer[100];
             std::sprintf(buffer, "Neuron\n%i", selectedNeurons.at(i));
             ImGui::Selectable(buffer, &selectedNeuronsWindows.at(selectedNeurons.at(i)), 0, ImVec2(50,50));
+            bool deselected = ImGui::IsItemClicked(1);
 
             float currentPot;
             if (renderMode == RENDER_ACTIVITY)
@@ -1116,6 +1117,8 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
             if ((i+1)%cellsPerRow != 0 && i != selectedNeurons.size()-1)
                 ImGui::SameLine();
             ImGui::PopID();
+
+            if (deselected) deselectNeuron(selectedNeurons.at(i));
         }
         ImGui::PopStyleColor(3);
 
