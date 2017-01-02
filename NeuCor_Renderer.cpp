@@ -451,6 +451,10 @@ void NeuCor_Renderer::updateView(){
                 synPot.push_back(log(brain->getNeuron(syn.pN)->activity()+1.f));
                 synPot.push_back(log(brain->getNeuron(syn.tN)->activity()+1.f));
             }
+            else if (renderMode == RENDER_ACTIVITY_FUNCTION){
+                synPot.push_back(activityFunction(syn.pN));
+                synPot.push_back(activityFunction(syn.tN));
+            }
             else if (renderMode == RENDER_NOSYNAPSES) logger.synapseCount++;
         }
     }
@@ -684,6 +688,10 @@ void NeuCor_Renderer::updateCamPos(){
     }
 }
 
+float NeuCor_Renderer::activityFunction(int ID){
+    return log(brain->getNeuron(ID)->activity()+1.f);
+}
+
 inline glm::vec3 NeuCor_Renderer::screenCoordinates(glm::vec3 worldPos, bool nomalizedZ){
     glm::vec4 posClip = vp * glm::vec4(worldPos.x, worldPos.y, worldPos.z, 1.0f );
     glm::vec3 posNDC = glm::vec3(posClip) / posClip.w;
@@ -912,7 +920,7 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
 
         if(ImGui::Button("<"))
             renderMode = static_cast<renderingModes>((renderMode-1+renderingModes::Count)%renderingModes::Count);
-        ImGui::SameLine(); ImGui::Text(renderingModeNames.at(renderMode).data()); ImGui::SameLine(150,0);
+        ImGui::SameLine(); ImGui::Text(renderingModeNames.at(renderMode).data()); ImGui::SameLine(180,0);
         if (glfwGetKey(window, GLFW_KEY_M ) == GLFW_PRESS){
             ImGui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(2.0f, 0.6f, 0.6f));
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(2.0f, 0.7f, 0.7f));

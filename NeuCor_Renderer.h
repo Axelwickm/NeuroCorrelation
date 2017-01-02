@@ -31,8 +31,8 @@ class NeuCor_Renderer
         bool selectNeuron(int id, bool windowOpen);
         bool deselectNeuron(int id);
 
-        enum renderingModes { RENDER_VOLTAGE, RENDER_PLASTICITY, RENDER_ACTIVITY, RENDER_NOSYNAPSES, Count};
-        std::vector<std::string> renderingModeNames = {"Voltage", "Plasticity", "Activity", "No synapses"};
+        enum renderingModes { RENDER_VOLTAGE, RENDER_PLASTICITY, RENDER_ACTIVITY, RENDER_ACTIVITY_FUNCTION, RENDER_NOSYNAPSES, Count};
+        std::vector<std::string> renderingModeNames = {"Voltage", "Plasticity", "Activity", "Activity function", "No synapses"};
         renderingModes renderMode;
 
 
@@ -48,8 +48,6 @@ class NeuCor_Renderer
     protected:
     private:
         NeuCor* brain;
-
-        void renderInterface();
         enum graphicsModule {MODULE_BRAIN, MODULE_TIME, MODULE_SELECTED_NEURONS, MODULE_STATS, MODULE_CONTROLS, MODULE_count};
         bool moduleInitOpen[5] = {true, true, true, false, false};
         struct module {
@@ -61,13 +59,17 @@ class NeuCor_Renderer
         };
         std::vector<module> modules;
 
+        void renderInterface();
         void renderModule(module* mod, bool windowed);
         void renderNeuronWindow(int ID, bool* open);
-        std::pair<int, ImVec2> newNeuWinPos; // <ID,pos> If ID = NULL it isn't used
         void updateCamPos();
         void resetCursor();
+
+        std::pair<int, ImVec2> newNeuWinPos; // <ID,pos> If ID = NULL it isn't used
         std::vector<int> selectedNeurons; // Selected neuron ID, smart pointer to bool if neuon window is open
         std::map<int, bool> selectedNeuronsWindows; // Selected neuron ID, smart pointer to bool if neuon window is open
+
+        float activityFunction(int ID);
 
         struct realTimeStats {
             realTimeStats();
