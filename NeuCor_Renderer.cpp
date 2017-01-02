@@ -718,15 +718,31 @@ void NeuCor_Renderer::renderInterface(){
         window_flags |= ImGuiWindowFlags_NoMove;
         window_flags |= ImGuiWindowFlags_NoCollapse;
         window_flags |= ImGuiWindowFlags_NoTitleBar;
+        window_flags |= ImGuiWindowFlags_NoResize;
         window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus;
+        static bool openDock = true;
+        static int lastWidth;
+        if (!openDock &&  10 < lastWidth)
+            ImGui::SetNextWindowSize(ImVec2(lastWidth-20, 0));
+        if (openDock &&  lastWidth < std::min( int(width/2.5), 300))
+            ImGui::SetNextWindowSize(ImVec2(lastWidth+20, 0));
         ImGui::SetNextWindowPos(ImVec2(0,0));
         ImGui::SetNextWindowSizeConstraints(ImVec2(10, height), ImVec2(width/2.5, height));
         ImGui::Begin("", NULL, window_flags);
+        lastWidth = ImGui::GetWindowWidth();
 
         if (40 < ImGui::GetWindowWidth()){
             for (int i = 0; i<modules.size(); i++){ // Render modules in dock
                 if (!modules[i].windowed || modules[i].snapped) renderModule(&modules[i], false);
             }
+        }
+
+        ImGui::Dummy(ImVec2(0, ImGui::GetContentRegionAvail().y-20));
+        ImGui::Dummy(ImVec2(ImGui::GetContentRegionAvail().x-25, 0));
+        ImGui::SameLine();
+        ImGui::RadioButton("", openDock);
+        if (ImGui::IsItemClicked()){
+            openDock = !openDock;
         }
         ImGui::End();
 
