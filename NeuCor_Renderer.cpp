@@ -711,21 +711,22 @@ void NeuCor_Renderer::renderInterface(){
         //std::cout<<modules[i].windowed<<"  "<<modules[i].snapped<<std::endl;
     }
 
-    ImGui::ShowTestWindow();
 
     {   // Dock
-        ImGuiWindowFlags window_flags = 0;
-        window_flags |= ImGuiWindowFlags_NoMove;
-        window_flags |= ImGuiWindowFlags_NoCollapse;
-        window_flags |= ImGuiWindowFlags_NoTitleBar;
-        window_flags |= ImGuiWindowFlags_NoResize;
-        window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus;
         static bool openDock = true;
         static int lastWidth;
         if (!openDock &&  10 < lastWidth)
             ImGui::SetNextWindowSize(ImVec2(lastWidth-20, 0));
         if (openDock &&  lastWidth < std::min( int(width/2.5), 300))
             ImGui::SetNextWindowSize(ImVec2(lastWidth+20, 0));
+
+
+        ImGuiWindowFlags window_flags = 0;
+        window_flags |= ImGuiWindowFlags_NoMove;
+        window_flags |= ImGuiWindowFlags_NoCollapse;
+        window_flags |= ImGuiWindowFlags_NoTitleBar;
+        window_flags |= ImGuiWindowFlags_NoResize;
+        window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus;
         ImGui::SetNextWindowPos(ImVec2(0,0));
         ImGui::SetNextWindowSizeConstraints(ImVec2(10, height), ImVec2(width/2.5, height));
         ImGui::Begin("", NULL, window_flags);
