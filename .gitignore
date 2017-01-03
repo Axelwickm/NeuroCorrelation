@@ -54,5 +54,6 @@ resources/lodepng.h
 NeuroCorrelation.cscope_file_list
 *.layout
 *.depend
+*.save-failed
 CppCheckResults.xml
 imgui.ini
