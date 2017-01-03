@@ -964,24 +964,40 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
                                                   std::pair<std::unique_ptr<double>, std::vector<float> >(std::unique_ptr<double>(new double), std::vector<float>())));
             }
             if (ImGui::Button(currentActivity, ImVec2(50,50)) && variables.size() != sizeof(letters)/sizeof(char*)){
-                // Store all current activities
-                auto lastA = &variables.at(currentActivity);
-                lastA->second.reserve(brain->neurons.size());
-                for (auto &neu: brain->neurons) lastA->second.push_back(neu.activity());
 
-                currentActivity = "";
-                brain->resetActivities();
-            }
-            if (ImGui::IsItemHovered()){ImGui::BeginTooltip(); ImGui::Text("Save activity"); ImGui::EndTooltip();}
+                if (glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS){
+                    /*ImGui::OpenPopup("Change name");
+                    strcpy(changingName, currentActivity);*/
+                }
+                else {
+                    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) != GLFW_PRESS) {
+                        // Store current activities
+                        auto lastA = &variables.at(currentActivity);
+                        lastA->second.reserve(brain->neurons.size());
+                        for (auto &neu: brain->neurons) lastA->second.push_back(neu.activity());
+                        currentActivity = "";
+                    }
+                    brain->resetActivities();
+                }
+            }/*
+            if (ImGui::BeginPopup("Change name")){
+                ImGui::InputText("", changingName, 16);
+                ImGui::EndPopup();
+                nameChanged = true;
+            }*/
+            if (ImGui::IsItemHovered()){ImGui::BeginTooltip(); ImGui::Text("Save activity\nCtrl + Click to reset"); ImGui::EndTooltip();}
             ImGui::SameLine();
             ImGui::Dummy(ImVec2(0,12));
+
+            std::vector<char*> toDelete;
             for (auto &var: variables){
                 if (var.first == currentActivity) continue;
                 ImGui::SameLine();
                 ImGui::Text(var.first);
-                if (ImGui::IsItemClicked()) variables.erase(var.first);
+                if (ImGui::IsItemClicked()) toDelete.push_back(var.first);
                 if (ImGui::IsItemHovered()){ImGui::BeginTooltip(); ImGui::Text("Press to delete %s", var.first); ImGui::EndTooltip();}
             }
+            while (toDelete.size() != 0){ variables.erase(toDelete.back()); toDelete.pop_back();}
             ImGui::Dummy(ImVec2(0,0)); // Getting rid of last SameLine()
 
             ImGui::InputText("Expression", activityExpression, IM_ARRAYSIZE(activityExpression));
