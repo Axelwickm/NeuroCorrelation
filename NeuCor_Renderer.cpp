@@ -735,6 +735,28 @@ inline glm::vec3 NeuCor_Renderer::screenCoordinates(glm::vec3 worldPos, bool nom
             posNDC.z);
     }
 }
+inline void NeuCor_Renderer::renderLine(int ID){
+    // Render line from window to neuron
+    coord3 pos3D = brain->getNeuron(ID)->position();
+    glm::vec3 screenGLM = screenCoordinates(glm::vec3(pos3D.x, pos3D.y, pos3D.z));
+    ImVec2 screen(screenGLM.x, screenGLM.y);
+
+    // Get closest point from window
+    ImVec2 minP = ImGui::GetWindowPos();
+    ImVec2 maxP(minP.x+ImGui::GetWindowSize().x, minP.y+ImGui::GetWindowSize().y);
+
+    ImVec2 closest = screen;
+    if (closest.x > maxP.x) closest.x = maxP.x;
+    else if (closest.x < minP.x) closest.x = minP.x;
+    if (closest.y > maxP.y) closest.y = maxP.y;
+    else if (closest.y < minP.y) closest.y = minP.y;
+
+    // Draw line. This is done inside window so that other windows can focus over it.
+    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+    draw_list->PushClipRectFullScreen();
+    draw_list->AddLine(closest, screen, ImColor(0, 90, 173, 180), 2.2f);
+    draw_list->PopClipRect();
+}
 
 void NeuCor_Renderer::renderInterface(){
     ImGui_ImplGlfwGL3_NewFrame();
@@ -804,13 +826,27 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
         ImGui::SetNextWindowPos(newNeuWinPos.second);
         newNeuWinPos.first = NULL;
     }
+    if (newNeuWinCollapsed.first == ID){
+        ImGui::SetNextWindowCollapsed(newNeuWinCollapsed.second);
+        newNeuWinCollapsed.first = NULL;
+    }
+    else ImGui::SetNextWindowCollapsed(true, ImGuiSetCond_Appearing);
 
     char buffer[100];
     std::sprintf(buffer, "Neuron %i", ID);
     ImGui::PushStyleColor(ImGuiCol_TitleBgCollapsed, ImColor(116, 102, 116, (int) floor(50 + neuPot*180.0f)));
-    ImGui::SetNextWindowCollapsed(true, ImGuiSetCond_Appearing);
-    ImGui::SetNextWindowSize(ImVec2(windowInitX, windowInitY), ImGuiSetCond_Appearing);
-    ImGui::Begin(buffer, open, 0);
+    if (!ImGui::Begin(buffer, open, ImGuiWindowFlags_NoResize)){
+        ImGui::SetWindowSize(buffer, ImVec2(
+            fmax(ImGui::GetWindowWidth()-20, 120), 1));
+        renderLine(ID);
+        ImGui::End(); ImGui::PopStyleColor(1);
+        return;
+    }
+    else {
+        ImGui::SetWindowSize(buffer, ImVec2(
+            fmin(ImGui::GetWindowWidth()+20, windowInitX),
+            fmin(ImGui::GetWindowHeight()+40, windowInitY)));
+    }
 
     ImGui::Text("Current voltage: %.01f mV", neuPot);
     ImGui::Text("Firing frequency: %.1f Hz", neu->activity());
@@ -841,8 +877,8 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
             if (ImGui::Button("Open")) {
                 selectNeuron(syn->pN, true);
                 ImVec2 currentWindowPos = ImGui::GetWindowPos();
-                newNeuWinPos.first = syn->pN;
-                newNeuWinPos.second = ImVec2(currentWindowPos.x-windowInitX-10, currentWindowPos.y-windowInitY/2.0+18);
+                newNeuWinPos.first = syn->pN; newNeuWinPos.second = ImVec2(currentWindowPos.x-windowInitX-10, currentWindowPos.y-windowInitY/2.0+18);
+                newNeuWinCollapsed.first = syn->pN; newNeuWinCollapsed.second = false;
             }
             ImGui::SameLine(); ImGui::Text("%i -> %i", syn->pN, syn->tN);
             if (0.0f < syn->getWeight() ) ImGui::TextColored(ImColor(116, 102, 116),"EXCITATORY");
@@ -874,8 +910,8 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
             if (ImGui::Button("Open")){
                 selectNeuron(syn.tN, true);
                 ImVec2 currentWindowPos = ImGui::GetWindowPos();
-                newNeuWinPos.first = syn.tN;
-                newNeuWinPos.second = ImVec2(currentWindowPos.x+ImGui::GetWindowWidth()/2.0+78, currentWindowPos.y-windowInitY/2.0+18);
+                newNeuWinPos.first = syn.tN; newNeuWinPos.second = ImVec2(currentWindowPos.x+ImGui::GetWindowWidth()/2.0+78, currentWindowPos.y-windowInitY/2.0+18);
+                newNeuWinCollapsed.first = syn.tN; newNeuWinCollapsed.second = false;
             }
             if (0.0f < syn.getWeight() ) ImGui::TextColored(ImColor(116, 102, 116),"EXCITATORY");
             else ImGui::TextColored(ImColor(26, 26, 116),"inhibitory");
@@ -886,27 +922,7 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
     }
     ImGui::EndChild();
 
-
-    // Render line from window to neuron
-    coord3 pos3D = neu->position();
-    glm::vec3 screenGLM = screenCoordinates(glm::vec3(pos3D.x, pos3D.y, pos3D.z));
-    ImVec2 screen(screenGLM.x, screenGLM.y);
-
-    // Get closest point from window
-    ImVec2 minP = ImGui::GetWindowPos();
-    ImVec2 maxP(minP.x+ImGui::GetWindowSize().x, minP.y+ImGui::GetWindowSize().y);
-
-    ImVec2 closest = screen;
-    if (closest.x > maxP.x) closest.x = maxP.x;
-    else if (closest.x < minP.x) closest.x = minP.x;
-    if (closest.y > maxP.y) closest.y = maxP.y;
-    else if (closest.y < minP.y) closest.y = minP.y;
-
-    // Draw line. This is done inside window so that other windows can focus over it.
-    ImDrawList* draw_list = ImGui::GetWindowDrawList();
-    draw_list->PushClipRectFullScreen();
-    draw_list->AddLine(closest, screen, ImColor(0, 90, 173, 180), 2.2f);
-    draw_list->PopClipRect();
+    renderLine(ID);
 
     ImGui::End();
     ImGui::PopStyleColor(1);
