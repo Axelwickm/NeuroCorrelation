@@ -3,4 +3,4 @@
 	url = git@github.com:ocornut/imgui.git
 [submodule "tinyexpr"]
 	path = tinyexpr
-	url = https://github.com/codeplea/tinyexpr
+	url = git@github.com:codeplea/tinyexpr.git
