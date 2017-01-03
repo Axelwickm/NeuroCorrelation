@@ -997,6 +997,8 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
                 }
                 te_expr* compiled = te_compile(activityExpression, vars, variables.size(), &error);
                 if (compiled) evaluated = compiled; // Uses compiled if it succeeded
+                if (*activityExpression == *currentActivity && strlen(activityExpression) == strlen(currentActivity))
+                    evaluated = NULL; // Nulls, to use a simpler and more effective rendering method
             }
 
         }
