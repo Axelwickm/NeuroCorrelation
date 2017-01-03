@@ -422,8 +422,16 @@ void NeuCor_Renderer::updateView(){
     );
     vp = Projection * View;
 
-
-    if (renderMode == RENDER_NOSYNAPSES) logger.synapseCount = 0;
+    double* variableLinks[variables.size()]; std::vector<float>* activityLinks[variables.size()];
+    if (renderMode == RENDER_ACTIVITY && evaluated != NULL){
+        int i = 0;
+        for (auto it = variables.begin(); it != variables.end(); it++){
+            variableLinks[i] = it->second.first.get();
+            activityLinks[i] = &(it->second.second);
+            i++;
+        }
+    }
+    else if (renderMode == RENDER_NOSYNAPSES) logger.synapseCount = 0;
 
     std::vector<coord3> connections;
     std::vector<float> synPot;
@@ -449,13 +457,13 @@ void NeuCor_Renderer::updateView(){
                 synPot.push_back(syn.getWeight()/2.0);
                 synPot.push_back(syn.getWeight()/2.0);
             }
-            else if (renderMode == -1){
+            else if (renderMode == RENDER_PLASTICITY && evaluated == NULL){
                 synPot.push_back(log(brain->getNeuron(syn.pN)->activity()+1.f));
                 synPot.push_back(log(brain->getNeuron(syn.tN)->activity()+1.f));
             }
             else if (renderMode == RENDER_ACTIVITY){
-                synPot.push_back(activityFunction(syn.pN));
-                synPot.push_back(activityFunction(syn.tN));
+                synPot.push_back(0);
+                synPot.push_back(0);
             }
             else if (renderMode == RENDER_NOSYNAPSES) logger.synapseCount++;
         }
@@ -688,11 +696,7 @@ void NeuCor_Renderer::updateCamPos(){
     if (glfwGetKey(window, GLFW_KEY_A ) == GLFW_PRESS){
         camPos -= right * GLfloat(deltaTime * speedMult);
     }
-}
-
-float NeuCor_Renderer::activityFunction(int ID){
-    return log(brain->getNeuron(ID)->activity()+1.f);
-}
+};
 
 inline glm::vec3 NeuCor_Renderer::screenCoordinates(glm::vec3 worldPos, bool nomalizedZ){
     glm::vec4 posClip = vp * glm::vec4(worldPos.x, worldPos.y, worldPos.z, 1.0f );
@@ -973,9 +977,7 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
                     vars[var_i] = tevar;
                     var_i++;
                 }
-
                 evaluated = te_compile(activityExpression, vars, variables.size(), &error);
-                if (error) std::cout<<"tiny_expr error: "<<error<<std::endl;
             }
 
         }
