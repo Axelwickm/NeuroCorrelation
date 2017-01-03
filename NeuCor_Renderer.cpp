@@ -181,6 +181,7 @@ NeuCor_Renderer::NeuCor_Renderer(NeuCor* _brain)
         modules.back().snapped = false;
         modules.back().beingDragged = false;;
     }
+    activityExpression = (char*) calloc(256, 1);
     activityExpression[0] = 'a';
 
     /* Load resources */
@@ -1000,7 +1001,7 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
             while (toDelete.size() != 0){ variables.erase(toDelete.back()); toDelete.pop_back();}
             ImGui::Dummy(ImVec2(0,0)); // Getting rid of last SameLine()
 
-            ImGui::InputText("Expression", activityExpression, IM_ARRAYSIZE(activityExpression));
+            ImGui::InputText("Expression", activityExpression, 256);
             static int error;
             if (error != 0) ImGui::TextColored(ImColor::HSV(0.0f, 0.7f, 0.7f), "Arithmetic error at %i", error);
             if (ImGui::Button("Use")){
