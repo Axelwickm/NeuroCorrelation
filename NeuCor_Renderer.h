@@ -61,17 +61,22 @@ class NeuCor_Renderer
         };
         std::vector<module> modules;
 
+        struct neuronWindow {
+            bool open;
+            ImVec2 relativePosition;
+
+            ImVec2 nextPosition; // (-1, -1) - Do nothing
+            int nextCollapsed; // 0 - Do nothing, 1 - be closed, 2 - be open
+        };
+        std::map<int, neuronWindow> neuronWindows;
+        std::vector<int> selectedNeurons; // Selected neuron ID, smart pointer to bool if neuron window is open
+
         void renderInterface();
         void renderModule(module* mod, bool windowed);
-        void renderNeuronWindow(int ID, bool* open);
+        void renderNeuronWindow(int ID, bool* open,  neuronWindow* neuWin = NULL);
         inline void renderLine(int ID);
         void updateCamPos();
         void resetCursor();
-
-        std::pair<int, ImVec2> newNeuWinPos; // <ID,pos> If ID = NULL it isn't used
-        std::pair<int, bool> newNeuWinCollapsed; // <ID,bool> If ID = NULL it isn't used
-        std::vector<int> selectedNeurons; // Selected neuron ID, smart pointer to bool if neuon window is open
-        std::map<int, bool> selectedNeuronsWindows; // Selected neuron ID, smart pointer to bool if neuon window is open
 
         std::map<char*, std::pair<std::unique_ptr<double>, std::vector<float>>> variables; // Set of variables storing neuron activities
         char* currentActivity = ""; // The variable where activities are currently being stored

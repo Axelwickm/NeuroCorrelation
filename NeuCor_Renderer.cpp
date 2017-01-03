@@ -188,7 +188,6 @@ NeuCor_Renderer::NeuCor_Renderer(NeuCor* _brain)
     loadResources();
 
     destructCallback = NULL;
-    newNeuWinPos.first = NULL;
 }
 
 NeuCor_Renderer::realTimeStats::realTimeStats(){
@@ -364,29 +363,30 @@ void NeuCor_Renderer::loadResources() {
 
 bool NeuCor_Renderer::selectNeuron(int id, bool windowOpen){
     assert(id < brain->neurons.size());
-    if (selectedNeuronsWindows.find(id) == selectedNeuronsWindows.end()){
+    if (neuronWindows.find(id) == neuronWindows.end()){
         selectedNeurons.push_back(id);
-        selectedNeuronsWindows.insert(std::pair<int, bool> (id, windowOpen));
+        neuronWindow newWindow = {.open = windowOpen, .relativePosition = ImVec2(15, 15), .nextPosition = ImVec2(-1,-1), .nextCollapsed = 0};
+        neuronWindows.insert(std::pair<int, neuronWindow> (id, newWindow));
         logger.timeline.insert(std::pair<int, std::deque<realTimeStats::neuronSnapshot> >(id, std::deque<realTimeStats::neuronSnapshot>()));
 
         return true;
     }
     else {
-        selectedNeuronsWindows.at(id) = windowOpen;
+        neuronWindows.at(id).open = windowOpen;
         return false;
     }
 }
 
 bool NeuCor_Renderer::deselectNeuron(int id){
     assert(id < brain->neurons.size());
-    if (selectedNeuronsWindows.find(id) != selectedNeuronsWindows.end()){
+    if (neuronWindows.find(id) != neuronWindows.end()){
         for (std::vector<int>::iterator i = selectedNeurons.begin(); i < selectedNeurons.end(); i++){
             if (*i == id){
                 selectedNeurons.erase(i);
                 break;
             }
         }
-        selectedNeuronsWindows.erase(id);
+        neuronWindows.erase(id);
         logger.timeline.erase(id);
         return true;
     }
@@ -805,7 +805,7 @@ void NeuCor_Renderer::renderInterface(){
 
     // Render neuron windows which are open
     for (auto ID: selectedNeurons){
-        bool* open = &selectedNeuronsWindows.at(ID);
+        bool* open = &neuronWindows.at(ID).open;
         if (*open) renderNeuronWindow(ID, open);
     }
 
@@ -816,21 +816,27 @@ void NeuCor_Renderer::renderInterface(){
     return deltaTime;
 }
 
-void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
+void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open, neuronWindow* neuWin){
     #define windowInitX 320
     #define windowInitY 450
     Neuron* neu = brain->getNeuron(ID);
+    if (!neuWin) neuWin = &neuronWindows.at(ID);
     float neuPot = neu->potential();
 
-    if (newNeuWinPos.first == ID){
-        ImGui::SetNextWindowPos(newNeuWinPos.second);
-        newNeuWinPos.first = NULL;
+    coord3 pos3D = neu->position();
+    glm::vec3 screenGLM = screenCoordinates(glm::vec3(pos3D.x, pos3D.y, pos3D.z));
+    if (neuWin->nextPosition.x != -1 || neuWin->nextPosition.y != -1) {
+        ImGui::SetNextWindowPos(neuWin->nextPosition);
+        neuWin->relativePosition = ImVec2(neuWin->nextPosition.x-screenGLM.x, neuWin->nextPosition.y-screenGLM.y);
     }
-    if (newNeuWinCollapsed.first == ID){
-        ImGui::SetNextWindowCollapsed(newNeuWinCollapsed.second);
-        newNeuWinCollapsed.first = NULL;
-    }
+    else ImGui::SetNextWindowPos(ImVec2(screenGLM.x+neuWin->relativePosition.x, screenGLM.y+neuWin->relativePosition.y));
+
+    if (neuWin->nextCollapsed != 0) ImGui::SetNextWindowCollapsed(neuWin->nextCollapsed == 1);
     else ImGui::SetNextWindowCollapsed(true, ImGuiSetCond_Appearing);
+
+    neuWin->nextPosition = ImVec2(-1, -1);
+    neuWin->nextCollapsed = 0;
+
 
     char buffer[100];
     std::sprintf(buffer, "Neuron %i", ID);
@@ -877,8 +883,8 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
             if (ImGui::Button("Open")) {
                 selectNeuron(syn->pN, true);
                 ImVec2 currentWindowPos = ImGui::GetWindowPos();
-                newNeuWinPos.first = syn->pN; newNeuWinPos.second = ImVec2(currentWindowPos.x-windowInitX-10, currentWindowPos.y-windowInitY/2.0+18);
-                newNeuWinCollapsed.first = syn->pN; newNeuWinCollapsed.second = false;
+                neuronWindows.at(syn->pN).nextPosition = ImVec2(currentWindowPos.x-windowInitX-10, currentWindowPos.y-windowInitY/2.0+18);
+                neuronWindows.at(syn->pN).nextCollapsed = true;
             }
             ImGui::SameLine(); ImGui::Text("%i -> %i", syn->pN, syn->tN);
             if (0.0f < syn->getWeight() ) ImGui::TextColored(ImColor(116, 102, 116),"EXCITATORY");
@@ -910,8 +916,8 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open){
             if (ImGui::Button("Open")){
                 selectNeuron(syn.tN, true);
                 ImVec2 currentWindowPos = ImGui::GetWindowPos();
-                newNeuWinPos.first = syn.tN; newNeuWinPos.second = ImVec2(currentWindowPos.x+ImGui::GetWindowWidth()/2.0+78, currentWindowPos.y-windowInitY/2.0+18);
-                newNeuWinCollapsed.first = syn.tN; newNeuWinCollapsed.second = false;
+                neuronWindows.at(syn.tN).nextPosition = ImVec2(currentWindowPos.x+ImGui::GetWindowWidth()/2.0+78, currentWindowPos.y-windowInitY/2.0+18);
+                neuronWindows.at(syn.tN).nextCollapsed = false;
             }
             if (0.0f < syn.getWeight() ) ImGui::TextColored(ImColor(116, 102, 116),"EXCITATORY");
             else ImGui::TextColored(ImColor(26, 26, 116),"inhibitory");
@@ -1212,7 +1218,7 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
 
             char buffer[100];
             std::sprintf(buffer, "Neuron\n%i", selectedNeurons.at(i));
-            ImGui::Selectable(buffer, &selectedNeuronsWindows.at(selectedNeurons.at(i)), 0, ImVec2(50,50));
+            ImGui::Selectable(buffer, &neuronWindows.at(selectedNeurons.at(i)).open, 0, ImVec2(50,50));
             bool deselected = ImGui::IsItemClicked(1);
 
             float currentPot;
@@ -1238,11 +1244,11 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
         }
         ImGui::SameLine();
         if (ImGui::Button("Open all")){
-            for (auto ID: selectedNeurons) selectedNeuronsWindows.at(ID) = true;
+            for (auto ID: selectedNeurons) neuronWindows.at(ID).open = true;
         }
         ImGui::SameLine();
         if (ImGui::Button("Close all")){
-            for (auto ID: selectedNeurons) selectedNeuronsWindows.at(ID) = false;
+            for (auto ID: selectedNeurons) neuronWindows.at(ID).open = false;
         }
         break;
     }
@@ -1344,7 +1350,6 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
             }
             if (closestDistance < minDistance){
                 if (!selectNeuron(ID, true)) deselectNeuron(ID);   // Tries to select, if false the neuron is already selected and is then deselected.
-                else newNeuWinPos = std::make_pair(ID, ImVec2(cursorPos.x+10, cursorPos.y+10));
             }
         }
         break;
