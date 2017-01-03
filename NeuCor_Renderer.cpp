@@ -987,8 +987,6 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
                 nameChanged = true;
             }*/
             if (ImGui::IsItemHovered()){ImGui::BeginTooltip(); ImGui::Text("Save activity\nCtrl + Click to reset"); ImGui::EndTooltip();}
-
-            ImGui::ShowTestWindow();
             ImGui::SameLine();
             ImGui::BeginChild("VariableList", ImVec2(ImGui::GetContentRegionAvailWidth(), 100), true);
             ImGui::Columns(3);
