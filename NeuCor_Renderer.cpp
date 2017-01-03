@@ -937,10 +937,19 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
                 currentActivity = "a";
                 for (int i = 0; variables.find(currentActivity) != variables.end(); i++)
                     currentActivity = letters[i];
-                variables.insert(std::pair<char*, std::unique_ptr<double> >(currentActivity, std::unique_ptr<double>(new double)));
+
+                variables.insert(std::pair<char*, std::pair<std::unique_ptr<double>, std::vector<float> > >(currentActivity,
+                                                  std::pair<std::unique_ptr<double>, std::vector<float> >(std::unique_ptr<double>(new double), std::vector<float>())));
             }
-            if (ImGui::Button(currentActivity, ImVec2(50,50)) && variables.size() != sizeof(letters)/sizeof(char*))
+            if (ImGui::Button(currentActivity, ImVec2(50,50)) && variables.size() != sizeof(letters)/sizeof(char*)){
+                // Store all current activities
+                auto lastA = &variables.at(currentActivity);
+                lastA->second.reserve(brain->neurons.size());
+                for (auto &neu: brain->neurons) lastA->second.push_back(neu.activity());
+
                 currentActivity = "";
+                brain->resetActivities();
+            }
             if (ImGui::IsItemHovered()){ImGui::BeginTooltip(); ImGui::Text("Save activity"); ImGui::EndTooltip();}
             ImGui::SameLine();
             ImGui::Dummy(ImVec2(0,12));
@@ -960,7 +969,7 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
                 te_variable vars[1];
                 std::size_t var_i = 0;
                 for (auto &var: variables) {
-                    te_variable tevar = {var.first, (double*)var.second.get()};
+                    te_variable tevar = {var.first, (double*)var.second.first.get()};
                     vars[var_i] = tevar;
                     var_i++;
                 }

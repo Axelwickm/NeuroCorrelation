@@ -37,7 +37,7 @@ class NeuCor_Renderer
         std::vector<std::string> renderingModeNames = {"Voltage", "Plasticity", "Activity", "No synapses"};
         renderingModes renderMode;
         char activityExpression[256];
-        std::map<char*, std::unique_ptr<double>> variables;
+        std::map<char*, std::pair<std::unique_ptr<double>, std::vector<float>>> variables;
         char* currentActivity = "";
         te_expr* evaluated;
 
