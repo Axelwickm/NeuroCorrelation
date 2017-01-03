@@ -71,10 +71,10 @@ class NeuCor_Renderer
         std::vector<int> selectedNeurons; // Selected neuron ID, smart pointer to bool if neuon window is open
         std::map<int, bool> selectedNeuronsWindows; // Selected neuron ID, smart pointer to bool if neuon window is open
 
-        std::map<char*, std::pair<std::unique_ptr<double>, std::vector<float>>> variables;
-        char* currentActivity = "";
-        te_expr* evaluated = NULL;
-        inline float activityFunction(int ID, bool update = false);
+        std::map<char*, std::pair<std::unique_ptr<double>, std::vector<float>>> variables; // Set of variables storing neuron activities
+        char* currentActivity = ""; // The variable where activities are currently being stored
+        te_expr* evaluated = NULL; // Complied arithmetic expression of activity
+        inline float activityFunction(int ID, bool update = false); // The function being called which calculates the actual value from the expression.
 
 
         struct realTimeStats {
