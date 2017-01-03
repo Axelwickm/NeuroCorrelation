@@ -37,10 +37,6 @@ class NeuCor_Renderer
         std::vector<std::string> renderingModeNames = {"Voltage", "Plasticity", "Activity", "No synapses"};
         renderingModes renderMode;
         char activityExpression[256];
-        std::map<char*, std::pair<std::unique_ptr<double>, std::vector<float>>> variables;
-        char* currentActivity = "";
-        te_expr* evaluated;
-
 
         void updateView();
         void pollWindow();
@@ -75,7 +71,10 @@ class NeuCor_Renderer
         std::vector<int> selectedNeurons; // Selected neuron ID, smart pointer to bool if neuon window is open
         std::map<int, bool> selectedNeuronsWindows; // Selected neuron ID, smart pointer to bool if neuon window is open
 
-        float activityFunction(int ID);
+        std::map<char*, std::pair<std::unique_ptr<double>, std::vector<float>>> variables;
+        char* currentActivity = "";
+        te_expr* evaluated = NULL;
+
 
         struct realTimeStats {
             realTimeStats();
