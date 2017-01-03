@@ -931,7 +931,6 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
             renderMode = static_cast<renderingModes>((renderMode+1)%renderingModes::Count);
         if (glfwGetKey(window, GLFW_KEY_M ) == GLFW_PRESS) ImGui::PopStyleColor(3);
         if (renderMode == RENDER_ACTIVITY){
-            ImGui::ShowTestWindow();
             ImGui::Separator();
             char* letters[] = {"a","b","c","d","e","f","g","h","i","j","k","l"};
             if (currentActivity == ""){
@@ -956,7 +955,7 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
 
             ImGui::InputText("Expression", activityExpression, IM_ARRAYSIZE(activityExpression));
             static int error;
-            if (error != 0) ImGui::Text("Arithmetic error at %i", error);
+            if (error != 0) ImGui::TextColored(ImColor::HSV(0.0f, 0.7f, 0.7f), "Arithmetic error at %i", error);
             if (ImGui::Button("Use")){
                 te_variable vars[1];
                 std::size_t var_i = 0;
