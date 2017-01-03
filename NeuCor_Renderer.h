@@ -8,12 +8,14 @@
 #include <vector>
 #include <deque>
 #include <map>
+#include <memory>
 
 #include <GL/glew.h>
 #define GLFW_INCLUDE_GLU
 #include <GLFW/glfw3.h>
 
 #include "imgui/imgui.h"
+#include "tinyexpr/tinyexpr.h"
 
 #include <glm/glm.hpp>
 using namespace glm;
@@ -31,9 +33,13 @@ class NeuCor_Renderer
         bool selectNeuron(int id, bool windowOpen);
         bool deselectNeuron(int id);
 
-        enum renderingModes { RENDER_VOLTAGE, RENDER_PLASTICITY, RENDER_ACTIVITY, RENDER_ACTIVITY_FUNCTION, RENDER_NOSYNAPSES, Count};
-        std::vector<std::string> renderingModeNames = {"Voltage", "Plasticity", "Activity", "Activity function", "No synapses"};
+        enum renderingModes { RENDER_VOLTAGE, RENDER_PLASTICITY, RENDER_ACTIVITY, RENDER_NOSYNAPSES, Count};
+        std::vector<std::string> renderingModeNames = {"Voltage", "Plasticity", "Activity", "No synapses"};
         renderingModes renderMode;
+        char activityExpression[256];
+        std::map<char*, std::unique_ptr<double>> variables;
+        char* currentActivity = "";
+        te_expr* evaluated;
 
 
         void updateView();

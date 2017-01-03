@@ -66,6 +66,10 @@
 		<Unit filename="neuron.shader" />
 		<Unit filename="synapse.Fshader" />
 		<Unit filename="synapse.shader" />
+		<Unit filename="tinyexpr/tinyexpr.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="tinyexpr/tinyexpr.h" />
 		<Extensions>
 			<code_completion />
 			<envvars />
