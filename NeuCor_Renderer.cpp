@@ -955,7 +955,7 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
         if (glfwGetKey(window, GLFW_KEY_M ) == GLFW_PRESS) ImGui::PopStyleColor(3);
         if (renderMode == RENDER_ACTIVITY){
             ImGui::Separator();
-            char* letters[] = {"a","b","c","d","e","f","g","h","i","j","k","l"};
+            char* letters[] = {"a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"};
             if (currentActivity == ""){
                 currentActivity = "a";
                 for (int i = 0; variables.find(currentActivity) != variables.end(); i++)
@@ -987,19 +987,24 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
                 nameChanged = true;
             }*/
             if (ImGui::IsItemHovered()){ImGui::BeginTooltip(); ImGui::Text("Save activity\nCtrl + Click to reset"); ImGui::EndTooltip();}
-            ImGui::SameLine();
-            ImGui::Dummy(ImVec2(0,12));
 
+            ImGui::ShowTestWindow();
+            ImGui::SameLine();
+            ImGui::BeginChild("VariableList", ImVec2(ImGui::GetContentRegionAvailWidth(), 100), true);
+            ImGui::Columns(3);
             std::vector<char*> toDelete;
+            int i = 1;
             for (auto &var: variables){
                 if (var.first == currentActivity) continue;
-                ImGui::SameLine();
                 ImGui::Text(var.first);
                 if (ImGui::IsItemClicked()) toDelete.push_back(var.first);
                 if (ImGui::IsItemHovered()){ImGui::BeginTooltip(); ImGui::Text("Press to delete %s", var.first); ImGui::EndTooltip();}
+                if (i % 10 == 0) ImGui::NextColumn();
+                i++;
             }
             while (toDelete.size() != 0){ variables.erase(toDelete.back()); toDelete.pop_back();}
-            ImGui::Dummy(ImVec2(0,0)); // Getting rid of last SameLine()
+
+            ImGui::EndChild();
 
             ImGui::InputText("Expression", activityExpression, 256);
             static int error;
