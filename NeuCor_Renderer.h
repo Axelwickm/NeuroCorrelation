@@ -74,6 +74,7 @@ class NeuCor_Renderer
         std::map<char*, std::pair<std::unique_ptr<double>, std::vector<float>>> variables;
         char* currentActivity = "";
         te_expr* evaluated = NULL;
+        inline float activityFunction(int ID, bool update = false);
 
 
         struct realTimeStats {

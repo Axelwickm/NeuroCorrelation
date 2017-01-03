@@ -422,15 +422,8 @@ void NeuCor_Renderer::updateView(){
     );
     vp = Projection * View;
 
-    double* variableLinks[variables.size()]; std::vector<float>* activityLinks[variables.size()];
-    if (renderMode == RENDER_ACTIVITY && evaluated != NULL){
-        int i = 0;
-        for (auto it = variables.begin(); it != variables.end(); it++){
-            variableLinks[i] = it->second.first.get();
-            activityLinks[i] = &(it->second.second);
-            i++;
-        }
-    }
+
+    if (renderMode == RENDER_ACTIVITY && evaluated != NULL) activityFunction(-1, true);
     else if (renderMode == RENDER_NOSYNAPSES) logger.synapseCount = 0;
 
     std::vector<coord3> connections;
@@ -462,8 +455,8 @@ void NeuCor_Renderer::updateView(){
                 synPot.push_back(log(brain->getNeuron(syn.tN)->activity()+1.f));
             }
             else if (renderMode == RENDER_ACTIVITY){
-                synPot.push_back(0);
-                synPot.push_back(0);
+                synPot.push_back(log(activityFunction(syn.tN)+1.f));
+                synPot.push_back(log(activityFunction(syn.pN)+1.f));
             }
             else if (renderMode == RENDER_NOSYNAPSES) logger.synapseCount++;
         }
@@ -697,6 +690,29 @@ void NeuCor_Renderer::updateCamPos(){
         camPos -= right * GLfloat(deltaTime * speedMult);
     }
 };
+
+inline float NeuCor_Renderer::activityFunction(int ID, bool update){
+    static std::vector<double*> variableLinks;
+    static std::vector<std::vector<float>*> activityLinks;
+    if (update) {
+        variableLinks.resize(variables.size()-1); //Skip current
+        activityLinks.resize(variables.size()-1);
+        int i = 0;
+        for (auto it = variables.begin(); it != variables.end(); it++){
+            if (it->first == currentActivity) continue;
+            variableLinks[i] = it->second.first.get();
+            activityLinks[i] = &(it->second.second);
+            i++;
+        }
+        return 0;
+    }
+    else {
+        for (int i = 0; i<variableLinks.size(); i++){
+            *(variableLinks.at(i)) = activityLinks.at(i)->at(ID);
+        }
+        return te_eval(evaluated);
+    }
+}
 
 inline glm::vec3 NeuCor_Renderer::screenCoordinates(glm::vec3 worldPos, bool nomalizedZ){
     glm::vec4 posClip = vp * glm::vec4(worldPos.x, worldPos.y, worldPos.z, 1.0f );
