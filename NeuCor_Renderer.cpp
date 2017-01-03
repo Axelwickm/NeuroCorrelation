@@ -694,21 +694,23 @@ void NeuCor_Renderer::updateCamPos(){
 inline float NeuCor_Renderer::activityFunction(int ID, bool update){
     static std::vector<double*> variableLinks;
     static std::vector<std::vector<float>*> activityLinks;
+    static int current = 0; // Has to be updated from Neuron, not stored data
     if (update) {
-        variableLinks.resize(variables.size()-1); //Skip current
-        activityLinks.resize(variables.size()-1);
+        variableLinks.resize(variables.size());
+        activityLinks.resize(variables.size());
         int i = 0;
         for (auto it = variables.begin(); it != variables.end(); it++){
-            if (it->first == currentActivity) continue;
+            if (it->first == currentActivity) current = i;
             variableLinks[i] = it->second.first.get();
-            activityLinks[i] = &(it->second.second);
+            activityLinks[i] = &(it->second.second); // Will be empty if current
             i++;
         }
         return 0;
     }
     else {
         for (int i = 0; i<variableLinks.size(); i++){
-            *(variableLinks.at(i)) = activityLinks.at(i)->at(ID);
+            if (i != current) *(variableLinks.at(i)) = activityLinks.at(i)->at(ID);
+            else *(variableLinks.at(i)) = brain->getNeuron(ID)->activity(); // Live update
         }
         return te_eval(evaluated);
     }
