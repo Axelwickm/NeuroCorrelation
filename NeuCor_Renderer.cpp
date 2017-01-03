@@ -995,7 +995,8 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
                     vars[var_i] = tevar;
                     var_i++;
                 }
-                evaluated = te_compile(activityExpression, vars, variables.size(), &error);
+                te_expr* compiled = te_compile(activityExpression, vars, variables.size(), &error);
+                if (compiled) evaluated = compiled; // Uses compiled if it succeeded
             }
 
         }
