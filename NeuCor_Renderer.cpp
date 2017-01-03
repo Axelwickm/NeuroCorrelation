@@ -581,7 +581,7 @@ void NeuCor_Renderer::updateView(){
     glDisableVertexAttribArray(2);
 
     // Hide cursor if the cursor is in the window, and navigation mode is on, else show it.
-    if (navigationMode && mouseInWindow) glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    if (navigationMode && mouseInWindow) {glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); ImGui::CaptureMouseFromApp(false);}
     else glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
 
