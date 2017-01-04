@@ -160,7 +160,7 @@ NeuCor_Renderer::NeuCor_Renderer(NeuCor* _brain)
     paused = false;
     realRunspeed = false;
 
-    navigationMode = false;
+    navigationMode = true;
     mouseInWindow = true;
     showInterface = true;
 
@@ -186,7 +186,9 @@ NeuCor_Renderer::NeuCor_Renderer(NeuCor* _brain)
 
     /* Load resources */
     loadResources();
-
+    glfwSetCursorPos(window, width/2.0, height/2.0);
+    updateCamPos();
+    navigationMode = true;
     destructCallback = NULL;
 }
 
@@ -419,8 +421,8 @@ void NeuCor_Renderer::updateView(){
 
 
     updateCamPos();
-
     float aspect = (float) width / (float)height;
+
     glm::mat4 Projection = glm::perspective(glm::radians(65.0f), (float) aspect, 0.05f, 100.0f);
     glm::mat4 View = glm::lookAt(
         camPos,
@@ -653,9 +655,7 @@ void NeuCor_Renderer::updateCamPos(){
         brain->runSpeed = powf(brain->runSpeed, 1.01);
         //std::cout<<"Run-speed: "<<brain->runSpeed<<std::endl;
     }
-    static bool firstTime = true;
-    if ((!navigationMode || !mouseInWindow) && !firstTime) return;
-    firstTime = false;
+    if (!navigationMode || !mouseInWindow) return;
 
     double xpos, ypos;
     glfwGetCursorPos(window, &xpos, &ypos);
@@ -664,7 +664,6 @@ void NeuCor_Renderer::updateCamPos(){
 
     float deltaX = cursorX-xpos;
     float deltaY = cursorY-ypos;
-
 
     camHA -= 0.15 * deltaTime * deltaX;
     camVA  += 0.15 * deltaTime * deltaY;
