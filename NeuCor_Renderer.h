@@ -97,6 +97,7 @@ class NeuCor_Renderer
                 int id;
                 float time;
                 float voltage;
+                std::vector<float> synapseWeights;
             };
             std::map<int, std::deque<neuronSnapshot> > timeline;
             float maxTimeline;

@@ -609,6 +609,10 @@ void NeuCor_Renderer::updateView(){
             neuSnap->id = neuID;
             neuSnap->time = brainTime;
             neuSnap->voltage = neu->potential();
+            neuSnap->synapseWeights.reserve(neu->outSynapses.size());
+            for (auto &syn: neu->outSynapses){
+                neuSnap->synapseWeights.push_back(syn.getWeight());
+            }
 
             while (logger.maxTimeline < brainTime - neuTimeline->begin()->time)
                 neuTimeline->pop_front();
@@ -932,6 +936,7 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, neuronWindow* neuWin){
 
     ImGui::BeginChild("Out synapses", ImVec2(windowWidth * 0.38f, 0), ImGuiWindowFlags_HorizontalScrollbar);
     ImGui::Text("Out synapses");
+    int i = 0;
     for (auto &syn: neu->outSynapses){
         ImGui::PushStyleColor(ImGuiCol_Header, ImColor(116, 102, 116, (int) floor(50 + syn.getPostPot()*180.0f)));
         std::sprintf(buffer,"%i", syn.tN);
@@ -947,9 +952,21 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, neuronWindow* neuWin){
             if (0.0f < syn.getWeight() ) ImGui::TextColored(ImColor(116, 102, 116),"EXCITATORY");
             else ImGui::TextColored(ImColor(26, 26, 116),"inhibitory");
             ImGui::Text("weight: %.2f", syn.getWeight());
+            float weightData[neuTimeline->size()];
+            for (int j = 0; j < neuTimeline->size(); j++){
+                weightData[j] = neuTimeline->at(j).synapseWeights.at(i);
+            }
+            ImGui::PlotLines("", weightData, neuTimeline->size(), 0, "", -3.0f, 3.0f, ImVec2(77, 48));
+            if (ImGui::IsItemHovered()){
+                ImGui::BeginTooltip();
+                ImGui::PlotLines("", weightData, neuTimeline->size(), 0, "", -3.0f, 3.0f, ImVec2(500, 200));
+                ImGui::Text("weight: %.3f", syn.getWeight());
+                ImGui::EndTooltip();
+            }
 
         }
         ImGui::PopStyleColor(1);
+        i++;
     }
     ImGui::EndChild();
 
