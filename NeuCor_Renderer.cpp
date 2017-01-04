@@ -810,9 +810,9 @@ void NeuCor_Renderer::renderInterface(){
     }
 
     // Render neuron windows which are open
+    int i = 0;
     for (auto ID: selectedNeurons){
-        bool* open = &neuronWindows.at(ID).open;
-        if (*open) renderNeuronWindow(ID, open);
+        if (neuronWindows.at(ID).open) renderNeuronWindow(ID);
     }
 
     ImGui::Render();
@@ -822,7 +822,7 @@ void NeuCor_Renderer::renderInterface(){
     return deltaTime;
 }
 
-void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open, neuronWindow* neuWin){
+void NeuCor_Renderer::renderNeuronWindow(int ID, neuronWindow* neuWin){
     #define windowInitX 320
     #define windowInitY 450
     Neuron* neu = brain->getNeuron(ID);
@@ -848,7 +848,7 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open, neuronWindow* neuWi
     char buffer[100];
     std::sprintf(buffer, "Neuron %i", ID);
     ImGui::PushStyleColor(ImGuiCol_TitleBgCollapsed, ImColor(116, 102, 116, (int) floor(50 + neuPot*180.0f)));
-    bool collapsed = !ImGui::Begin(buffer, open, ImGuiWindowFlags_NoResize);
+    bool collapsed = !ImGui::Begin(buffer, &neuWin->open, ImGuiWindowFlags_NoResize);
 
     neuWin->currentWindowPos = ImGui::GetWindowPos();
     if (ImGui::IsMouseHoveringWindow() && ImGui::IsMouseDragging()){

@@ -76,7 +76,7 @@ class NeuCor_Renderer
 
         void renderInterface();
         void renderModule(module* mod, bool windowed);
-        void renderNeuronWindow(int ID, bool* open,  neuronWindow* neuWin = NULL);
+        void renderNeuronWindow(int ID, neuronWindow* neuWin = NULL);
         inline void renderLine(int ID);
         void updateCamPos();
         void resetCursor();
