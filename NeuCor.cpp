@@ -248,7 +248,7 @@ void InputFirer::run(){
 void InputFirer::schedule(float deltaT, float frequency){
     if (frequency == 0) return;
 
-    float lastFire = parentNet->getNeuron(index)->lastFire;
+    float lastFire = parentNet->getNeuron(near.at(0))->lastFire;
     if (lastFire != lastFire) lastFire = 0;
     float currentT = parentNet->getTime();
 
@@ -493,7 +493,6 @@ void Neuron::run(){
     charge_passive(deltaT, currentT);
     charge_thresholdCheck(deltaT, currentT);
     AP(currentT);
-
     vesicles_uptake(deltaT);
 
     // Update activity
@@ -584,6 +583,7 @@ void Synapse::run(){
     parentNet->queSimulation(parentNet->getNeuron(tN), 0.1);
 
     lastSpikeArrival = parentNet->getTime();
+    AP_fireTime = 0;
 
     synapticPlasticity();
 }
