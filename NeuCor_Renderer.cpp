@@ -365,9 +365,15 @@ bool NeuCor_Renderer::selectNeuron(int id, bool windowOpen){
     assert(id < brain->neurons.size());
     if (neuronWindows.find(id) == neuronWindows.end()){
         selectedNeurons.push_back(id);
-        neuronWindow newWindow = {.open = windowOpen, .relativePosition = ImVec2(15, 15), .nextPosition = ImVec2(-1,-1), .nextCollapsed = 0};
-        neuronWindows.insert(std::pair<int, neuronWindow> (id, newWindow));
         logger.timeline.insert(std::pair<int, std::deque<realTimeStats::neuronSnapshot> >(id, std::deque<realTimeStats::neuronSnapshot>()));
+        neuronWindow newWindow = {
+            .open = windowOpen,
+            .usingRelative = true, .relativePosition = ImVec2(15, 15),
+            .nextPosition = ImVec2(-1,-1), .nextCollapsed = 0,
+            .beingDragged = false
+        };
+
+        neuronWindows.insert(std::pair<int, neuronWindow> (id, newWindow));
 
         return true;
     }
@@ -827,9 +833,10 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open, neuronWindow* neuWi
     glm::vec3 screenGLM = screenCoordinates(glm::vec3(pos3D.x, pos3D.y, pos3D.z));
     if (neuWin->nextPosition.x != -1 || neuWin->nextPosition.y != -1) {
         ImGui::SetNextWindowPos(neuWin->nextPosition);
-        neuWin->relativePosition = ImVec2(neuWin->nextPosition.x-screenGLM.x, neuWin->nextPosition.y-screenGLM.y);
+        neuWin->usingRelative = false;
     }
-    else ImGui::SetNextWindowPos(ImVec2(screenGLM.x+neuWin->relativePosition.x, screenGLM.y+neuWin->relativePosition.y));
+    else if (neuWin->usingRelative && !neuWin->beingDragged) ImGui::SetNextWindowPos(ImVec2(screenGLM.x+neuWin->relativePosition.x, screenGLM.y+neuWin->relativePosition.y));
+    else if (neuWin->beingDragged) neuWin->relativePosition = ImVec2(neuWin->currentWindowPos.x - screenGLM.x, neuWin->currentWindowPos.y - screenGLM.y);
 
     if (neuWin->nextCollapsed != 0) ImGui::SetNextWindowCollapsed(neuWin->nextCollapsed == 1);
     else ImGui::SetNextWindowCollapsed(true, ImGuiSetCond_Appearing);
@@ -841,7 +848,15 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open, neuronWindow* neuWi
     char buffer[100];
     std::sprintf(buffer, "Neuron %i", ID);
     ImGui::PushStyleColor(ImGuiCol_TitleBgCollapsed, ImColor(116, 102, 116, (int) floor(50 + neuPot*180.0f)));
-    if (!ImGui::Begin(buffer, open, ImGuiWindowFlags_NoResize)){
+    bool collapsed = !ImGui::Begin(buffer, open, ImGuiWindowFlags_NoResize);
+
+    neuWin->currentWindowPos = ImGui::GetWindowPos();
+    if (ImGui::IsMouseHoveringWindow() && ImGui::IsMouseDragging()){
+        neuWin->beingDragged = true;
+    }
+    else neuWin->beingDragged = false;
+
+    if (collapsed){
         ImGui::SetWindowSize(buffer, ImVec2(
             fmax(ImGui::GetWindowWidth()-20, 120), 1));
         renderLine(ID);
@@ -854,7 +869,15 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open, neuronWindow* neuWi
             fmin(ImGui::GetWindowHeight()+40, windowInitY)));
     }
 
+
     ImGui::Text("Current voltage: %.01f mV", neuPot);
+    ImGui::SameLine(); ImGui::Dummy(ImVec2(ImGui::GetContentRegionAvailWidth() - 30, 0)); ImGui::SameLine();
+    ImGui::RadioButton("", neuWin->usingRelative);
+    if (ImGui::IsItemClicked()){
+        neuWin->usingRelative = !neuWin->usingRelative;
+        neuWin->relativePosition = ImVec2(neuWin->currentWindowPos.x - screenGLM.x, neuWin->currentWindowPos.y - screenGLM.y);
+    }
+    if (ImGui::IsItemHovered()) {ImGui::BeginTooltip(); ImGui::Text("Follow neuron"); ImGui::EndTooltip();}
     ImGui::Text("Firing frequency: %.1f Hz", neu->activity());
     ImGui::Text("Last fire: %1.f ms ago", brain->getTime() - neu->lastFire);
 
@@ -884,7 +907,8 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open, neuronWindow* neuWi
                 selectNeuron(syn->pN, true);
                 ImVec2 currentWindowPos = ImGui::GetWindowPos();
                 neuronWindows.at(syn->pN).nextPosition = ImVec2(currentWindowPos.x-windowInitX-10, currentWindowPos.y-windowInitY/2.0+18);
-                neuronWindows.at(syn->pN).nextCollapsed = true;
+                neuronWindows.at(syn->pN).nextCollapsed = 2;
+                neuWin->usingRelative = false;
             }
             ImGui::SameLine(); ImGui::Text("%i -> %i", syn->pN, syn->tN);
             if (0.0f < syn->getWeight() ) ImGui::TextColored(ImColor(116, 102, 116),"EXCITATORY");
@@ -917,7 +941,8 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, bool *open, neuronWindow* neuWi
                 selectNeuron(syn.tN, true);
                 ImVec2 currentWindowPos = ImGui::GetWindowPos();
                 neuronWindows.at(syn.tN).nextPosition = ImVec2(currentWindowPos.x+ImGui::GetWindowWidth()/2.0+78, currentWindowPos.y-windowInitY/2.0+18);
-                neuronWindows.at(syn.tN).nextCollapsed = false;
+                neuronWindows.at(syn.tN).nextCollapsed = 2;
+                neuWin->usingRelative = false;
             }
             if (0.0f < syn.getWeight() ) ImGui::TextColored(ImColor(116, 102, 116),"EXCITATORY");
             else ImGui::TextColored(ImColor(26, 26, 116),"inhibitory");

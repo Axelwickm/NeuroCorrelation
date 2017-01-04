@@ -63,10 +63,13 @@ class NeuCor_Renderer
 
         struct neuronWindow {
             bool open;
+            bool usingRelative;
             ImVec2 relativePosition;
 
             ImVec2 nextPosition; // (-1, -1) - Do nothing
             int nextCollapsed; // 0 - Do nothing, 1 - be closed, 2 - be open
+            bool beingDragged;
+            ImVec2 currentWindowPos;
         };
         std::map<int, neuronWindow> neuronWindows;
         std::vector<int> selectedNeurons; // Selected neuron ID, smart pointer to bool if neuron window is open
