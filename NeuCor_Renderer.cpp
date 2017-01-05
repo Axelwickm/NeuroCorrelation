@@ -1349,17 +1349,8 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
 
     case (KEY_ACTION):
         if (std::get<1>(TTparams) == GLFW_KEY_ESCAPE && std::get<3>(TTparams) == GLFW_PRESS) glfwSetWindowShouldClose(std::get<0>(TTparams), GL_TRUE); // Close window on escape-key press
-        if (std::get<1>(TTparams) == GLFW_KEY_P && std::get<3>(TTparams) == GLFW_PRESS) paused = !paused; // Pause time
-        if (std::get<1>(TTparams) == GLFW_KEY_SPACE && std::get<3>(TTparams) == GLFW_PRESS) {
-            if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {navigationMode = true; showInterface = !showInterface;}
-            else navigationMode = !navigationMode;
-
-            if (navigationMode) resetCursor();
-            else showInterface = true;
-        }
-        if (std::get<1>(TTparams) == GLFW_KEY_N && std::get<3>(TTparams) == GLFW_PRESS){ // Reset all activity start times
-            brain->resetActivities();
-        }
+        if (std::get<1>(TTparams) == GLFW_KEY_SPACE && std::get<3>(TTparams) == GLFW_PRESS) paused = !paused; // Pause time
+        if (std::get<1>(TTparams) == GLFW_KEY_N && std::get<3>(TTparams) == GLFW_PRESS) brain->resetActivities(); // Reset all activity start times
         break;
 
     case (CHAR_ACTION):
@@ -1392,6 +1383,13 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
             if (closestDistance < minDistance){
                 if (!selectNeuron(ID, true)) deselectNeuron(ID);   // Tries to select, if false the neuron is already selected and is then deselected.
             }
+        }
+        if (std::get<1>(TTparams) == GLFW_MOUSE_BUTTON_RIGHT && std::get<2>(TTparams) == GLFW_PRESS) {
+            if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {navigationMode = true; showInterface = !showInterface;}
+            else navigationMode = !navigationMode;
+
+            if (navigationMode) resetCursor();
+            else showInterface = true;
         }
         break;
 
