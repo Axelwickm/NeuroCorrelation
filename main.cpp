@@ -12,7 +12,7 @@ void windowDestroy() {
 }
 
 int main(int argc, char* args[]){
-    #define SEED 8423
+    #define SEED -1
 
     srand(time(NULL));
     if (SEED != -1) srand(SEED);
@@ -40,8 +40,9 @@ int main(int argc, char* args[]){
     brain.runSpeed = 0.05;
 
 
-    float inputs[] = {100.0};
-    brain.setInputRateArray(inputs, 1);
+    float inputs[] = {250, 250};
+    coord3 inputPositions[] = {{2,0,0},{-2,0,0}};
+    brain.setInputRateArray(inputs, sizeof(inputs)/sizeof(float), inputPositions);
 
     std::cout<<"Starting program loop\n";
     unsigned t = 0;
@@ -49,7 +50,9 @@ int main(int argc, char* args[]){
         t++;
         if (false) brain.run();
 
-        if (sin(brain.getTime()/10.0) > 0.0) inputs[0] = 250;
+        if (brain.getTime() > 20){inputs[0] = 0; inputs[1] = 0;}
+        else if (sin(brain.getTime()/10.0) > 0.0) inputs[0] = 250;
+        else if (sin(brain.getTime()/10.0) > 0.0) inputs[1] = 250;
         else inputs[0] = 0;
         //std::cout<<inputs[0]<<std::endl;
 

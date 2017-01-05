@@ -38,7 +38,7 @@ class NeuCor {
         bool runAll;
         float getTime() const;
 
-        void setInputRateArray(float* inputs, unsigned arraySize);
+        void setInputRateArray(float inputs[], unsigned inputCount, coord3 inputPositions[] = {NULL});
 
         void createNeuron(coord3 position);
         void makeConnections();
@@ -105,7 +105,7 @@ class simulator {
 
 class InputFirer: public simulator {
     public:
-        InputFirer(NeuCor* p, unsigned i);
+        InputFirer(NeuCor* p, unsigned i, coord3 position = {NAN,NAN,NAN});
         coord3 a;
         coord3 b;
 

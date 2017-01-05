@@ -28,15 +28,17 @@ NeuCor::NeuCor(int n_neurons) {
 
 NeuCor::~NeuCor(){}
 
-void NeuCor::setInputRateArray(float* inputs, unsigned arraySize){
+void NeuCor::setInputRateArray(float inputs[], unsigned inputCount, coord3 inputPositions[]){
     inputArray = inputs;
-    inputArraySize = arraySize;
+    inputArraySize = inputCount;
 
-    int inputHanderSizeChange = std::min(inputArraySize, neurons.size()) - inputHandler.size();
+    int inputHanderSizeChange = inputArraySize - inputHandler.size();
     if (0 < inputHanderSizeChange){
         for (unsigned i = 0; i<inputHanderSizeChange; i++){
-            InputFirer firer(this, inputHandler.size());
-            inputHandler.push_back(firer);
+            if (inputPositions != NULL)
+                inputHandler.emplace_back(this, inputHandler.size(), inputPositions[i]);
+            else
+                inputHandler.emplace_back(this, inputHandler.size());
         }
     }
     else if (inputHanderSizeChange < 0){
@@ -224,9 +226,10 @@ void simulator::exterminate(){
     deleted = true;
 }
 
-InputFirer::InputFirer(NeuCor* p, unsigned i)
+InputFirer::InputFirer(NeuCor* p, unsigned i, coord3 position)
 :simulator(p), index(i) {
-    a.x = (float) rand()/RAND_MAX, a.y = (float) rand()/RAND_MAX, a.z = (float) rand()/RAND_MAX;
+    if (position.x == position.x) a = position; // If x is Nan
+    else a = {(float) rand()/RAND_MAX,(float) rand()/RAND_MAX,(float) rand()/RAND_MAX};
     float longitude = 2.0*3.1459*(float) rand()/RAND_MAX;
     float latitude = acos(2.0*(float) rand()/RAND_MAX-1.0);
     b.x = a.x+sqrt(1.0-pow(cos(longitude),2.0))*cos(latitude);
@@ -583,7 +586,6 @@ void Synapse::run(){
     parentNet->queSimulation(parentNet->getNeuron(tN), 0.1);
 
     lastSpikeArrival = parentNet->getTime();
-    AP_fireTime = 0;
 
     synapticPlasticity();
 }
