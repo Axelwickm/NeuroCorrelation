@@ -812,8 +812,29 @@ void NeuCor_Renderer::renderInterface(){
 
     }
 
+    // Render inputs firers
+    for (auto &inFi: brain->inputHandler){
+        ImGui::SetNextWindowPos( ImVec2(0,0) ); // Naked window   V
+        ImGui::Begin("BCKGND", NULL, ImGui::GetIO().DisplaySize, 0.0f, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus );
+        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+        glm::vec3 screenCoords = screenCoordinates(glm::vec3(inFi.a.x, inFi.a.y, inFi.a.z));
+        draw_list->PushClipRectFullScreen();
+        draw_list->AddCircle(ImVec2(screenCoords.x, screenCoords.y), 10, ImColor(0.8 - 10.0f/((float) ((float) brain->getTime()-inFi.lastFire)*10.0f+1.0f), 0.5f, 0.5f));
+        draw_list->PopClipRect();
+
+        double xpos, ypos;
+        glfwGetCursorPos(window, &xpos, &ypos);
+        if (glm::distance(glm::vec2(screenCoords), glm::vec2(xpos, ypos)) < 10){
+            ImGui::BeginTooltip();
+            ImGui::Text("Input %i: %.0f Hz", inFi.index, brain->inputArray[inFi.index]);
+            ImGui::EndTooltip();
+        }
+
+        ImGui::End();
+    }
+
     // Render neuron windows which are open
-    int i = 0;
     for (auto ID: selectedNeurons){
         if (neuronWindows.at(ID).open) renderNeuronWindow(ID);
     }
