@@ -1384,7 +1384,7 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
                 if (!selectNeuron(ID, true)) deselectNeuron(ID);   // Tries to select, if false the neuron is already selected and is then deselected.
             }
         }
-        if (std::get<1>(TTparams) == GLFW_MOUSE_BUTTON_RIGHT && std::get<2>(TTparams) == GLFW_PRESS) {
+        if (std::get<1>(TTparams) == GLFW_MOUSE_BUTTON_RIGHT && std::get<2>(TTparams) == GLFW_PRESS) { // Switch to navigation mode
             if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {navigationMode = true; showInterface = !showInterface;}
             else navigationMode = !navigationMode;
 
