@@ -60,6 +60,9 @@ class NeuCor {
         std::tuple<std::size_t, std::size_t> registerNeuron(coord3 pos, float potential, float activity);
         std::size_t getFreeID() const;
 
+        float* inputArray;
+        std::vector<InputFirer> inputHandler;
+
         boost::container::stable_vector<Neuron> neurons;
         Neuron* getNeuron(std::size_t ID);
         Synapse* getSynapse(std::size_t toID, std::size_t fromID);
@@ -71,10 +74,7 @@ class NeuCor {
         std::priority_queue<simulation, std::vector<simulation>, std::greater<simulation>> simulationQue;
         float currentTime = 0.0;
 
-        float* inputArray;
         unsigned inputArraySize;
-        std::vector<InputFirer> inputHandler;
-
         unsigned totalGenNeurons;
         std::vector<std::size_t> freeNeuronIDs;
 };
@@ -103,16 +103,17 @@ class simulator {
         bool deleted;
 };
 
-class InputFirer: public simulator {
-    public:
-        InputFirer(NeuCor* p, unsigned i, coord3 position = {NAN,NAN,NAN});
-        coord3 a;
-        coord3 b;
+struct InputFirer: public simulator {
+    InputFirer(NeuCor* p, unsigned i, coord3 position = {NAN,NAN,NAN});
+    coord3 a;
+    coord3 b;
 
-        void run();
-        void schedule(float deltaT, float frequency);
-        const unsigned index;
-        std::vector<std::size_t> near;
+    void run();
+    void schedule(float deltaT, float frequency);
+    float lastFire;
+    const unsigned index;
+    std::vector<std::size_t> near;
+    float radius;
 };
 
 class Neuron: public simulator {

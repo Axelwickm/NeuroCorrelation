@@ -236,8 +236,9 @@ InputFirer::InputFirer(NeuCor* p, unsigned i, coord3 position)
     b.y = a.y+sqrt(1.0-pow(cos(longitude),2.0))*sin(latitude);
     b.z = a.z+cos(longitude);
 
+    radius = 0.75;
     for (auto &neu: parentNet->neurons){
-        if (neu.position().getDist(a) < 0.75){
+        if (neu.position().getDist(a) < radius){
             near.push_back(neu.getID());
         }
     }
@@ -251,12 +252,12 @@ void InputFirer::run(){
 void InputFirer::schedule(float deltaT, float frequency){
     if (frequency == 0) return;
 
-    float lastFire = parentNet->getNeuron(near.at(0))->lastFire;
     if (lastFire != lastFire) lastFire = 0;
     float currentT = parentNet->getTime();
 
     for (float fireTime = lastFire + 1000.0/frequency; fireTime < currentT + deltaT; fireTime += 1000.0/frequency){
         parentNet->queSimulation(this, fireTime-currentT);
+        lastFire = fireTime;
     }
 }
 
@@ -592,7 +593,7 @@ void Synapse::run(){
 void Synapse::fire(float polW, float depolFac, float deltaStart){
     if (AP_fireTime != 0) return;
     AP_polW = polW, AP_depolFac = depolFac, AP_deltaStart = deltaStart;
-    AP_depolFac *= 2.0;
+    AP_depolFac *= 2.5;
     AP_depolFac *= weight;
 
     AP_fireTime = length*AP_speed;
@@ -606,7 +607,7 @@ void Synapse::synapticPlasticity(){
     float traceT = parentNet->getNeuron(tN)->trace;
     float traceS = powf(0.75,parentNet->getTime()-lastSpikeArrival);
 
-    float weightChange = STDP(traceS - traceT)*0.5;
+    float weightChange = STDP(traceT - traceS);
     weight += weightChange;
     weight = fmax(fmin(weight, 3.0), -3.0);
 
