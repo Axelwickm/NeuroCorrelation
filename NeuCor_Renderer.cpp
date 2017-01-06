@@ -1312,6 +1312,24 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
         if (ImGui::Button("Close all")){
             for (auto ID: selectedNeurons) neuronWindows.at(ID).open = false;
         }
+        static char selectNeuronBuf[64];
+        ImGui::InputText("ID", selectNeuronBuf, 64, ImGuiInputTextFlags_CharsDecimal);
+        ImGui::SameLine();
+        if (ImGui::Button("Select")){
+            int selected = 0; int offset = 0;
+            bool noSelected = true;
+            for (int i = 0; i<64; i++) if (selectNeuronBuf[i] != 0) {offset = i;}
+            for (int i = 63; 0 <= i; i--){
+                if (selectNeuronBuf[i] == 0) continue;
+                noSelected = false;
+                selected += (selectNeuronBuf[i]-48)*(float) powf(10, offset-i);;
+            }
+            if (brain->neurons.size() <= selected) std::cout<<"Neuron "<<selected<<" does not exist.\n";
+            else if (!noSelected){
+                selectNeuron(selected, false);
+                memset(selectNeuronBuf, 0, 64);
+            }
+        }
         break;
     }
 
