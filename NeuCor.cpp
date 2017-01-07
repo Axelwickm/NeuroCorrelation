@@ -608,7 +608,7 @@ void Synapse::synapticPlasticity(){
     float traceS = powf(0.75,parentNet->getTime()-lastSpikeArrival);
 
     float weightChange = STDP(traceT - traceS);
-    weight += weightChange;
+    weight += weightChange*0.1;
     weight = fmax(fmin(weight, 3.0), -3.0);
 
     //std::cout<<"Delta w = "<<weightChange<<std::endl;
@@ -619,7 +619,7 @@ inline float Synapse::STDP(float deltaT){
     #define TIME_CONSTANT 7.5
 
     if (0.0 < deltaT)
-        return exp(-deltaT/TIME_CONSTANT);
+        return 2.0*exp(-deltaT/TIME_CONSTANT);
     else if (deltaT < 0.0)
         return -exp(deltaT/TIME_CONSTANT);
     return 0.0;
