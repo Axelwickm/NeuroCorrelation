@@ -55,7 +55,7 @@ void NeuCor::makeConnections(){
 }
 
 void NeuCor::createNeuron(coord3 position){
-    #define SPAWN_DENSITY 3.6
+    #define SPAWN_DENSITY 6
     #define SPAWN_SIZE 2.0
     #define SPAWN_SPHERE true
 
@@ -278,7 +278,7 @@ Neuron::Neuron(NeuCor* p, coord3 position)
     buffer = 5.0;
 
     AP_h = 100.0, AP_depolW = 0.3, AP_polW = 0.6, AP_deltaPol = 1.16, AP_depolFac = 0.2, AP_deltaStart = 1.0;
-    AP_cutoff = 4.0;
+    AP_cutoff = 2.0;
 
     activityStartTime = parentNet->getTime();
     firings = 0;
@@ -504,12 +504,6 @@ void Neuron::run(){
 
     //y=sqrt(pi/2)*w*f*l^(x-o)*e^(0.5*w^2*log(l)^2)*(erf((w^2*log(l)-o+x)/(sqrt(2)*w))-erf((w^2*log(l)-o)/(sqrt(2)*w)))
     //y/(sqrt(pi/2)*w*f*e^(0.5*w^2*log(l)^2))=l^(x-o)*(erf((w^2*log(l)-o+x)/(sqrt(2)*w))-erf((w^2*log(l)-o)/(sqrt(2)*w)))
-
-    int randomID = rand()%parentNet->neurons.size();
-    randomID = 111;
-    if (ownID == randomID && false)
-        std::cout<<randomID<<"  -  "<<currentT<<"   "<<potential()<<std::endl;
-
 }
 
 void Neuron::fire(){
@@ -528,6 +522,7 @@ void Neuron::fire(){
     //vesicles -= 5.0;
 }
 void Neuron::transfer(){
+    parentNet->queSimulation(this, AP_cutoff);
     for (auto syn: inSynapses){
         parentNet->getSynapse(syn.first, syn.second);
     }
@@ -543,14 +538,9 @@ void Neuron::charge_passive(float deltaT, float currentT){
     for (auto syn: inSynapses){
         auto s = parentNet->getSynapse(syn.first, syn.second);
         float timeOffset = currentT - s->AP_fireTime;
-        if (timeOffset <= 0.0 || s->AP_fireTime == 0){continue;}
+        if (timeOffset <= 0.0 || s->AP_fireTime == 0) continue;
 
-        float synapseIntegral = sqrt(3.1459/2.0)*s->AP_polW*s->AP_depolFac
-            * pow(recharge, timeOffset-s->AP_deltaStart)
-            * exp(0.5*pow(s->AP_polW,2.0)*pow(log(recharge),2.0))
-            * (erf((pow(s->AP_polW,2.0)*log(recharge)-s->AP_deltaStart+timeOffset) / (sqrt(2.0)*s->AP_polW))
-                - erf((pow(s->AP_polW,2.0)*log(recharge)-s->AP_deltaStart) / (sqrt(2.0)*s->AP_polW)));
-        synapseSum += synapseIntegral;
+        synapseSum += 20.0*deltaT*s->AP_depolFac;
 
         if (AP_cutoff < timeOffset) s->AP_fireTime = 0;
     }
