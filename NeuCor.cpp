@@ -256,8 +256,10 @@ void InputFirer::schedule(float deltaT, float frequency){
     float currentT = parentNet->getTime();
 
     for (float fireTime = lastFire + 1000.0/frequency; fireTime < currentT + deltaT; fireTime += 1000.0/frequency){
-        parentNet->queSimulation(this, fireTime-currentT);
-        lastFire = fireTime;
+        if (currentT < fireTime){
+            parentNet->queSimulation(this, fireTime-currentT);
+            lastFire = fireTime;
+        }
     }
 }
 
