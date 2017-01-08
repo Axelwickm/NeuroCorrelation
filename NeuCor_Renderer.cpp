@@ -1261,11 +1261,11 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
 
         ImGui::Text("Raster plot");
         float rasterPlotWidth = ImGui::GetContentRegionAvailWidth(), rasterPlotHeight = sqrt(brain->neurons.size())*15.f;
-        float rasterPlotTime = 20.0; // ms
+        static float rasterPlotTime = 20.0; // ms
 
         ImVec2 nextPos = ImVec2(ImGui::GetWindowPos().x + 8, ImGui::GetItemRectMax().y + 20);
         ImDrawList* drawList = ImGui::GetWindowDrawList();
-        ImGui::Dummy(ImVec2(rasterPlotWidth, rasterPlotHeight+50));
+
         drawList->AddRectFilled(nextPos, ImVec2(nextPos.x+rasterPlotWidth+10, nextPos.y+rasterPlotHeight+10), ImColor(0.2f, 0.2f, 0.2f));
         float brainTime = brain->getTime();
         int neuronCount = brain->neurons.size();
@@ -1276,6 +1276,12 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
                     nextPos.y+5+rasterPlotHeight*neu.getID()/neuronCount);
                 drawList->AddRectFilled(spikePos, ImVec2(spikePos.x+2, spikePos.y+2), ImColor(0.9f, 0.6f, 0.9f));
             }
+        }
+        ImGui::Dummy(ImVec2(rasterPlotWidth, rasterPlotHeight+50));
+        if (ImGui::IsItemClicked()) ImGui::OpenPopup("Raster plot settings");
+        if (ImGui::BeginPopup("Raster plot settings")){
+                ImGui::DragFloat("Time range", &rasterPlotTime, 0.02, 0.1, 100, "%.2f", 2);
+                ImGui::EndPopup();
         }
 
         break;
