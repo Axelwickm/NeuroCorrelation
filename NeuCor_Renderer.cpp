@@ -1263,9 +1263,7 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
         float rasterPlotWidth = ImGui::GetContentRegionAvailWidth(), rasterPlotHeight = sqrt(brain->neurons.size())*15.f;
         float rasterPlotTime = 20.0; // ms
 
-        ImVec2 nextPos = ImGui::GetItemRectMax();
-        nextPos.x -= ImGui::GetItemRectMax().x + 20;
-        nextPos.y += 10;
+        ImVec2 nextPos = ImVec2(ImGui::GetWindowPos().x + 8, ImGui::GetItemRectMax().y + 20);
         ImDrawList* drawList = ImGui::GetWindowDrawList();
         ImGui::Dummy(ImVec2(rasterPlotWidth, rasterPlotHeight+50));
         drawList->AddRectFilled(nextPos, ImVec2(nextPos.x+rasterPlotWidth+10, nextPos.y+rasterPlotHeight+10), ImColor(0.2f, 0.2f, 0.2f));
