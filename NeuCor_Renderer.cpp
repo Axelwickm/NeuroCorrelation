@@ -1357,8 +1357,9 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
         }
         static char selectNeuronBuf[64];
         ImGui::InputText("ID", selectNeuronBuf, 64, ImGuiInputTextFlags_CharsDecimal);
+        bool shouldSelect = (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_KP_ENTER) == GLFW_PRESS) && ImGui::IsItemActive();
         ImGui::SameLine();
-        if (ImGui::Button("Select")){
+        if (shouldSelect || ImGui::Button("Select") ){
             int selected = 0; int offset = 0;
             bool noSelected = true;
             for (int i = 0; i<64; i++) if (selectNeuronBuf[i] != 0) {offset = i;}
@@ -1379,7 +1380,6 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
     case (MODULE_CONTROLS): {
         if (windowed) ImGui::Begin("Controls");
         else {openTree = ImGui::CollapsingHeader("Controls"); if (!openTree) break; activeTree = ImGui::IsItemActive();}
-        ImGui::Text("Module isn't defined in NeuCor_Renderer::renderModule().");
         ImGui::Text("TODO.");
         break;
     }
