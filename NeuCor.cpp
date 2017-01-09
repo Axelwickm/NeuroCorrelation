@@ -121,6 +121,9 @@ float NeuCor::getTime() const {return currentTime;}
 void NeuCor::queSimulation(simulator* s, const float time){
     simulationQue.emplace(s, currentTime + time);
 }
+void NeuCor::queFlip(std::pair<std::size_t, std::size_t> ID){
+    synapseFlippingQue.push_back(ID);
+}
 void NeuCor::resetActivities(){
     for (auto &neu: neurons) neu.resetActivity();
 }
@@ -467,6 +470,11 @@ float Synapse::getWeight() const {
 
 void NeuCor::run(){
     assert(0 <= runSpeed);
+
+    for (auto it = synapseFlippingQue.begin(); it != synapseFlippingQue.end(); it++)
+        getSynapse(*it)->flipDirection();
+    synapseFlippingQue.clear();
+
     if (runAll){
         for (auto &neu: neurons) queSimulation(&neu, 0.0);
     }
@@ -615,4 +623,5 @@ inline float Synapse::STDP(float deltaT){
     else if (deltaT < 0.0)
         return -exp(deltaT/TIME_CONSTANT);
     return 0.0;
+    //if (weight < 0) parentNet->queFlip(std::pair<std::size_t, std::size_t>(pN, tN)); // Que flipping of synapse if weight is 0
 }

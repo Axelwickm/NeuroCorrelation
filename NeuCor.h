@@ -67,6 +67,7 @@ class NeuCor {
         Neuron* getNeuron(std::size_t ID);
         Synapse* getSynapse(std::size_t toID, std::size_t fromID);
         Synapse* getSynapse(std::pair<std::size_t, std::size_t> ID);
+        void queFlip(std::pair<std::size_t, std::size_t>);
 
         void deleteSynapse(std::size_t toID, std::size_t fromID);
         void deleteNeuron(std::size_t ID);
@@ -77,6 +78,7 @@ class NeuCor {
         unsigned inputArraySize;
         unsigned totalGenNeurons;
         std::vector<std::size_t> freeNeuronIDs;
+        std::vector<std::pair<std::size_t, std::size_t> > synapseFlippingQue;
 };
 
 struct simulation {
