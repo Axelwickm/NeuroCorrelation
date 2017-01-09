@@ -12,9 +12,9 @@ NeuCor::NeuCor(int n_neurons) {
     runAll = false;
     totalGenNeurons = 0;
 
-    learningRate = 0.3;
+    learningRate = 0.6;
     preSynapticTraceDecay = 0.5;
-    postSynapticTraceDecay = 0.8;
+    postSynapticTraceDecay = 0.9;
 
     totalGenNeurons = n_neurons;
     for (int n = 0; n<n_neurons; n++){
@@ -243,7 +243,7 @@ InputFirer::InputFirer(NeuCor* p, unsigned i, coord3 position)
     b.y = a.y+sqrt(1.0-pow(cos(longitude),2.0))*sin(latitude);
     b.z = a.z+cos(longitude);
 
-    radius = 0.75;
+    radius = 0.5;
     for (auto &neu: parentNet->neurons){
         if (neu.position().getDist(a) < radius){
             near.push_back(neu.getID());
@@ -597,7 +597,7 @@ void Synapse::run(){
 void Synapse::fire(float polW, float depolFac, float deltaStart){
     if (AP_fireTime != 0) return;
     AP_polW = polW, AP_depolFac = depolFac, AP_deltaStart = deltaStart;
-    AP_depolFac *= 2.5;
+    AP_depolFac *= 1.45;
     AP_depolFac *= weight;
 
     AP_fireTime = length*AP_speed;
