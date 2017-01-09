@@ -1263,20 +1263,37 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
         float rasterPlotWidth = ImGui::GetContentRegionAvailWidth(), rasterPlotHeight = sqrt(brain->neurons.size())*15.f;
         static float rasterPlotTime = 20.0; // ms
 
-        ImVec2 nextPos = ImVec2(ImGui::GetWindowPos().x + 8, ImGui::GetItemRectMax().y + 20);
+        ImVec2 nextPos = ImVec2(ImGui::GetWindowPos().x + 8, ImGui::GetItemRectMax().y + 15);
         ImDrawList* drawList = ImGui::GetWindowDrawList();
 
         drawList->AddRectFilled(nextPos, ImVec2(nextPos.x+rasterPlotWidth+10, nextPos.y+rasterPlotHeight+10), ImColor(0.2f, 0.2f, 0.2f));
         float brainTime = brain->getTime();
         int neuronCount = brain->neurons.size();
+        static std::deque<std::vector<int> > firePlot;
+        int firePlotSize = rasterPlotTime/(brain->runSpeed);
+
+        firePlot.emplace_back();
+        firePlot.back().reserve(neuronCount/5);
         for (auto &neu: brain->neurons) {
-            if (neu.lastFire == neu.lastFire){
-                ImVec2 spikePos = ImVec2(
-                    nextPos.x+5+rasterPlotWidth - rasterPlotWidth*(brainTime-neu.lastFire)/rasterPlotTime,
-                    nextPos.y+5+rasterPlotHeight*neu.getID()/neuronCount);
-                drawList->AddRectFilled(spikePos, ImVec2(spikePos.x+2, spikePos.y+2), ImColor(0.9f, 0.6f, 0.9f));
+            if (brainTime - neu.lastFire < brain->runSpeed){
+                firePlot.back().push_back(neu.getID());
             }
         }
+        firePlot.back().shrink_to_fit();
+        for (int i = 0; i < (int) firePlot.size()-firePlotSize; i++)
+            firePlot.pop_front();
+        float i = 0;
+        for (auto &frame: firePlot){
+            for (auto &fire: frame){
+                ImVec2 spikePos = ImVec2(
+                        nextPos.x+5+rasterPlotWidth*((float) i/firePlot.size()),
+                        nextPos.y+5+rasterPlotHeight*fire/neuronCount);
+                drawList->AddRectFilled(spikePos, ImVec2(spikePos.x+1.5, spikePos.y+1.5), ImColor(0.9f, 0.6f, 0.9f));
+            }
+            i++;
+        }
+
+
         ImGui::Dummy(ImVec2(rasterPlotWidth, rasterPlotHeight+50));
         if (ImGui::IsItemClicked()) ImGui::OpenPopup("Raster plot settings");
         if (ImGui::BeginPopup("Raster plot settings")){
@@ -1363,6 +1380,7 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
         if (windowed) ImGui::Begin("Controls");
         else {openTree = ImGui::CollapsingHeader("Controls"); if (!openTree) break; activeTree = ImGui::IsItemActive();}
         ImGui::Text("Module isn't defined in NeuCor_Renderer::renderModule().");
+        ImGui::Text("TODO.");
         break;
     }
 
