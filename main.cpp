@@ -13,23 +13,29 @@ void windowDestroy() {
 
 int main(int argc, char* args[]){
     #define SEED -1
-
-    srand(time(NULL));
-    if (SEED != -1) srand(SEED);
+    unsigned seed = SEED;
+    if (SEED == -1) seed = time(NULL);
+    srand(seed);
+    std::cout<<"Current seed: "<<seed<<std::endl;
 
     NeuCor brain(500);
 
-    /*
-    for (float xpos = 0; xpos<30; xpos += 25.0/30.0){
-        break;
+/*
+    for (float xpos = 0; xpos<8; xpos++){
         coord3 d;
-        d.x = xpos;
-        d.y = (float) rand()/RAND_MAX*0.08;
-        d.z = 0;
+        if (xpos == 0) d = {0.5, 0, 0};
+        if (xpos == 1) d = {0, 0.5, 0};
+        if (xpos == 2) d = {0, 0, 0.5};
+        if (xpos == 3) d = {0, 0, 0.6};
+        if (xpos == 4) d = {0, 0, 0.8};
+        if (xpos == 5) d = {0, 0, 0.7};
+        if (xpos == 5) d = {0.6, 0, 0};
+        if (xpos == 6) d = {0.4, 0.1, 0};
+        if (xpos == 7) d = {0.4, 0.1, 0};
         brain.createNeuron(d);
     }
     brain.makeConnections();
-    */
+*/
 
     NeuCor_Renderer brainRenderer(&brain);
     brainRenderer.runBrainOnUpdate = true;
@@ -40,8 +46,8 @@ int main(int argc, char* args[]){
     brain.runSpeed = 0.05;
 
 
-    float inputs[] = {250, 250};
-    coord3 inputPositions[] = {{2,0,0},{-2,0,0}};
+    float inputs[] = {50, 50, 0};
+    coord3 inputPositions[] = {{1,0,0},{-2,0,0}, {-0.5, 1.5, 0}};
     brain.setInputRateArray(inputs, sizeof(inputs)/sizeof(float), inputPositions);
 
     std::cout<<"Starting program loop\n";
@@ -50,10 +56,14 @@ int main(int argc, char* args[]){
         t++;
         if (false) brain.run();
 
-        if (brain.getTime() > 20){inputs[0] = 0; inputs[1] = 0;}
-        else if (sin(brain.getTime()/10.0) > 0.0) inputs[0] = 250;
-        else if (sin(brain.getTime()/10.0) > 0.0) inputs[1] = 250;
-        else inputs[0] = 0;
+        //if (brain.getTime() > 20){inputs[0] = 0; inputs[1] = 0;}
+        if (sin(brain.getTime()/10.0) > 0.0){
+            inputs[0] = 100; inputs[1] = 100;
+        }
+        else {
+            inputs[0] = 0; inputs[1] = 0;
+        }
+        //if (rand()%100 == 0) inputs[2] = rand()%200;
         //std::cout<<inputs[0]<<std::endl;
 
         brainRenderer.pollWindow();
