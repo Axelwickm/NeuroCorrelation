@@ -1107,6 +1107,7 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
             }
 
         }
+        ImGui::SliderFloat("Learning rate", &brain->learningRate, 0, 4, "%.3f");
 
     } break;
 

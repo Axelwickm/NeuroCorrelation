@@ -12,6 +12,10 @@ NeuCor::NeuCor(int n_neurons) {
     runAll = false;
     totalGenNeurons = 0;
 
+    learningRate = 0.3;
+    preSynapticTraceDecay = 0.5;
+    postSynapticTraceDecay = 0.8;
+
     totalGenNeurons = n_neurons;
     for (int n = 0; n<n_neurons; n++){
         coord3 d;
@@ -267,7 +271,7 @@ void InputFirer::schedule(float deltaT, float frequency){
 }
 
 Neuron::Neuron(NeuCor* p, coord3 position)
-:simulator(p), ownID(p->getFreeID()) {
+:simulator(p), ownID(p->getFreeID()), traceDecayRate(p->postSynapticTraceDecay) {
     auto registration = p->registerNeuron(position, 0.0, 1.0);
     pos = std::get<0>(registration);
     PA = std::get<1>(registration);
@@ -366,12 +370,12 @@ void Neuron::resetActivity(){firings = 0; activityStartTime = parentNet->getTime
 std::size_t Neuron::getID() const { return ownID;}
 
 Synapse::Synapse(NeuCor* p, std::size_t parent, std::size_t target)
-:simulator(p) {
+:simulator(p), traceDecayRate(p->preSynapticTraceDecay) {
     pN = parent;
     tN = target;
     parentNet->getNeuron(target)->inSynapses.emplace(parent, target);
 
-    lastSpikeArrival = 0.0;
+    lastSpikeArrival = -INFINITY;
 
     weight = (float) rand()/RAND_MAX*2.0 + 0.5;
 
@@ -384,7 +388,7 @@ Synapse::Synapse(NeuCor* p, std::size_t parent, std::size_t target)
     AP_polW = 0, AP_depolFac = 0, AP_deltaStart = 0, AP_fireTime = 0;
     AP_speed = 2.0;
 }
-Synapse::Synapse(const Synapse &other):simulator(other.parentNet){
+Synapse::Synapse(const Synapse &other):simulator(other.parentNet), traceDecayRate(other.traceDecayRate){
     // Simulator member update
     lastRan = other.lastRan;
 
@@ -502,7 +506,7 @@ void Neuron::run(){
 
     if (deltaT == 0) return;
 
-    trace *= powf(0.75, deltaT);
+    trace *= powf(traceDecayRate, deltaT);
 
     charge_passive(deltaT, currentT);
     charge_thresholdCheck(deltaT, currentT);
@@ -604,24 +608,17 @@ void Synapse::fire(float polW, float depolFac, float deltaStart){
 }
 
 void Synapse::synapticPlasticity(){
-    float traceT = parentNet->getNeuron(tN)->trace;
-    float traceS = powf(0.75,parentNet->getTime()-lastSpikeArrival);
+    float traceS = powf(traceDecayRate, parentNet->getTime()-lastSpikeArrival); // Synapse trace (presynaptic)
+    float traceT = parentNet->getNeuron(tN)->trace; // Target trace (postsynaptic)
+    bool inhibitory = weight < 0;
+    if (traceT == 1) traceT = 0;
+    if (traceS == 1) traceS = 0;
 
-    float weightChange = STDP(traceT - traceS);
-    weight += weightChange*0.1;
-    weight = fmax(fmin(weight, 3.0), -3.0);
-
+    float weightChange = traceS - traceT;
+    weight += weightChange*parentNet->learningRate;
+    if (!inhibitory) weight = fmax(fmin(weight, 3.0), 0.0);
+    else weight = fmax(fmin(weight, 0.0), -3.0);
     //std::cout<<"Delta w = "<<weightChange<<std::endl;
 
-    //if (rand()%80 == 0) std::cout<<"S "<<weight<<std::endl;
-}
-inline float Synapse::STDP(float deltaT){
-    #define TIME_CONSTANT 7.5
-
-    if (0.0 < deltaT)
-        return 2.0*exp(-deltaT/TIME_CONSTANT);
-    else if (deltaT < 0.0)
-        return -exp(deltaT/TIME_CONSTANT);
-    return 0.0;
     //if (weight < 0) parentNet->queFlip(std::pair<std::size_t, std::size_t>(pN, tN)); // Que flipping of synapse if weight is 0
 }

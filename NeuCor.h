@@ -37,6 +37,7 @@ class NeuCor {
         float runSpeed;
         bool runAll;
         float getTime() const;
+        float learningRate, preSynapticTraceDecay, postSynapticTraceDecay;
 
         void setInputRateArray(float inputs[], unsigned inputCount, coord3 inputPositions[] = {NULL});
 
@@ -159,6 +160,7 @@ class Neuron: public simulator {
         float vesicles, reuptake, buffer;
         float AP_h, AP_depolW, AP_polW, AP_deltaPol, AP_depolFac, AP_deltaStart;
         float AP_cutoff;
+        const float traceDecayRate;
 
         float activityStartTime;
         unsigned firings;
@@ -186,7 +188,6 @@ class Synapse: public simulator {
         friend class NeuCor_Renderer;
 
         void synapticPlasticity();
-        inline float STDP(float deltaT);
 
         float getPrePot() const;
         float getPostPot() const;
@@ -201,6 +202,7 @@ class Synapse: public simulator {
 
         float AP_polW, AP_depolFac, AP_deltaStart, AP_fireTime;
         float AP_speed;
+        const float traceDecayRate;
     private:
         float length;
         float weight;
