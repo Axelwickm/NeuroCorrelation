@@ -729,6 +729,7 @@ inline float NeuCor_Renderer::activityFunction(int ID, bool update){
 inline glm::vec3 NeuCor_Renderer::screenCoordinates(glm::vec3 worldPos, bool nomalizedZ){
     glm::vec4 posClip = vp * glm::vec4(worldPos.x, worldPos.y, worldPos.z, 1.0f );
     glm::vec3 posNDC = glm::vec3(posClip) / posClip.w;
+    if (1.0 < posNDC.z) return glm::vec3(NAN, NAN, NAN); // Don't give coordinates if behind camera
     if (nomalizedZ){
         GLfloat dR[2]; // Depth range
         glGetFloatv(GL_DEPTH_RANGE, &dR[0]);
