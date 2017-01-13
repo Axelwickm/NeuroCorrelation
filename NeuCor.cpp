@@ -147,7 +147,6 @@ Synapse* NeuCor::getSynapse(std::pair<std::size_t, std::size_t> ID){
 
 void NeuCor::deleteNeuron(std::size_t ID){
     Neuron* n = getNeuron(ID);
-    n->exterminate();
 
     coord3 emptyPos;
     emptyPos.setNAN();
@@ -221,17 +220,10 @@ void NeuCor::printSynapseWeightDist() const {
 }
 
 simulator::simulator(NeuCor* p){
-    deleted = false;
-
     parentNet = p;
     lastRan = parentNet->getTime();
 }
-bool simulator::exists() const {
-    return !deleted;
-}
-void simulator::exterminate(){
-    deleted = true;
-}
+deletedSimulator::deletedSimulator(NeuCor* p): simulator(p) {};
 
 InputFirer::InputFirer(NeuCor* p, unsigned i, coord3 position)
 :simulator(p), index(i) {
@@ -316,18 +308,13 @@ Neuron& Neuron::operator=(const Neuron& other){
     trace = other.trace;
     lastFire = other.lastFire;
 
-    deleted = other.deleted;
-
     activityStartTime = other.activityStartTime;
     firings = other.firings;
     setActivity(0);
 }
 void Neuron::makeConnections(){
-    if (!exists()) return;
     coord3 nPos = position();
     for (size_t i = 0; i<parentNet->neurons.size(); i++){
-        if (not parentNet->neurons.at(i).exists()) continue;
-
         coord3 otherPos = parentNet->neurons.at(i).position();
         float distance = nPos.getDist(otherPos);
         if (distance<1.0 and i != ownID){
@@ -429,7 +416,6 @@ void Synapse::flipDirection(){
     neuP->inSynapses.emplace(tN, pN);
     neuT->inSynapses.erase(inSyn);
 
-
     for (auto itr = neuP->outSynapses.begin(); itr != neuP->outSynapses.end(); itr++){
         if (itr->tN == tN) {
             std::swap(tN, pN);
@@ -497,8 +483,6 @@ void NeuCor::run(){
 }
 
 void Neuron::run(){
-    if (!exists()) return;
-
     // Determine time
     float currentT = parentNet->getTime();
     float deltaT = currentT - lastRan;
@@ -585,7 +569,7 @@ void Neuron::AP(float currentT){
 
 
 void Synapse::run(){
-    if (!exists() || (AP_fireTime < parentNet->getTime())) return;
+    if (AP_fireTime < parentNet->getTime()) return;
 
     parentNet->getNeuron(tN)->transfer();
     parentNet->queSimulation(parentNet->getNeuron(tN), 0.1);
