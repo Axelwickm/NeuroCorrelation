@@ -95,15 +95,14 @@ class simulator {
         NeuCor* parentNet;
 
         virtual void run() = 0;
-
-        bool exists() const;
-        void exterminate();
     protected:
         friend class Neuron;
         friend class Synapse;
         float lastRan;
-    private:
-        bool deleted;
+};
+struct deletedSimulator: public simulator {
+    deletedSimulator(NeuCor* p);
+    void run(){}; // Run-function which does nothing
 };
 
 struct InputFirer: public simulator {
