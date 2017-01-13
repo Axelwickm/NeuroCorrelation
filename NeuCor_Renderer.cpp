@@ -815,7 +815,8 @@ void NeuCor_Renderer::renderInterface(){
     }
 
     // Render inputs firers
-    ImGui::SetNextWindowPos( ImVec2(0,0) ); // Naked window   V
+    ImGui::SetNextWindowPos( ImVec2(0,0) ); // Naked background window
+    ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
     ImGui::Begin("BCKGND", NULL, ImGui::GetIO().DisplaySize, 0.0f, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus );
     for (auto &inFi: brain->inputHandler){
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
