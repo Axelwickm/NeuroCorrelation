@@ -456,8 +456,8 @@ void NeuCor_Renderer::updateView(){
                 synPot.push_back(syn.getPostPot()+0.03);
             }
             else if (renderMode == RENDER_PLASTICITY){
-                synPot.push_back(syn.getWeight()/2.0);
-                synPot.push_back(syn.getWeight()/2.0);
+                synPot.push_back(syn.getWeight()/2.0*log(brain->getNeuron(syn.pN)->activity()+1.f));
+                synPot.push_back(syn.getWeight()/2.0*log(brain->getNeuron(syn.tN)->activity()+1.f));
             }
             else if (renderMode == RENDER_ACTIVITY && evaluated == NULL){
                 synPot.push_back(log(brain->getNeuron(syn.pN)->activity()+1.f));
