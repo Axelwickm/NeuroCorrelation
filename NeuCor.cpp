@@ -13,8 +13,8 @@ NeuCor::NeuCor(int n_neurons) {
     totalGenNeurons = 0;
 
     learningRate = 0.6;
-    preSynapticTraceDecay = 0.5;
-    postSynapticTraceDecay = 0.9;
+    presynapticTraceDecay = 0.5;
+    postsynapticTraceDecay = 0.9;
 
     totalGenNeurons = n_neurons;
     for (int n = 0; n<n_neurons; n++){
@@ -122,11 +122,11 @@ std::size_t NeuCor::getFreeID() const {
 
 float NeuCor::getTime() const {return currentTime;}
 
-void NeuCor::queSimulation(simulator* s, const float time){
-    simulationQue.emplace(s, currentTime + time);
+void NeuCor::queueSimulation(simulator* s, const float time){
+    simulationQueue.emplace(s, currentTime + time);
 }
 void NeuCor::queFlip(std::pair<std::size_t, std::size_t> ID){
-    synapseFlippingQue.push_back(ID);
+    synapseFlippingQueue.push_back(ID);
 }
 void NeuCor::resetActivities(){
     for (auto &neu: neurons) neu.resetActivity();
@@ -258,14 +258,14 @@ void InputFirer::schedule(float deltaT, float frequency){
 
     for (float fireTime = lastFire + 1000.0/frequency; fireTime < currentT + deltaT; fireTime += 1000.0/frequency){
         if (currentT < fireTime){
-            parentNet->queSimulation(this, fireTime-currentT);
+            parentNet->queueSimulation(this, fireTime-currentT);
             lastFire = fireTime;
         }
     }
 }
 
 Neuron::Neuron(NeuCor* p, coord3 position)
-:simulator(p), ownID(p->getFreeID()), traceDecayRate(p->postSynapticTraceDecay) {
+:simulator(p), ownID(p->getFreeID()), traceDecayRate(p->postsynapticTraceDecay) {
     auto registration = p->registerNeuron(position, 0.0, 1.0);
     pos = std::get<0>(registration);
     PA = std::get<1>(registration);
@@ -360,7 +360,7 @@ void Neuron::resetActivity(){firings = 0; activityStartTime = parentNet->getTime
 std::size_t Neuron::getID() const { return ownID;}
 
 Synapse::Synapse(NeuCor* p, std::size_t parent, std::size_t target)
-:simulator(p), traceDecayRate(p->preSynapticTraceDecay) {
+:simulator(p), traceDecayRate(p->presynapticTraceDecay) {
     pN = parent;
     tN = target;
     parentNet->getNeuron(target)->inSynapses.emplace(parent, target);
@@ -464,23 +464,23 @@ float Synapse::getWeight() const {
 void NeuCor::run(){
     assert(0 <= runSpeed);
 
-    for (auto it = synapseFlippingQue.begin(); it != synapseFlippingQue.end(); it++)
+    for (auto it = synapseFlippingQueue.begin(); it != synapseFlippingQueue.end(); it++)
         getSynapse(*it)->flipDirection();
-    synapseFlippingQue.clear();
+    synapseFlippingQueue.clear();
 
     if (runAll){
-        for (auto &neu: neurons) queSimulation(&neu, 0.0);
+        for (auto &neu: neurons) queueSimulation(&neu, 0.0);
     }
 
     for (int i = 0; i<inputHandler.size(); i++){
         inputHandler.at(i).schedule(runSpeed, inputArray[i]);
     }
     float const targetTime = currentTime + runSpeed;
-    while (simulationQue.size() != 0){
-        currentTime = simulationQue.top().stime;
-        if (currentTime < simulationQue.top().stime || targetTime < currentTime) break;
-        simulationQue.top().addr->run();
-        simulationQue.pop();
+    while (simulationQueue.size() != 0){
+        currentTime = simulationQueue.top().stime;
+        if (currentTime < simulationQueue.top().stime || targetTime < currentTime) break;
+        simulationQueue.top().addr->run();
+        simulationQueue.pop();
     }
     currentTime = targetTime;
 }
@@ -495,6 +495,7 @@ void Neuron::run(){
 
     trace *= powf(traceDecayRate, deltaT);
 
+    charge_insynapses(deltaT, currentT);
     charge_passive(deltaT, currentT);
     charge_thresholdCheck(deltaT, currentT);
     AP(currentT);
@@ -523,36 +524,33 @@ void Neuron::fire(){
     //vesicles -= 5.0;
 }
 void Neuron::transfer(){
-    parentNet->queSimulation(this, AP_cutoff);
-    for (auto syn: inSynapses){
-        parentNet->getSynapse(syn.first, syn.second);
-    }
+    parentNet->queueSimulation(this, AP_cutoff);
 }
 void Neuron::givePotential(float pot){
     setPotential(potential()+pot);
 }
 
 void Neuron::charge_passive(float deltaT, float currentT){
-    float newPot;
-    float synapseSum = 0.0;
-
-    for (auto syn: inSynapses){
-        auto s = parentNet->getSynapse(syn.first, syn.second);
-        float timeOffset = currentT - s->AP_fireTime;
-        if (timeOffset <= 0.0 || s->AP_fireTime == 0) continue;
-
-        synapseSum += 20.0*deltaT*s->AP_depolFac;
-
-        if (AP_cutoff < timeOffset) s->AP_fireTime = 0;
-    }
-
-    newPot = ((float) potential()-baselevel) * powf(recharge, deltaT) + baselevel + synapseSum;
-
+    float newPot = ((float) potential()-baselevel) * powf(recharge, deltaT) + baselevel;
     setPotential(newPot);
 }
 
 void Neuron::charge_thresholdCheck(float deltaT, float currentT){
     if (threshold < potential() && (lastFire != lastFire || AP_cutoff < (float) currentT-lastFire) && 0.0 < vesicles) fire();
+}
+
+void Neuron::charge_insynapses(float deltaT, float currentT){
+    float newPot = potential();
+    for (auto syn: inSynapses){
+        auto s = parentNet->getSynapse(syn.first, syn.second);
+        float timeOffset = currentT - s->AP_fireTime;
+        if (timeOffset <= 0.0 || s->AP_fireTime == 0) continue;
+
+        newPot += 20.0*deltaT*s->AP_depolFac;
+
+        if (AP_cutoff < timeOffset) s->AP_fireTime = 0;
+    }
+    setPotential(newPot);
 }
 
 void Neuron::vesicles_uptake(float deltaT){
@@ -575,7 +573,7 @@ void Synapse::run(){
     if (AP_fireTime < parentNet->getTime()) return;
 
     parentNet->getNeuron(tN)->transfer();
-    parentNet->queSimulation(parentNet->getNeuron(tN), 0.1);
+    parentNet->queueSimulation(parentNet->getNeuron(tN), 0.1);
 
     lastSpikeArrival = parentNet->getTime();
 
@@ -588,7 +586,7 @@ void Synapse::fire(float polW, float depolFac, float deltaStart){
     AP_depolFac *= weight;
 
     AP_fireTime = length*AP_speed;
-    parentNet->queSimulation(this, AP_fireTime);
+    parentNet->queueSimulation(this, AP_fireTime);
     AP_fireTime += parentNet->getTime();
 
     lastSpikeStart = parentNet->getTime();
