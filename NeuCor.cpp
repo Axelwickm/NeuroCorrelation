@@ -235,7 +235,7 @@ InputFirer::InputFirer(NeuCor* p, unsigned i, coord3 position)
     b.y = a.y+sqrt(1.0-pow(cos(longitude),2.0))*sin(latitude);
     b.z = a.z+cos(longitude);
 
-    radius = 0.5;
+    radius = 0.75;
     for (auto &neu: parentNet->neurons){
         if (neu.position().getDist(a) < radius){
             near.push_back(neu.getID());
@@ -320,6 +320,7 @@ void Neuron::makeConnections(){
         if (distance<1.0 and i != ownID){
             bool allowed = true;
             for (size_t j = 0; j < parentNet->neurons.at(i).outSynapses.size(); j++){
+                break;
                 if (parentNet->getNeuron(parentNet->neurons.at(i).outSynapses.at(j).tN) == this){
                     allowed = false;
                     break;
@@ -333,7 +334,7 @@ void Neuron::makeConnections(){
             }
             if (allowed){
                 outSynapses.emplace_back(parentNet, ownID, i);
-                if (rand()%2 == 0) outSynapses.back().flipDirection();
+                //if (rand()%2 == 0) outSynapses.back().flipDirection();
             }
         }
     }
@@ -597,6 +598,8 @@ void Synapse::synapticPlasticity(){
     bool inhibitory = weight < 0;
     if (traceT == 1) traceT = 0;
     if (traceS == 1) traceS = 0;
+
+    if (weight == 0 && !inhibitory && rand()%120 == 0) weight += 3.0; // 1/120 chance of weight being boosted (this allows for signal expansion and reservation throughout the brain)
 
     float weightChange = traceS - traceT;
     weight += weightChange*parentNet->learningRate;

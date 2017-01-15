@@ -46,7 +46,7 @@ int main(int argc, char* args[]){
     brain.runSpeed = 0.05;
 
 
-    float inputs[] = {50, 50, 0};
+    float inputs[] = {0, 0, 200};
     coord3 inputPositions[] = {{1,0,0},{-2,0,0}, {-0.5, 1.5, 0}};
     brain.setInputRateArray(inputs, sizeof(inputs)/sizeof(float), inputPositions);
 
@@ -57,12 +57,14 @@ int main(int argc, char* args[]){
         if (false) brain.run();
 
         //if (brain.getTime() > 20){inputs[0] = 0; inputs[1] = 0;}
-        if (sin(brain.getTime()/10.0) > 0.0){
+        /*if (sin(brain.getTime()/30.0) > 0.0){
             inputs[0] = 100; inputs[1] = 100;
         }
         else {
             inputs[0] = 0; inputs[1] = 0;
-        }
+        }*/
+        if (brain.getTime()>2000.0) inputs[0] = 200;
+        if (brain.getTime()>2000.0) inputs[2] = 100;
         //if (rand()%100 == 0) inputs[2] = rand()%200;
         //std::cout<<inputs[0]<<std::endl;
 
