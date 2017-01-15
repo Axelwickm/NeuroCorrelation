@@ -106,16 +106,14 @@ struct deletedSimulator: public simulator {
 };
 
 struct InputFirer: public simulator {
-    InputFirer(NeuCor* p, unsigned i, coord3 position = {NAN,NAN,NAN});
-    coord3 a;
-    coord3 b;
-
-    void run();
-    void schedule(float deltaT, float frequency);
-    float lastFire;
-    const unsigned index;
-    std::vector<std::size_t> near;
+    InputFirer(NeuCor* p, coord3 position = {NAN,NAN,NAN}); // If positions are NAN, a random position is assigned
+    coord3 a;                                               // Position
     float radius;
+    std::vector<std::size_t> near;                          // IDs of all neurons closer than radius
+
+    void schedule(float deltaT, float frequency);           // Schedules itself to be run at even intervals (frequency) for the next given ms (deltaT)
+    float lastFire;                                         // The last scheduled time
+    void run();                                             // Runs all neurons in near vector
 };
 
 class Neuron: public simulator {

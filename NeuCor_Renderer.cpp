@@ -859,6 +859,7 @@ void NeuCor_Renderer::renderInterface(){
     ImGui::SetNextWindowPos( ImVec2(0,0) ); // Naked background window
     ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
     ImGui::Begin("BCKGND", NULL, ImGui::GetIO().DisplaySize, 0.0f, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus );
+    int inputHandlerID = 0;
     for (auto &inFi: brain->inputHandler){
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
@@ -869,9 +870,10 @@ void NeuCor_Renderer::renderInterface(){
         glfwGetCursorPos(window, &xpos, &ypos);
         if (glm::distance(glm::vec2(screenCoords), glm::vec2(xpos, ypos)) < 10){
             ImGui::BeginTooltip();
-            ImGui::Text("Input %i: %.0f Hz", inFi.index, brain->inputArray[inFi.index]);
+            ImGui::Text("Input %i: %.0f Hz", inputHandlerID, brain->inputArray[inputHandlerID]);
             ImGui::EndTooltip();
         }
+        inputHandlerID++;
     }
     ImGui::End();
 

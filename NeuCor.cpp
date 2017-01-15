@@ -40,9 +40,9 @@ void NeuCor::setInputRateArray(float inputs[], unsigned inputCount, coord3 input
     if (0 < inputHanderSizeChange){
         for (unsigned i = 0; i<inputHanderSizeChange; i++){
             if (inputPositions != NULL)
-                inputHandler.emplace_back(this, inputHandler.size(), inputPositions[i]);
+                inputHandler.emplace_back(this, inputPositions[i]);
             else
-                inputHandler.emplace_back(this, inputHandler.size());
+                inputHandler.emplace_back(this);
         }
     }
     else if (inputHanderSizeChange < 0){
@@ -225,15 +225,17 @@ simulator::simulator(NeuCor* p){
 }
 deletedSimulator::deletedSimulator(NeuCor* p): simulator(p) {};
 
-InputFirer::InputFirer(NeuCor* p, unsigned i, coord3 position)
-:simulator(p), index(i) {
-    if (position.x == position.x) a = position; // If x is Nan
+InputFirer::InputFirer(NeuCor* p, coord3 position)
+:simulator(p) {
+    if (position.x == position.x) a = position; // If x isn't NAN
     else a = {(float) rand()/RAND_MAX,(float) rand()/RAND_MAX,(float) rand()/RAND_MAX};
-    float longitude = 2.0*3.1459*(float) rand()/RAND_MAX;
+
+    //  Make b a random point within a given distance of a
+    /*float longitude = 2.0*3.1459*(float) rand()/RAND_MAX;
     float latitude = acos(2.0*(float) rand()/RAND_MAX-1.0);
     b.x = a.x+sqrt(1.0-pow(cos(longitude),2.0))*cos(latitude);
     b.y = a.y+sqrt(1.0-pow(cos(longitude),2.0))*sin(latitude);
-    b.z = a.z+cos(longitude);
+    b.z = a.z+cos(longitude);*/
 
     radius = 0.75;
     for (auto &neu: parentNet->neurons){
@@ -470,8 +472,8 @@ void NeuCor::run(){
         for (auto &neu: neurons) queSimulation(&neu, 0.0);
     }
 
-    for (auto &handler: inputHandler){
-        handler.schedule(runSpeed, inputArray[handler.index]);
+    for (int i = 0; i<inputHandler.size(); i++){
+        inputHandler.at(i).schedule(runSpeed, inputArray[i]);
     }
     float const targetTime = currentTime + runSpeed;
     while (simulationQue.size() != 0){
