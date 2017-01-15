@@ -47,7 +47,7 @@ void glfw_MouseButtonCallback(GLFWwindow* window, int button, int action, int mo
     ImGui_ImplGlfwGL3_MouseButtonCallback(window, button, action, mods);
 }
 void glfw_ScrollCallback(GLFWwindow* window, double xoffset, double yoffset){
-    windowRegistry.at(window)->inputCallback(NeuCor_Renderer::MOUSE_SCROLL, window, (int) xoffset*1000, (int) yoffset*1000, -1, -1);
+    windowRegistry.at(window)->inputCallback(NeuCor_Renderer::MOUSE_SCROLL, window, (int) xoffset, (int) yoffset, -1, -1);
     ImGui_ImplGlfwGL3_ScrollCallback(window, xoffset, yoffset);
 }
 void glfw_CursorCallback(GLFWwindow* window, int entered){
@@ -219,6 +219,7 @@ void NeuCor_Renderer::initGLFW(){
     glfwWindowHint(GLFW_SAMPLES, 4); // 4x antialiasing
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // We want OpenGL 3.3
 
+    cameraMode = cameraModes::CAMERA_MOUSE_LOOK;
     renderMode = renderingModes::RENDER_VOLTAGE;
 
 
@@ -410,6 +411,7 @@ void NeuCor_Renderer::updateView(){
     deltaTime = float(currentTime - lastTime);
     lastTime = currentTime;
     FPS = (FPS*20.0+1.0/deltaTime)/21.0; // Makes FPS change slower
+    float aspect = (float) width / (float)height;
 
     if (runBrainOnUpdate && realRunspeed && !paused){
         float staticRunSpeed = brain->runSpeed;
@@ -421,16 +423,6 @@ void NeuCor_Renderer::updateView(){
 
 
     updateCamPos();
-    float aspect = (float) width / (float)height;
-
-    glm::mat4 Projection = glm::perspective(glm::radians(65.0f), (float) aspect, 0.05f, 100.0f);
-    glm::mat4 View = glm::lookAt(
-        camPos,
-        camPos+camDir,
-        camUp
-    );
-    vp = Projection * View;
-
 
     if (renderMode == RENDER_ACTIVITY && evaluated != NULL) activityFunction(-1, true);
     else if (renderMode == RENDER_NOSYNAPSES) logger.synapseCount = 0;
@@ -662,48 +654,92 @@ void NeuCor_Renderer::updateCamPos(){
     }
     if (!navigationMode || !mouseInWindow) return;
 
+    float aspect = (float) width / (float)height;
     double xpos, ypos;
     glfwGetCursorPos(window, &xpos, &ypos);
 
     if (cursorX != cursorX) {cursorX = xpos; cursorY = ypos;}
 
-    float deltaX = cursorX-xpos;
-    float deltaY = cursorY-ypos;
+    if (cameraMode == CAMERA_MOUSE_LOOK){
+        float deltaX = cursorX-xpos;
+        float deltaY = cursorY-ypos;
 
-    camHA -= 0.15 * deltaTime * deltaX;
-    camVA  += 0.15 * deltaTime * deltaY;
+        camHA -= 0.15 * deltaTime * deltaX;
+        camVA  += 0.15 * deltaTime * deltaY;
 
+        camDir = glm::vec3 (
+            cos(camVA) * sin(camHA),
+            sin(camVA),
+            cos(camVA) * cos(camHA)
+        );
+        glm::vec3 right = glm::vec3(
+            -cos(camHA),
+            0,
+            sin(camHA)
+        );
+        camUp = glm::cross( right, camDir );
+
+        float speedMult = 5;
+        // Move forward
+        if (glfwGetKey(window, GLFW_KEY_W ) == GLFW_PRESS){
+            camPos += camDir * GLfloat(deltaTime * speedMult);
+        }
+        // Move backward
+        if (glfwGetKey(window, GLFW_KEY_S ) == GLFW_PRESS){
+            camPos -= camDir * GLfloat(deltaTime * speedMult);
+        }
+        // Strafe right
+        if (glfwGetKey(window, GLFW_KEY_D ) == GLFW_PRESS){
+            camPos += right * GLfloat(deltaTime *  speedMult);
+        }
+        // Strafe left
+        if (glfwGetKey(window, GLFW_KEY_A ) == GLFW_PRESS){
+            camPos -= right * GLfloat(deltaTime * speedMult);
+        }
+
+        glm::mat4 Projection = glm::perspective(glm::radians(65.0f), (float) aspect, 0.05f, 100.0f);
+        glm::mat4 View = glm::lookAt(
+            camPos,
+            camPos+camDir,
+            camUp
+        );
+        vp = Projection * View;
+    }
+    else if (cameraMode == CAMERA_ORBIT) {
+        float deltaX = cursorX-xpos;
+        float deltaY = cursorY-ypos;
+
+        if (!CAMERA_ORBIT_momentum){
+            camHA -= 0.15 * deltaTime * deltaX;
+            camVA  += 0.15 * deltaTime * deltaY;
+        }
+
+        static glm::vec3 focusPoint(0.0, 0.0, 0.0);
+        glm::vec3 focusVector = camPos - focusPoint;
+        if ((camHA != 0 || camVA != 0) && CAMERA_ORBIT_momentum)
+            focusVector = glm::vec3( glm::vec4(focusVector, 0.0)
+                *glm::rotate(0.8f*deltaTime*glm::length(glm::vec2(camHA, camVA)),
+                glm::vec3(0.4 * camVA,  0.4 * camHA, 0.f)) );
+        else if (glm::length(glm::vec2(deltaX, deltaY)) != 0.0f){
+            focusVector = glm::vec3( glm::vec4(focusVector, 0.0)
+                *glm::rotate(0.8f*deltaTime*glm::length(glm::vec2(deltaX, deltaY)),
+                glm::vec3(0.4 * deltaY,  0.4 * deltaX, 0.0f)) );
+        }
+
+
+        camPos = focusVector+focusPoint;
+
+        glm::mat4 Projection = glm::perspective(glm::radians(65.0f), (float) aspect, 0.05f, 100.0f);
+        camUp = glm::vec3(0.0, 1.0, 0.0);
+        glm::mat4 View = glm::lookAt(
+            camPos,
+            focusPoint,
+            camUp
+        );
+
+        vp = Projection * View;
+    }
     cursorX = xpos; cursorY = ypos;
-
-    camDir = glm::vec3 (
-        cos(camVA) * sin(camHA),
-        sin(camVA),
-        cos(camVA) * cos(camHA)
-    );
-     glm::vec3 right = glm::vec3(
-        -cos(camHA),
-        0,
-        sin(camHA)
-    );
-    camUp = glm::cross( right, camDir );
-
-    float speedMult = 5;
-    // Move forward
-    if (glfwGetKey(window, GLFW_KEY_W ) == GLFW_PRESS){
-        camPos += camDir * GLfloat(deltaTime * speedMult);
-    }
-    // Move backward
-    if (glfwGetKey(window, GLFW_KEY_S ) == GLFW_PRESS){
-        camPos -= camDir * GLfloat(deltaTime * speedMult);
-    }
-    // Strafe right
-    if (glfwGetKey(window, GLFW_KEY_D ) == GLFW_PRESS){
-        camPos += right * GLfloat(deltaTime *  speedMult);
-    }
-    // Strafe left
-    if (glfwGetKey(window, GLFW_KEY_A ) == GLFW_PRESS){
-        camPos -= right * GLfloat(deltaTime * speedMult);
-    }
 };
 
 inline float NeuCor_Renderer::activityFunction(int ID, bool update){
@@ -1030,9 +1066,29 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
 
         ImGui::Text("Brain runtime: %.001f ms", brain->getTime());
         ImGui::Text("FPS: %i", (int) round(FPS));
-
+        ImGui::NewLine();
+        // Camera mode switcher
+        ImGui::Text("Camera mode:");
         if(ImGui::Button("<"))
-            renderMode = static_cast<renderingModes>((renderMode-1+renderingModes::Count)%renderingModes::Count);
+            cameraMode = static_cast<cameraModes>((cameraMode-1+cameraModes::CAMERA_count)%cameraModes::CAMERA_count);
+        ImGui::SameLine(); ImGui::Text(cameraModeNames.at(cameraMode).data()); ImGui::SameLine(180,0);
+        if (glfwGetKey(window, GLFW_KEY_C ) == GLFW_PRESS){
+            ImGui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(2.0f, 0.6f, 0.6f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(2.0f, 0.7f, 0.7f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(2.0f, 0.8f, 0.8f));
+        }
+        if(ImGui::Button(">"))
+            cameraMode = static_cast<cameraModes>((cameraMode+1)%cameraModes::CAMERA_count);
+        if (glfwGetKey(window, GLFW_KEY_C ) == GLFW_PRESS) ImGui::PopStyleColor(3);
+        if (cameraMode == CAMERA_ORBIT){
+            ImGui::Checkbox("Static", &CAMERA_ORBIT_momentum);
+            if (ImGui::IsItemClicked() && !CAMERA_ORBIT_momentum) {camHA = 0.1, camVA = 0.02;}
+        }
+
+        // Rendering mode switcher
+        ImGui::Text("Rendering mode:");
+        if(ImGui::Button("<"))
+            renderMode = static_cast<renderingModes>((renderMode-1+renderingModes::RENDER_count)%renderingModes::RENDER_count);
         ImGui::SameLine(); ImGui::Text(renderingModeNames.at(renderMode).data()); ImGui::SameLine(180,0);
         if (glfwGetKey(window, GLFW_KEY_M ) == GLFW_PRESS){
             ImGui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(2.0f, 0.6f, 0.6f));
@@ -1040,7 +1096,7 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(2.0f, 0.8f, 0.8f));
         }
         if(ImGui::Button(">"))
-            renderMode = static_cast<renderingModes>((renderMode+1)%renderingModes::Count);
+            renderMode = static_cast<renderingModes>((renderMode+1)%renderingModes::RENDER_count);
         if (glfwGetKey(window, GLFW_KEY_M ) == GLFW_PRESS) ImGui::PopStyleColor(3);
         if (renderMode == RENDER_PLASTICITY){
             ImGui::Checkbox("Only active", &RENDER_PLASTICITY_onlyActive);
@@ -1113,7 +1169,7 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
             }
 
         }
-        ImGui::Separator();
+        ImGui::NewLine();
         ImGui::SliderFloat("Learning rate", &brain->learningRate, 0, 4, "%.3f");
 
     } break;
@@ -1445,9 +1501,14 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
         break;
 
     case (CHAR_ACTION):
-        if (std::get<1>(TTparams) == 109 || std::get<1>(TTparams) == 77){ // Iterate to next rendering mode on M-key press
+        if (std::get<1>(TTparams) == 99 || std::get<1>(TTparams) == 67){ // Iterate to next camera mode on C-key press
+            cameraMode = static_cast<cameraModes>(cameraMode+1);
+            if (cameraMode == cameraModes::CAMERA_count) cameraMode = static_cast<cameraModes>(cameraMode-(int) cameraModes::CAMERA_count);
+            std::cout<<"Camera mode: "<<cameraModeNames.at(cameraMode)<<std::endl;
+        }
+        else if (std::get<1>(TTparams) == 109 || std::get<1>(TTparams) == 77){ // Iterate to next rendering mode on M-key press
             renderMode = static_cast<renderingModes>(renderMode+1);
-            if (renderMode == renderingModes::Count) renderMode = static_cast<renderingModes>(renderMode-(int) renderingModes::Count);
+            if (renderMode == renderingModes::RENDER_count) renderMode = static_cast<renderingModes>(renderMode-(int) renderingModes::RENDER_count);
             std::cout<<"Rendering mode: "<<renderingModeNames.at(renderMode)<<std::endl;
         }
         break;
@@ -1484,6 +1545,11 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
         }
         break;
 
+    case (MOUSE_SCROLL):
+        if (cameraMode == CAMERA_ORBIT){
+            camPos *= 1.f - std::get<2>(TTparams)/12.5;
+        }
+        break;
 
     case (MOUSE_ENTER):
         mouseInWindow = std::get<1>(TTparams) && glfwGetWindowAttrib(window, GLFW_FOCUSED);

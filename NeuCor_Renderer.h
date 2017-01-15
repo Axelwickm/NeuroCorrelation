@@ -33,7 +33,12 @@ class NeuCor_Renderer
         bool selectNeuron(int id, bool windowOpen);
         bool deselectNeuron(int id);
 
-        enum renderingModes { RENDER_VOLTAGE, RENDER_PLASTICITY, RENDER_ACTIVITY, RENDER_NOSYNAPSES, Count};
+        enum cameraModes{ CAMERA_MOUSE_LOOK, CAMERA_ORBIT, CAMERA_count};
+        bool CAMERA_ORBIT_momentum = false;
+        std::vector<std::string> cameraModeNames = {"Mouse look", "Orbit"};
+        cameraModes cameraMode;
+
+        enum renderingModes { RENDER_VOLTAGE, RENDER_PLASTICITY, RENDER_ACTIVITY, RENDER_NOSYNAPSES, RENDER_count};
         bool RENDER_PLASTICITY_onlyActive = true;
         std::vector<std::string> renderingModeNames = {"Voltage", "Plasticity", "Activity", "No synapses"};
         renderingModes renderMode;
