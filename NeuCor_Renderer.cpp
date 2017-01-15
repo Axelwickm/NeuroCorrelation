@@ -456,8 +456,13 @@ void NeuCor_Renderer::updateView(){
                 synPot.push_back(syn.getPostPot()+0.03);
             }
             else if (renderMode == RENDER_PLASTICITY){
-                synPot.push_back(syn.getWeight()/2.0*log(brain->getNeuron(syn.pN)->activity()+1.f));
-                synPot.push_back(syn.getWeight()/2.0*log(brain->getNeuron(syn.tN)->activity()+1.f));
+                synPot.push_back(syn.getWeight()/2.0);
+                synPot.push_back(syn.getWeight()/2.0);
+                if (RENDER_PLASTICITY_onlyActive){
+                    synPot.at(synPot.size()-2) *= log(brain->getNeuron(syn.pN)->activity()+1.f);
+                    synPot.back()              *= log(brain->getNeuron(syn.tN)->activity()+1.f);
+                }
+
             }
             else if (renderMode == RENDER_ACTIVITY && evaluated == NULL){
                 synPot.push_back(log(brain->getNeuron(syn.pN)->activity()+1.f));
@@ -1037,8 +1042,10 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
         if(ImGui::Button(">"))
             renderMode = static_cast<renderingModes>((renderMode+1)%renderingModes::Count);
         if (glfwGetKey(window, GLFW_KEY_M ) == GLFW_PRESS) ImGui::PopStyleColor(3);
-        if (renderMode == RENDER_ACTIVITY){
-            ImGui::Separator();
+        if (renderMode == RENDER_PLASTICITY){
+            ImGui::Checkbox("Only active", &RENDER_PLASTICITY_onlyActive);
+        }
+        else if (renderMode == RENDER_ACTIVITY){
             char* letters[] = {"a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"};
             if (currentActivity == ""){
                 currentActivity = "a";
@@ -1106,6 +1113,7 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
             }
 
         }
+        ImGui::Separator();
         ImGui::SliderFloat("Learning rate", &brain->learningRate, 0, 4, "%.3f");
 
     } break;

@@ -34,6 +34,7 @@ class NeuCor_Renderer
         bool deselectNeuron(int id);
 
         enum renderingModes { RENDER_VOLTAGE, RENDER_PLASTICITY, RENDER_ACTIVITY, RENDER_NOSYNAPSES, Count};
+        bool RENDER_PLASTICITY_onlyActive = true;
         std::vector<std::string> renderingModeNames = {"Voltage", "Plasticity", "Activity", "No synapses"};
         renderingModes renderMode;
         char* activityExpression;
