@@ -652,7 +652,7 @@ void NeuCor_Renderer::updateCamPos(){
         brain->runSpeed = powf(brain->runSpeed, 1.01);
         //std::cout<<"Run-speed: "<<brain->runSpeed<<std::endl;
     }
-    if (!navigationMode || !mouseInWindow) return;
+    if ((!navigationMode && !(cameraMode == CAMERA_ORBIT && CAMERA_ORBIT_momentum)) || !mouseInWindow) return;
 
     float aspect = (float) width / (float)height;
     double xpos, ypos;
