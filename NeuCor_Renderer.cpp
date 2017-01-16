@@ -1089,16 +1089,20 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
 
         // Rendering mode switcher
         ImGui::Text("Rendering mode:");
+        ImGui::PushID("render left button");
         if(ImGui::Button("<"))
             renderMode = static_cast<renderingModes>((renderMode-1+renderingModes::RENDER_count)%renderingModes::RENDER_count);
+        ImGui::PopID();
         ImGui::SameLine(); ImGui::Text(renderingModeNames.at(renderMode).data()); ImGui::SameLine(180,0);
         if (glfwGetKey(window, GLFW_KEY_M ) == GLFW_PRESS){
             ImGui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(2.0f, 0.6f, 0.6f));
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(2.0f, 0.7f, 0.7f));
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(2.0f, 0.8f, 0.8f));
         }
+        ImGui::PushID("render right button");
         if(ImGui::Button(">"))
             renderMode = static_cast<renderingModes>((renderMode+1)%renderingModes::RENDER_count);
+        ImGui::PopID();
         if (glfwGetKey(window, GLFW_KEY_M ) == GLFW_PRESS) ImGui::PopStyleColor(3);
         if (renderMode == RENDER_PLASTICITY){
             ImGui::Checkbox("Only active", &RENDER_PLASTICITY_onlyActive);
