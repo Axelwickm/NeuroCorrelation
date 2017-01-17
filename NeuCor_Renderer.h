@@ -33,9 +33,8 @@ class NeuCor_Renderer
         bool selectNeuron(int id, bool windowOpen);
         bool deselectNeuron(int id);
 
-        enum cameraModes{ CAMERA_MOUSE_LOOK, CAMERA_ORBIT, CAMERA_count};
-        bool CAMERA_ORBIT_momentum = false;
-        std::vector<std::string> cameraModeNames = {"Mouse look", "Orbit"};
+        enum cameraModes{ CAMERA_MOUSE_LOOK, CAMERA_ORBIT, CAMERA_ORBIT_MOMENTUM, CAMERA_count};
+        std::vector<std::string> cameraModeNames = {"Mouse look", "Orbit", "Orbit momentum"};
         cameraModes cameraMode;
 
         enum renderingModes { RENDER_VOLTAGE, RENDER_PLASTICITY, RENDER_ACTIVITY, RENDER_NOSYNAPSES, RENDER_count};
@@ -86,6 +85,7 @@ class NeuCor_Renderer
         void renderNeuronWindow(int ID, neuronWindow* neuWin = NULL);
         inline void renderLine(int ID);
         void updateCamPos();
+        float cameraRadius;
         void resetCursor();
 
         std::map<char*, std::pair<std::unique_ptr<double>, std::vector<float>>> variables; // Set of variables storing neuron activities

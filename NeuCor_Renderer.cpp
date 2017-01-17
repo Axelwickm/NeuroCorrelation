@@ -704,38 +704,45 @@ void NeuCor_Renderer::updateCamPos(){
             camUp
         );
         vp = Projection * View;
+
+        cameraRadius = glm::distance(camPos, vec3(0,0,0)); // For orbit camera mode
     }
-    else if (cameraMode == CAMERA_ORBIT) {
+    else if (cameraMode == CAMERA_ORBIT || cameraMode == CAMERA_ORBIT_MOMENTUM) {
         float deltaX = cursorX-xpos;
         float deltaY = cursorY-ypos;
+        static glm::vec2 momentum(0.0, 0.0);
 
-        if (!CAMERA_ORBIT_momentum){
-            camHA -= 0.15 * deltaTime * deltaX;
-            camVA  += 0.15 * deltaTime * deltaY;
+        glm::vec2 cameraPan(0.0, 0.0);
+        if (ImGui::IsMouseDragging(0, 0)){
+            cameraPan = glm::vec2(-deltaX, deltaY)/50.f;
         }
-
+        else {
+            if (cameraMode == CAMERA_ORBIT_MOMENTUM){
+                if (navigationMode) momentum += glm::vec2(deltaX, -deltaY) * deltaTime / 500.f;
+                camHA += momentum.x;
+                camVA += momentum.y;
+            }
+            else {
+                camHA -= 0.15 * deltaTime * deltaX;
+                camVA  += 0.15 * deltaTime * deltaY;
+                momentum = glm::vec2(0.0, 0.0);
+            }
+        }
         static glm::vec3 focusPoint(0.0, 0.0, 0.0);
-        glm::vec3 focusVector = camPos - focusPoint;
-        if ((camHA != 0 || camVA != 0) && CAMERA_ORBIT_momentum)
-            focusVector = glm::vec3( glm::vec4(focusVector, 0.0)
-                *glm::rotate(0.8f*deltaTime*glm::length(glm::vec2(camHA, camVA)),
-                glm::vec3(0.4 * camVA,  0.4 * camHA, 0.f)) );
-        else if (glm::length(glm::vec2(deltaX, deltaY)) != 0.0f){
-            focusVector = glm::vec3( glm::vec4(focusVector, 0.0)
-                *glm::rotate(0.8f*deltaTime*glm::length(glm::vec2(deltaX, deltaY)),
-                glm::vec3(0.4 * deltaY,  0.4 * deltaX, 0.0f)) );
-        }
 
-
-        camPos = focusVector+focusPoint;
-
+        camPos = focusPoint + glm::vec3(cos(camHA) * cos(camVA), sin(camVA), -sin(camHA) * cos(camVA)) * cameraRadius;
+        camUp =  glm::normalize(
+            glm::vec3(cos(camHA) * cos(camVA + 1.570796f),
+            sin(camVA + 1.570796f),
+            -sin(camHA) * cos(camVA + 1.570796f))
+        );
         glm::mat4 Projection = glm::perspective(glm::radians(65.0f), (float) aspect, 0.05f, 100.0f);
-        camUp = glm::vec3(0.0, 1.0, 0.0);
         glm::mat4 View = glm::lookAt(
             camPos,
             focusPoint,
             camUp
         );
+        focusPoint += glm::vec3( glm::vec4(cameraPan, 0.0, 0.0) * View );
 
         vp = Projection * View;
     }
