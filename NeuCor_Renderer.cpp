@@ -261,7 +261,7 @@ void NeuCor_Renderer::initOpenGL(GLFWwindow* window){
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    glClearColor(GLclampf(0.06), GLclampf(0.06), GLclampf(0.07), GLclampf(1.0));
+    glClearColor(GLclampf(0.01), GLclampf(0.01), GLclampf(0.02), GLclampf(1.0));
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glLineWidth(2.5);
