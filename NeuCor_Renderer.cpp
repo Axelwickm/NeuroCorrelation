@@ -652,7 +652,7 @@ void NeuCor_Renderer::updateCamPos(){
         brain->runSpeed = powf(brain->runSpeed, 1.01);
         //std::cout<<"Run-speed: "<<brain->runSpeed<<std::endl;
     }
-    if ((!navigationMode && !(cameraMode == CAMERA_ORBIT && CAMERA_ORBIT_momentum)) || !mouseInWindow) return;
+    if ((!navigationMode && !(cameraMode == CAMERA_ORBIT_MOMENTUM)) || !mouseInWindow) return;
 
     float aspect = (float) width / (float)height;
     double xpos, ypos;
@@ -718,9 +718,9 @@ void NeuCor_Renderer::updateCamPos(){
         }
         else {
             if (cameraMode == CAMERA_ORBIT_MOMENTUM){
-                if (navigationMode) momentum += glm::vec2(deltaX, -deltaY) * deltaTime / 500.f;
-                camHA += momentum.x;
-                camVA += momentum.y;
+                if (navigationMode) momentum += glm::vec2(deltaX, -deltaY) * deltaTime / 100.f;
+                camHA += momentum.x*deltaTime;
+                camVA += momentum.y*deltaTime;
             }
             else {
                 camHA -= 0.15 * deltaTime * deltaX;
@@ -1089,10 +1089,6 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
         if(ImGui::Button(">"))
             cameraMode = static_cast<cameraModes>((cameraMode+1)%cameraModes::CAMERA_count);
         if (glfwGetKey(window, GLFW_KEY_C ) == GLFW_PRESS) ImGui::PopStyleColor(3);
-        if (cameraMode == CAMERA_ORBIT){
-            ImGui::Checkbox("Static", &CAMERA_ORBIT_momentum);
-            if (ImGui::IsItemClicked() && !CAMERA_ORBIT_momentum) {camHA = 0.1, camVA = 0.02;}
-        }
 
         // Rendering mode switcher
         ImGui::Text("Rendering mode:");
@@ -1560,7 +1556,7 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
 
     case (MOUSE_SCROLL):
         if (cameraMode == CAMERA_ORBIT){
-            camPos *= 1.f - std::get<2>(TTparams)/12.5;
+            cameraRadius -= std::get<2>(TTparams)/4.0f;
         }
         break;
 
