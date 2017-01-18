@@ -40,6 +40,8 @@ $RECYCLE.BIN/
 .VolumeIcon.icns
 
 # Directories potentially created on remote AFP share
+bin/
+
 .AppleDB
 .AppleDesktop
 Network Trash Folder
@@ -48,9 +50,6 @@ Temporary Items
 bin/Debug/NeuroCorrelation.exe
 *.jpg
 *.o
-resources/lodepng.cpp
-resources/picopng.cpp
-resources/lodepng.h
 NeuroCorrelation.cscope_file_list
 *.layout
 *.depend
