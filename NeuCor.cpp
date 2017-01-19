@@ -367,7 +367,7 @@ Synapse::Synapse(NeuCor* p, std::size_t parent, std::size_t target)
 
     lastSpikeArrival = -INFINITY;
 
-    weight = (float) rand()/RAND_MAX*2.0 + 0.5;
+    weight = (float) rand()/RAND_MAX*0.8 + 0.2;
 
     if ((float) rand()/RAND_MAX < 0.2) weight = -weight;
 
@@ -582,7 +582,7 @@ void Synapse::run(){
 void Synapse::fire(float polW, float depolFac, float deltaStart){
     if (AP_fireTime != 0) return;
     AP_polW = polW, AP_depolFac = depolFac, AP_deltaStart = deltaStart;
-    AP_depolFac *= 1.45;
+    AP_depolFac *= 4.35;
     AP_depolFac *= weight;
 
     AP_fireTime = length*AP_speed;
@@ -599,12 +599,12 @@ void Synapse::synapticPlasticity(){
     if (traceT == 1) traceT = 0;
     if (traceS == 1) traceS = 0;
 
-    if (weight == 0 && !inhibitory && rand()%120 == 0) weight += 3.0; // 1/120 chance of weight being boosted (this allows for signal expansion and reservation throughout the brain)
+    if (weight == 0 && !inhibitory && rand()%120 == 0) weight += 1.0; // 1/120 chance of weight being boosted (this allows for signal expansion and reservation throughout the brain)
 
     float weightChange = traceS - traceT;
     weight += weightChange*parentNet->learningRate;
-    if (!inhibitory) weight = fmax(fmin(weight, 3.0), 0.0);
-    else weight = fmax(fmin(weight, 0.0), -3.0);
+    if (!inhibitory) weight = fmax(fmin(weight, 1.0), 0.0);
+    else weight = fmax(fmin(weight, 0.0), -1.0);
     //std::cout<<"Delta w = "<<weightChange<<std::endl;
 
     //if (weight < 0) parentNet->queFlip(std::pair<std::size_t, std::size_t>(pN, tN)); // Que flipping of synapse if weight is 0

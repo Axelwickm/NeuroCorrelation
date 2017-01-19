@@ -1058,10 +1058,10 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, neuronWindow* neuWin){
             for (int j = 0; j < neuTimeline->size(); j++){
                 weightData[j] = neuTimeline->at(j).synapseWeights.at(i);
             }
-            ImGui::PlotLines("", weightData, neuTimeline->size(), 0, "", -3.0f, 3.0f, ImVec2(77, 48));
+            ImGui::PlotLines("", weightData, neuTimeline->size(), 0, "", -1.0f, 1.0f, ImVec2(77, 48));
             if (ImGui::IsItemHovered()){
                 ImGui::BeginTooltip();
-                ImGui::PlotLines("", weightData, neuTimeline->size(), 0, "", -3.0f, 3.0f, ImVec2(500, 200));
+                ImGui::PlotLines("", weightData, neuTimeline->size(), 0, "", -1.0f, 1.0f, ImVec2(500, 200));
                 ImGui::Text("weight: %.3f", syn.getWeight());
                 ImGui::EndTooltip();
             }
@@ -1322,7 +1322,7 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
 
 
         // Weight distribution
-        static float w_span = 0.2, w_range_min = -3.0, w_range_max = 3.0;
+        static float w_span = 0.2, w_range_min = -1.0, w_range_max = 1.0;
         static float w_updatePeriod = 5.0;
         static bool w_updatesOn = true;
         logger.weightUpdateTimer -= deltaTime;
