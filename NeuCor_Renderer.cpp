@@ -183,7 +183,7 @@ NeuCor_Renderer::NeuCor_Renderer(NeuCor* _brain)
     }
     activityExpression = (char*) calloc(256, 1);
     activityExpression[0] = 'a';
-    signalSpreadStrength = 0.8;
+    closenessIntensity = 0.8;
 
     /* Load resources */
     loadResources();
@@ -378,7 +378,7 @@ bool NeuCor_Renderer::selectNeuron(int id, bool windowOpen){
         };
 
         neuronWindows.insert(std::pair<int, neuronWindow> (id, newWindow));
-        if (renderMode == RENDER_SIGNAL_SPREAD) updateSignalSpread();
+        if (renderMode == RENDER_CLOSENESS) updateSignalSpread();
 
         return true;
     }
@@ -399,7 +399,7 @@ bool NeuCor_Renderer::deselectNeuron(int id){
         }
         neuronWindows.erase(id);
         logger.timeline.erase(id);
-        if (renderMode == RENDER_SIGNAL_SPREAD) updateSignalSpread();
+        if (renderMode == RENDER_CLOSENESS) updateSignalSpread();
         return true;
     }
     else {
@@ -430,7 +430,7 @@ void NeuCor_Renderer::updateView(){
     if (renderMode == RENDER_ACTIVITY && evaluated != NULL) activityFunction(-1, true);
     else if (renderMode == RENDER_NOSYNAPSES) logger.synapseCount = 0;
 
-    signalSpread.resize(brain->neurons.size(), 0);
+    closenessValues.resize(brain->neurons.size(), 0);
     std::vector<coord3> connections;
     std::vector<float> synPot;
     synPot.reserve(brain->neurons.size()*8.0);
@@ -465,12 +465,12 @@ void NeuCor_Renderer::updateView(){
                 synPot.push_back(log(brain->getNeuron(syn.tN)->activity()+1.f));
             }
             else if (renderMode == RENDER_ACTIVITY){
-                synPot.push_back(log(activityFunction(syn.tN)+1.f));
                 synPot.push_back(log(activityFunction(syn.pN)+1.f));
+                synPot.push_back(log(activityFunction(syn.tN)+1.f));
             }
-            else if (renderMode == RENDER_SIGNAL_SPREAD){
-                synPot.push_back(signalSpread.at(syn.tN));
-                synPot.push_back(signalSpread.at(syn.pN));
+            else if (renderMode == RENDER_CLOSENESS){
+                synPot.push_back(powf(closenessValues.at(syn.pN), closenessIntensity));
+                synPot.push_back(powf(closenessValues.at(syn.tN), closenessIntensity));
             }
             else if (renderMode == RENDER_NOSYNAPSES) logger.synapseCount++;
         }
@@ -758,27 +758,32 @@ void NeuCor_Renderer::updateCamPos(){
 };
 
 void NeuCor_Renderer::updateSignalSpread(){
-    std::fill(signalSpread.begin(), signalSpread.end(), 0.0);
+    std::fill(closenessValues.begin(), closenessValues.end(), INFINITY);
     std::vector<std::size_t> toCheck;
-    std::map<std::size_t, bool> checked;
     toCheck.reserve(logger.synapseCount/5);
     for (auto neuID: selectedNeurons){
-        signalSpread.at(neuID) = 1.0;
+        closenessValues.at(neuID) = 0.0;
         toCheck.push_back(neuID);
     }
+    float maxDegree = 0;
     while (!toCheck.empty()){
-        int i = toCheck.back();
+        int current = toCheck.back();
         toCheck.pop_back();
-        for (auto &outSyn: brain->getNeuron(i)->outSynapses){
+        for (auto &outSyn: brain->getNeuron(current)->outSynapses){
             if (0.0 > outSyn.getWeight()) continue;
-            if (signalSpread.at(outSyn.tN) == 0 && checked.find(outSyn.tN) == checked.end())
-                toCheck.push_back(outSyn.tN),
-            signalSpread.at(outSyn.tN) = fmax(signalSpread.at(outSyn.tN), (float) signalSpread.at(i)*outSyn.getWeight()*signalSpreadStrength/3.f);
-            //std::cout<<signalSpread.at(outSyn.tN)<<std::endl;
+            float newDegree = closenessValues.at(current) + 1.0/outSyn.getWeight();
+            if (newDegree < closenessValues.at(outSyn.tN)){
+                toCheck.push_back(outSyn.tN);
+                closenessValues.at(outSyn.tN) = newDegree;
+            }
         }
-        //std::cout<<signalSpread.at(toCheck.back())<<std::endl;
-        checked.insert(std::pair<std::size_t, bool>(i, true));
     }
+    for (auto &neu: closenessValues)
+        if (maxDegree < neu)
+            maxDegree = neu;
+    maxDegree = 6;
+    for (auto &neu: closenessValues)
+        neu = fmax(0, 1.0 - neu/maxDegree);
 }
 
 inline float NeuCor_Renderer::activityFunction(int ID, bool update){
@@ -1142,8 +1147,8 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
         if (renderMode == RENDER_PLASTICITY){
             ImGui::Checkbox("Only active", &RENDER_PLASTICITY_onlyActive);
         }
-        else if (renderMode == RENDER_SIGNAL_SPREAD){
-            ImGui::DragFloat("Strength factor", &signalSpreadStrength, 0.01, 0, 1, "%.2f");
+        else if (renderMode == RENDER_CLOSENESS){
+            ImGui::DragFloat("Strength factor", &closenessIntensity, 0.01, 0, 20, "%.2f", 2.0);
         }
         else if (renderMode == RENDER_ACTIVITY){
             char* letters[] = {"a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"};

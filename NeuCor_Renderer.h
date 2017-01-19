@@ -37,9 +37,9 @@ class NeuCor_Renderer
         std::vector<std::string> cameraModeNames = {"Mouse look", "Orbit", "Orbit momentum"};
         cameraModes cameraMode;
 
-        enum renderingModes { RENDER_VOLTAGE, RENDER_PLASTICITY, RENDER_ACTIVITY, RENDER_SIGNAL_SPREAD, RENDER_NOSYNAPSES, RENDER_count};
+        enum renderingModes { RENDER_VOLTAGE, RENDER_PLASTICITY, RENDER_ACTIVITY, RENDER_CLOSENESS, RENDER_NOSYNAPSES, RENDER_count};
         bool RENDER_PLASTICITY_onlyActive = true;
-        std::vector<std::string> renderingModeNames = {"Voltage", "Plasticity", "Activity", "Signal spread", "No synapses"};
+        std::vector<std::string> renderingModeNames = {"Voltage", "Plasticity", "Activity", "Closeness", "No synapses"};
         renderingModes renderMode;
         char* activityExpression;
 
@@ -79,7 +79,7 @@ class NeuCor_Renderer
         };
         std::map<int, neuronWindow> neuronWindows;
         std::vector<int> selectedNeurons; // Selected neuron ID, smart pointer to bool if neuron window is open
-        std::vector<float> signalSpread; float signalSpreadStrength;
+        std::vector<float> closenessValues; float closenessIntensity;
         void updateSignalSpread();
 
         void renderInterface();
