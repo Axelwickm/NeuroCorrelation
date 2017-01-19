@@ -1590,7 +1590,7 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
         break;
 
     case (MOUSE_SCROLL):
-        if (cameraMode == CAMERA_ORBIT){
+        if (cameraMode == CAMERA_ORBIT || cameraMode == CAMERA_ORBIT_MOMENTUM){
             cameraRadius -= std::get<2>(TTparams)/4.0f;
         }
         break;
