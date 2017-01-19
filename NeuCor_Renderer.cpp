@@ -721,7 +721,7 @@ void NeuCor_Renderer::updateCamPos(){
         static glm::vec2 momentum(0.0, 0.0);
 
         glm::vec2 cameraPan(0.0, 0.0);
-        if (ImGui::IsMouseDragging(0, 0)){
+        if (ImGui::IsMouseDragging(0, 0) && navigationMode){
             cameraPan = glm::vec2(-deltaX, deltaY)/50.f;
         }
         else {
