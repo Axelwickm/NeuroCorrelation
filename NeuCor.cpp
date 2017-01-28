@@ -23,11 +23,13 @@ NeuCor::NeuCor(int n_neurons) {
         createNeuron(d);
     }
     totalGenNeurons = 0;
-
+    std::cout<<"Making connections for: ";
     for (int n = 0; n<n_neurons; n++){
-        std::cout<<"Making connections for "<<n<<std::endl;
+        if (n != 0) std::cout<<", ";
+        std::cout<<n;
         neurons.at(n).makeConnections();
     }
+    std::cout<<std::endl;
 }
 
 NeuCor::~NeuCor(){}
