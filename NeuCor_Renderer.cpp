@@ -1000,8 +1000,13 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, neuronWindow* neuWin){
     for (int i = 0; i < neuTimeline->size(); i++){
         voltageData[i] = neuTimeline->at(i).voltage;
     }
-    ImGui::PlotLines("", voltageData, neuTimeline->size(), 0, "", -90.0f, 50.0f, ImVec2(300, 100));
+    #define voltageGraphWidth 300
+    #define voltageGraphHeight 100
 
+    ImGui::PlotLines("", voltageData, neuTimeline->size(), 0, "", -90.0f, 50.0f, ImVec2(300, 100));
+    ImVec2 thresholdLine( ImGui::GetItemRectMin().x, ImGui::GetItemRectMin().y + voltageGraphHeight * 0.75 );
+    ImDrawList* drawList = ImGui::GetWindowDrawList();
+    drawList->AddLine(thresholdLine, ImVec2(thresholdLine.x + voltageGraphWidth, thresholdLine.y), ImColor(50, 50, 50));
     ImGui::Separator();
 
     float windowWidth = ImGui::GetWindowContentRegionWidth();
