@@ -20,8 +20,7 @@
 #include <glm/glm.hpp>
 using namespace glm;
 
-class NeuCor_Renderer
-{
+class NeuCor_Renderer {
     public:
         NeuCor_Renderer(NeuCor* _brain);
         ~NeuCor_Renderer();
