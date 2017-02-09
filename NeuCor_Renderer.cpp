@@ -318,7 +318,7 @@ void NeuCor_Renderer::loadResources() {
     unsigned long w, h;
 
     int error = decodePNG(image, w, h, &buffer[0], (unsigned long)buffer.size());
-    if(error != 0) std::cout << "error: " << error << std::endl;
+    if(error != 0) std::cout << "error: " << error << '\n';
 
 
     unsigned char * neuronimgData = &image[0];
@@ -344,7 +344,7 @@ void NeuCor_Renderer::loadResources() {
     loadFile(buffer, filename);
 
     error = decodePNG(image, w, h, &buffer[0], (unsigned long)buffer.size());
-    if(error != 0) std::cout << "error: " << error << std::endl;
+    if(error != 0) std::cout << "error: " << error << '\n';
 
 
     unsigned char * neuron_smallimgData = &image[0];
@@ -475,7 +475,7 @@ void NeuCor_Renderer::updateView(){
             else if (renderMode == RENDER_NOSYNAPSES) logger.synapseCount++;
         }
     }
-    if (PRINT_CONNECTIONS_EVERY_FRAME) std::cout<<std::endl;
+    if (PRINT_CONNECTIONS_EVERY_FRAME) std::cout<<'\n';
 
     logger.neuronCount = brain->neurons.size();
     if (renderMode != RENDER_NOSYNAPSES) logger.synapseCount = synPot.size()/2;
@@ -653,12 +653,12 @@ void NeuCor_Renderer::updateCamPos(){
     // Slow down time
     if (glfwGetKey(window, GLFW_KEY_PERIOD ) == GLFW_PRESS){
         brain->runSpeed = powf(brain->runSpeed, 0.99);
-        //std::cout<<"Run-speed: "<<brain->runSpeed<<std::endl;
+        //std::cout<<"Run-speed: "<<brain->runSpeed<<'\n';
     }
     // Speed up time
     if (glfwGetKey(window, GLFW_KEY_COMMA ) == GLFW_PRESS){
         brain->runSpeed = powf(brain->runSpeed, 1.01);
-        //std::cout<<"Run-speed: "<<brain->runSpeed<<std::endl;
+        //std::cout<<"Run-speed: "<<brain->runSpeed<<'\n';
     }
     if ((!navigationMode && !(cameraMode == CAMERA_ORBIT_MOMENTUM)) || !mouseInWindow) return;
 
@@ -1558,12 +1558,12 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
         if (std::get<1>(TTparams) == 99 || std::get<1>(TTparams) == 67){ // Iterate to next camera mode on C-key press
             cameraMode = static_cast<cameraModes>(cameraMode+1);
             if (cameraMode == cameraModes::CAMERA_count) cameraMode = static_cast<cameraModes>(cameraMode-(int) cameraModes::CAMERA_count);
-            std::cout<<"Camera mode: "<<cameraModeNames.at(cameraMode)<<std::endl;
+            std::cout<<"Camera mode: "<<cameraModeNames.at(cameraMode)<<'\n';
         }
         else if (std::get<1>(TTparams) == 109 || std::get<1>(TTparams) == 77){ // Iterate to next rendering mode on M-key press
             renderMode = static_cast<renderingModes>(renderMode+1);
             if (renderMode == renderingModes::RENDER_count) renderMode = static_cast<renderingModes>(renderMode-(int) renderingModes::RENDER_count);
-            std::cout<<"Rendering mode: "<<renderingModeNames.at(renderMode)<<std::endl;
+            std::cout<<"Rendering mode: "<<renderingModeNames.at(renderMode)<<'\n';
         }
         break;
 

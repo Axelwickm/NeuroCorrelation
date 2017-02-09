@@ -29,7 +29,7 @@ NeuCor::NeuCor(int n_neurons) {
         std::cout<<n;
         neurons.at(n).makeConnections();
     }
-    std::cout<<std::endl;
+    std::cout<<'\n';
 }
 
 NeuCor::~NeuCor(){}
@@ -67,7 +67,7 @@ void NeuCor::createNeuron(coord3 position){
 
     float spawnSize = SPAWN_SIZE;
 
-    //std::cout<<"Free neurons: "<<freeNeuronIDs.size()<<std::endl;
+    //std::cout<<"Free neurons: "<<freeNeuronIDs.size()<<'\n';
     if (position.x != position.x && SPAWN_SPHERE){
         if (totalGenNeurons != 0 ) spawnSize = powf(totalGenNeurons/(1.3333*3.1459*SPAWN_DENSITY),0.33333)*2.0;
         do {
@@ -209,13 +209,13 @@ void NeuCor::printSynapseWeightDist() const {
     std::cout.precision(2);
     std::cout<<"Synaptic weight distribution  |  "<<range_min<<" -> "<<range_max<<":\n";
     for (int i = 0; i < weightDistribution.size(); i++){
-        if (i == 0) std::cout<<"  /\\  | "<<below<<std::endl;
+        if (i == 0) std::cout<<"  /\\  | "<<below<<'\n';
         if (0.0 <= range_min+span*i)
             std::cout<<std::fixed<<" "<<(range_min+span*i)<<" | ";
         else std::cout<<std::fixed<<(range_min+span*i)<<" | ";
         for (int j = 0; j<weightDistribution.at(i)/maxVal; j++) std::cout<<"#";
-        std::cout<<std::endl;
-        if (i == weightDistribution.size()-1) std::cout<<"  \\/  | "<<above<<std::endl<<std::endl;
+        std::cout<<'\n';
+        if (i == weightDistribution.size()-1) std::cout<<"  \\/  | "<<above<<'\n'<<'\n';
     }
     std::cout.unsetf(std::ios::fixed);
     std::cout.precision(6);
@@ -607,7 +607,7 @@ void Synapse::synapticPlasticity(){
     weight += weightChange*parentNet->learningRate;
     if (!inhibitory) weight = fmax(fmin(weight, 1.0), 0.0);
     else weight = fmax(fmin(weight, 0.0), -1.0);
-    //std::cout<<"Delta w = "<<weightChange<<std::endl;
+    //std::cout<<"Delta w = "<<weightChange<<'\n';
 
     //if (weight < 0) parentNet->queFlip(std::pair<std::size_t, std::size_t>(pN, tN)); // Que flipping of synapse if weight is 0
 }
