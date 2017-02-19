@@ -493,21 +493,25 @@ void Neuron::run(){
     float deltaT = currentT - lastRan;
     lastRan = currentT;
 
+    // Exit function if no time has passed
     if (deltaT == 0) return;
 
+    // Decay trace variable exponentially
     trace *= powf(traceDecayRate, deltaT);
 
+    // Integrates the potentials of the input synapses
     charge_insynapses(deltaT, currentT);
+    // Exponentially decays/grows neuron potential towards base level
     charge_passive(deltaT, currentT);
+    // Checks if neuron potential is above threshold, and if so fires neuron
     charge_thresholdCheck(deltaT, currentT);
+    // If neuron is firing, shapes the action potential by setting the potential
     AP(currentT);
+    // Increases vesicles amount
     vesicles_uptake(deltaT);
 
     // Update activity
     setActivity(firings/(((float) currentT-activityStartTime)/10.0));
-
-    //y=sqrt(pi/2)*w*f*l^(x-o)*e^(0.5*w^2*log(l)^2)*(erf((w^2*log(l)-o+x)/(sqrt(2)*w))-erf((w^2*log(l)-o)/(sqrt(2)*w)))
-    //y/(sqrt(pi/2)*w*f*e^(0.5*w^2*log(l)^2))=l^(x-o)*(erf((w^2*log(l)-o+x)/(sqrt(2)*w))-erf((w^2*log(l)-o)/(sqrt(2)*w)))
 }
 
 void Neuron::fire(){
