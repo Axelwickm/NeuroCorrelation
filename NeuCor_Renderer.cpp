@@ -1286,8 +1286,8 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
 
         {
             ImGui::Text("Neuron activity distribution");
-            static int a_spans = 20.0;
-            static float a_range_min = 0.0, a_range_max = 50.0;
+            static int a_spans = 25.0;
+            static float a_range_min = 0.0, a_range_max = 3.0;
             static float a_updatePeriod = 0.2;
             static bool a_updatesOn = true;
             logger.activityUpdateTimer -= deltaTime;
