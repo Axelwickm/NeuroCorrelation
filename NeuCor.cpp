@@ -552,7 +552,7 @@ void Neuron::charge_insynapses(float deltaT, float currentT){
         float timeOffset = currentT - s->AP_fireTime;
         if (timeOffset <= 0.0 || s->AP_fireTime == 0) continue;
 
-        newPot += 20.0*deltaT*s->AP_depolFac;
+        newPot += deltaT*s->AP_depolFac;
 
         if (AP_cutoff < timeOffset) s->AP_fireTime = 0;
     }
@@ -588,7 +588,7 @@ void Synapse::run(){
 void Synapse::fire(float polW, float depolFac, float deltaStart){
     if (AP_fireTime != 0) return;
     AP_polW = polW, AP_depolFac = depolFac, AP_deltaStart = deltaStart;
-    AP_depolFac *= 4.35;
+    AP_depolFac *= 80.0;
     AP_depolFac *= weight;
 
     AP_fireTime = length*AP_speed;
