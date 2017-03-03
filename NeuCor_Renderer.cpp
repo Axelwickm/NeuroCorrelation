@@ -1272,6 +1272,15 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
                 ImGui::EndTooltip();
             }
         }
+        ImGui::Checkbox("Run all", &brain->runAll);
+        ImGui::SameLine(); ImGui::TextDisabled("[?]");
+        if (ImGui::IsItemHovered()) {
+            ImGui::BeginTooltip();
+            ImGui::PushTextWrapPos(450.0f);
+            ImGui::TextUnformatted("Simulates all neurons every frame.");
+            ImGui::PopTextWrapPos();
+            ImGui::EndTooltip();
+        }
 
     } break;
 
