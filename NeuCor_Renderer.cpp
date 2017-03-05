@@ -160,7 +160,7 @@ NeuCor_Renderer::NeuCor_Renderer(NeuCor* _brain)
     paused = false;
     realRunspeed = false;
 
-    navigationMode = true;
+    navigationMode = false;
     mouseInWindow = true;
     showInterface = true;
 
@@ -189,7 +189,6 @@ NeuCor_Renderer::NeuCor_Renderer(NeuCor* _brain)
     loadResources();
     glfwSetCursorPos(window, width/2.0, height/2.0);
     updateCamPos();
-    navigationMode = true;
     destructCallback = NULL;
 }
 
