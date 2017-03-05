@@ -1514,7 +1514,26 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
     case (MODULE_CONTROLS): {
         if (windowed) ImGui::Begin("Controls");
         else {openTree = ImGui::CollapsingHeader("Controls"); if (!openTree) break; activeTree = ImGui::IsItemActive();}
-        ImGui::Text("TODO.");
+
+        std::string controlsText =
+            "Right click  -  Enter navigation mode\n"
+            "Right click + Ctrl  -  Hide interface\n"
+            "Left click  -  Toggle selection of neuron\n"
+            "C  -  Go to next camera mode\n"
+            "M  -  Go to next rendering mode\n"
+            ".  -  Speed up time\n"
+            ",  -  Slow down time\n"
+            "\n"
+            "Camera mode:\n"
+            "Mouse look\n"
+            "WASD  -  move camera\n"
+            "\n"
+            "Orbit + Orbit momentum\n"
+            "Left click + drag - pan camera\n"
+            "Scroll - Move closer/further away\n"
+        ;
+
+        ImGui::Text(controlsText.c_str());
         break;
     }
 
