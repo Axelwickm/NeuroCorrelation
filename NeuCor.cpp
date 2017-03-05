@@ -289,7 +289,6 @@ Neuron::Neuron(NeuCor* p, coord3 position)
     firings = 0;
     setActivity(0);
 
-    trace = 0.0;
     vesicles = buffer * 0.75;
     lastFire = NAN;
 
@@ -309,7 +308,6 @@ Neuron& Neuron::operator=(const Neuron& other){
     outSynapses = other.outSynapses;
     inSynapses = other.inSynapses;
 
-    trace = other.trace;
     lastFire = other.lastFire;
 
     activityStartTime = other.activityStartTime;
@@ -496,9 +494,6 @@ void Neuron::run(){
     // Exit function if no time has passed
     if (deltaT == 0) return;
 
-    // Decay trace variable exponentially
-    trace *= powf(traceDecayRate, deltaT);
-
     // Integrates the potentials of the input synapses
     charge_insynapses(deltaT, currentT);
     // Exponentially decays/grows neuron potential towards base level
@@ -516,7 +511,6 @@ void Neuron::run(){
 
 void Neuron::fire(){
     lastFire = parentNet->getTime();
-    trace = 1.0;
     firings++;
 
     for (size_t s = 0; s < outSynapses.size(); s++){
@@ -534,6 +528,10 @@ void Neuron::transfer(){
 }
 void Neuron::givePotential(float pot){
     setPotential(potential()+pot);
+}
+
+float Neuron::getTrace() const {
+    return powf(traceDecayRate, parentNet->getTime()-lastFire);
 }
 
 void Neuron::charge_passive(float deltaT, float currentT){
@@ -600,7 +598,7 @@ void Synapse::fire(float polW, float depolFac, float deltaStart){
 
 void Synapse::synapticPlasticity(){
     float traceS = powf(traceDecayRate, parentNet->getTime()-lastSpikeArrival); // Synapse trace (presynaptic)
-    float traceT = parentNet->getNeuron(tN)->trace; // Target trace (postsynaptic)
+    float traceT = parentNet->getNeuron(tN)->getTrace(); // Target trace (postsynaptic)
     bool inhibitory = weight < 0;
     if (traceT == 1) traceT = 0;
     if (traceS == 1) traceS = 0;

@@ -146,8 +146,10 @@ class Neuron: public simulator {
         void makeConnections();              // Creates connections to all neurons closer than 1 unit
         void run();                          // Updates the neuron to current simulation time
         void fire();                         // Initiates neuron firing sequence, increases activity, updates weight of both incoming and outgoing synapses
-        void transfer();                     // Schedule simulation at maximum input voltage from synapses, thus firing if needed. Called by in-synapses.
-        void givePotential(float pot);
+        void transfer();                     // Schedule simulation at maximum input voltage from synapses, thus firing if needed. Called by in-synapses
+        void givePotential(float pot);       // Instantly adds given amount of potential
+
+        float getTrace() const;              // Returns the amount of trace left after firing. Used for calculating synapse weight change
 
         std::size_t pos;
         std::size_t PA;
@@ -166,7 +168,6 @@ class Neuron: public simulator {
         void resetActivity();                           // Resets the firings count and sets initial time to current time
         std::size_t getID() const;
 
-        float trace;                                    // Becomes 1 after every fire, but exponentially decays with time
         float lastFire;                                 // Simulation time when neuron last fired
 
     private:
