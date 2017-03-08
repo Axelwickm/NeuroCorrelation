@@ -48,7 +48,8 @@ int main(int argc, char* args[]){
 
     float inputs[] = {0, 0, 200};
     coord3 inputPositions[] = {{1,0,0},{-2,0,0}, {-0.5, 1.5, 0}};
-    brain.setInputRateArray(inputs, sizeof(inputs)/sizeof(float), inputPositions);
+    float inputRadius[] = {0.75, 1.0, 0.75};
+    brain.setInputRateArray(inputs, sizeof(inputs)/sizeof(float), inputPositions, inputRadius);
 
     std::cout<<"Starting program loop\n";
     unsigned t = 0;

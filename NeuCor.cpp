@@ -34,7 +34,7 @@ NeuCor::NeuCor(int n_neurons) {
 
 NeuCor::~NeuCor(){}
 
-void NeuCor::setInputRateArray(float inputs[], unsigned inputCount, coord3 inputPositions[]){
+void NeuCor::setInputRateArray(float inputs[], unsigned inputCount, coord3 inputPositions[], float inputRadius[]){
     inputArray = inputs;
     inputArraySize = inputCount;
 
@@ -42,7 +42,7 @@ void NeuCor::setInputRateArray(float inputs[], unsigned inputCount, coord3 input
     if (0 < inputHanderSizeChange){
         for (unsigned i = 0; i<inputHanderSizeChange; i++){
             if (inputPositions != NULL)
-                inputHandler.emplace_back(this, inputPositions[i]);
+                inputHandler.emplace_back(this, inputPositions[i], inputRadius[i]);
             else
                 inputHandler.emplace_back(this);
         }
@@ -227,8 +227,8 @@ simulator::simulator(NeuCor* p){
 }
 deletedSimulator::deletedSimulator(NeuCor* p): simulator(p) {};
 
-InputFirer::InputFirer(NeuCor* p, coord3 position)
-:simulator(p) {
+InputFirer::InputFirer(NeuCor* p, coord3 position, float radius)
+:simulator(p), radius(radius) {
     if (position.x == position.x) a = position; // If x isn't NAN
     else a = {(float) rand()/RAND_MAX,(float) rand()/RAND_MAX,(float) rand()/RAND_MAX};
 
@@ -239,7 +239,6 @@ InputFirer::InputFirer(NeuCor* p, coord3 position)
     b.y = a.y+sqrt(1.0-pow(cos(longitude),2.0))*sin(latitude);
     b.z = a.z+cos(longitude);*/
 
-    radius = 0.75;
     for (auto &neu: parentNet->neurons){
         if (neu.position().getDist(a) < radius){
             near.push_back(neu.getID());

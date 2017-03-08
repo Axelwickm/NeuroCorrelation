@@ -46,8 +46,8 @@ class NeuCor {
 
         // This is how input signals interface with the brain. Every given input has a position in the brain, which is used to determined what nearby neurons are fired.
         // Input rate is defined in Hz as floats. Since the memory address of the array (inputs) is what's stored, the brain will use the updated values automatically.
-        // If the inputs positions are NULL, they are generated randomly.
-        void setInputRateArray(float inputs[], unsigned inputCount, coord3 inputPositions[] = {NULL});
+        // If the inputs positions are NULL, they are generated randomly and input radius is 1.0
+        void setInputRateArray(float inputs[], unsigned inputCount, coord3 inputPositions[] = {NULL}, float inputRadius[] = {NULL});
 
         void createNeuron(coord3 position);  // Creates neuron at given coordinates
         void makeConnections();              // Connects all neurons closer than 1 unit to each other.
@@ -126,7 +126,7 @@ struct deletedSimulator: public simulator {
 // Works to interface between user and neurons
 // Schedule is called every time the brain's run function is called
 struct InputFirer: public simulator {
-    InputFirer(NeuCor* p, coord3 position = {NAN,NAN,NAN}); // If positions are NAN, a random position is assigned
+    InputFirer(NeuCor* p, coord3 position = {NAN,NAN,NAN}, float radius = 1.0); // If positions are NAN, a random position is assigned
     coord3 a;                                               // Position
     float radius;
     std::vector<std::size_t> near;                          // IDs of all neurons closer than radius
