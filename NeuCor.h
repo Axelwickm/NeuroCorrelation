@@ -51,8 +51,6 @@ class NeuCor {
 
         void createNeuron(coord3 position);  // Creates neuron at given coordinates
         void makeConnections();              // Connects all neurons closer than 1 unit to each other.
-
-        void printSynapseWeightDist() const; // Prints out distribution graph of every synapse's weight (from -3 to 3) in console
     protected:
         friend class simulator;
         friend class Neuron;

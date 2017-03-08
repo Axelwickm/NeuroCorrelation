@@ -180,51 +180,11 @@ void NeuCor::deleteSynapse(std::size_t fromID, std::size_t toID){
     }
 }
 
-void NeuCor::printSynapseWeightDist() const {
-    float const span = 0.2, range_min = -3.0, range_max = 3.2;
-    int const longestRow = 20;
-
-    std::vector<int> weightDistribution;
-    weightDistribution.resize(ceil(float(range_max-range_min)/span), 0);
-
-    int maxVal = 0, above = 0, below = 0;
-    for (auto &neu : neurons){
-        for (auto &syn : neu.outSynapses){
-            int spanIndex = ceil((syn.getWeight()-range_min)/span);
-            if (spanIndex < 0){
-                below++;
-                continue;
-            }
-            else if (spanIndex >= weightDistribution.size()){
-                above++;
-                continue;
-            }
-            weightDistribution.at(spanIndex)++;
-            maxVal = std::max(maxVal, weightDistribution.at(spanIndex));
-        }
-    }
-    maxVal /= longestRow;
-
-
-    std::cout.precision(2);
-    std::cout<<"Synaptic weight distribution  |  "<<range_min<<" -> "<<range_max<<":\n";
-    for (int i = 0; i < weightDistribution.size(); i++){
-        if (i == 0) std::cout<<"  /\\  | "<<below<<'\n';
-        if (0.0 <= range_min+span*i)
-            std::cout<<std::fixed<<" "<<(range_min+span*i)<<" | ";
-        else std::cout<<std::fixed<<(range_min+span*i)<<" | ";
-        for (int j = 0; j<weightDistribution.at(i)/maxVal; j++) std::cout<<"#";
-        std::cout<<'\n';
-        if (i == weightDistribution.size()-1) std::cout<<"  \\/  | "<<above<<'\n'<<'\n';
-    }
-    std::cout.unsetf(std::ios::fixed);
-    std::cout.precision(6);
-}
-
 simulator::simulator(NeuCor* p){
     parentNet = p;
     lastRan = parentNet->getTime();
 }
+
 deletedSimulator::deletedSimulator(NeuCor* p): simulator(p) {};
 
 InputFirer::InputFirer(NeuCor* p, coord3 position, float radius)
