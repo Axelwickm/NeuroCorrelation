@@ -503,7 +503,9 @@ void Neuron::givePotential(float pot){
 }
 
 float Neuron::getTrace() const {
-    return powf(traceDecayRate, parentNet->getTime()-lastFire);
+    float t = powf(traceDecayRate, parentNet->getTime()-lastFire);
+    if (t == t) return t;
+    else return 0;
 }
 
 void Neuron::charge_passive(float deltaT, float currentT){
