@@ -225,6 +225,7 @@ class Synapse: public simulator {
         float AP_polW, AP_depolFac, AP_deltaStart, AP_fireTime; // Shape of the action potential (spike). Mostly inherited from parent neuron
         float AP_speed;                                         // ms/unit of spike
         const float traceDecayRate;
+        bool inhibitory;
     private:
         float length;                                   // Length between parent and target neuron
         float weight;                                   // A factor to the action potential's strength. This value is changed by plasticity, and is where most of the learning in the brain happens

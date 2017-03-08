@@ -339,6 +339,8 @@ Synapse::Synapse(NeuCor* p, std::size_t parent, std::size_t target)
 
     if ((float) rand()/RAND_MAX < 0.2) weight = -weight;
 
+    inhibitory = weight < 0.0;
+
     coord3 n1 = parentNet->getNeuron(target)->position();
     coord3 n2 = parentNet->getNeuron(parent)->position();
     length = n2.getDist(n1);
@@ -573,7 +575,7 @@ void Synapse::fire(float polW, float depolFac, float deltaStart){
 void Synapse::synapticPlasticity(){
     float traceS = powf(traceDecayRate, parentNet->getTime()-lastSpikeArrival); // Synapse trace (presynaptic)
     float traceT = parentNet->getNeuron(tN)->getTrace(); // Target trace (postsynaptic)
-    bool inhibitory = weight < 0;
+
     if (traceT == 1) traceT = 0;
     if (traceS == 1) traceS = 0;
 
