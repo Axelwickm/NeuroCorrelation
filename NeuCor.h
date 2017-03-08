@@ -50,6 +50,7 @@ class NeuCor {
         void setInputRateArray(float inputs[], unsigned inputCount, coord3 inputPositions[] = {NULL}, float inputRadius[] = {NULL});
 
         void createNeuron(coord3 position);  // Creates neuron at given coordinates
+        void createSynapse(std::size_t toID, std::size_t fromID, float weight);
         void makeConnections();              // Connects all neurons closer than 1 unit to each other.
     protected:
         friend class simulator;
@@ -212,6 +213,7 @@ class Synapse: public simulator {
         float getPrePot() const;                        // Used by renderer to show parent end voltage
         float getPostPot() const;                       // Used by renderer to show target end voltage
         float getWeight() const;
+        void setWeight(float w);
 
         void flipDirection();                           // Flips direction of the synapse. This moves this object ownership, changing the memory addresses of itself and some of the other synapses owned by the same parent neuron
 

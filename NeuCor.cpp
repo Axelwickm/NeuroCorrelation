@@ -93,6 +93,15 @@ void NeuCor::createNeuron(coord3 position){
         freeNeuronIDs.pop_back();
     }
 }
+void NeuCor::createSynapse(std::size_t toID, std::size_t fromID, float weight){
+
+    for (auto &t: neurons.at(fromID).outSynapses) // Don't allow if synapse already exists
+        if (t.tN == toID)
+            return;
+
+    neurons.at(fromID).outSynapses.emplace_back(this, fromID, toID);
+    neurons.at(fromID).outSynapses.back().setWeight(weight);
+}
 
 std::tuple<std::size_t, std::size_t> NeuCor::registerNeuron(coord3 pos, float potential, float activity){
     std::size_t posIndx;
@@ -416,6 +425,10 @@ float Synapse::getPostPot() const {
 
 float Synapse::getWeight() const {
     return weight;
+}
+
+void Synapse::setWeight(float w) {
+    weight = w;
 }
 
 /* Simulation related methods */
