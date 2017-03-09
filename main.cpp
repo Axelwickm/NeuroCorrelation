@@ -19,7 +19,7 @@ int main(int argc, char* args[]){
     std::cout<<"Current seed: "<<seed<<std::endl;
 
     enum currentSimulationEnum {SIM_OTHER, SIM_FEW_NEURONS, SIM_300_NEURONS};
-    const currentSimulationEnum currentSimulation = SIM_300_NEURONS;
+    const currentSimulationEnum currentSimulation = SIM_FEW_NEURONS;
 
     switch (currentSimulation){
         case SIM_FEW_NEURONS:{
@@ -29,14 +29,15 @@ int main(int argc, char* args[]){
             brain.runAll = true;
             brain.runSpeed = 0.01;
 
-            coord3 neuronPositions[] = {{0,0,0}, {-0.52,-0.5,0}};//, {0.52,-0.5,0}, {0,0.8,0}};
+            coord3 neuronPositions[] = {{0,0,0}, {-0.55,-0.5,0}, {0.52,-0.5,0}};
             for (auto &n: neuronPositions) brain.createNeuron(n);
 
-            /*brain.createSynapse(3, 0, 1.f);*/ brain.createSynapse(0, 1, 0.9f);// brain.createSynapse(0, 2, 0.2f);
+            brain.createSynapse(0, 1, 0.5f); brain.createSynapse(0, 2, 0.5f);
+            brain.createSynapse(1, 0, -0.5f); brain.createSynapse(2, 0, 0.5f);
 
-            coord3 inputPositions[] = {neuronPositions[1]};//, neuronPositions[2]};
-            float inputRadius[] = {0.1};
-            float inputs[] = {200};
+            coord3 inputPositions[] = {neuronPositions[1], neuronPositions[2]};
+            float inputRadius[] = {0.1, 0.1};
+            float inputs[] = {200, 200};
             brain.setInputRateArray(inputs, sizeof(inputs)/sizeof(float), inputPositions, inputRadius);
 
             NeuCor_Renderer brainRenderer(&brain);
@@ -103,17 +104,12 @@ int main(int argc, char* args[]){
                 t++;
                 if (false) brain.run();
 
-                //if (brain.getTime() > 20){inputs[0] = 0; inputs[1] = 0;}
-                /*if (sin(brain.getTime()/30.0) > 0.0){
-                    inputs[0] = 100; inputs[1] = 100;
+                if (sin(brain.getTime()/50.0) > 0.0){
+                    inputs[2] = 200;
                 }
                 else {
-                    inputs[0] = 0; inputs[1] = 0;
-                }*/
-                if (brain.getTime()>2000.0) inputs[0] = 200;
-                if (brain.getTime()>2000.0) inputs[2] = 100;
-                //if (rand()%100 == 0) inputs[2] = rand()%200;
-                //std::cout<<inputs[0]<<std::endl;
+                    inputs[2] = 0;
+                }
 
                 brainRenderer.pollWindow();
                 brainRenderer.updateView();
