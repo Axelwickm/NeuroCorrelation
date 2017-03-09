@@ -367,7 +367,7 @@ Synapse::Synapse(const Synapse &other):simulator(other.parentNet), traceDecayRat
     synapticPlasticityCalls = other.synapticPlasticityCalls;
 
     AP_polW = 0, AP_depolFac = 0, AP_deltaStart = 0, AP_fireTime = 0;
-    AP_speed = 2.0;
+    AP_speed = other.AP_speed;
 }
 Synapse& Synapse::operator= (const Synapse &other){
     // Simulator member update
@@ -385,7 +385,7 @@ Synapse& Synapse::operator= (const Synapse &other){
     synapticPlasticityCalls = other.synapticPlasticityCalls;
 
     AP_polW = 0, AP_depolFac = 0, AP_deltaStart = 0, AP_fireTime = 0;
-    AP_speed = 2.0;
+    AP_speed = other.AP_speed;
 }
 Synapse::~Synapse(){
 
