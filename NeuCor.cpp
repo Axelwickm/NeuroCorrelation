@@ -431,6 +431,7 @@ float Synapse::getWeight() const {
 
 void Synapse::setWeight(float w) {
     weight = w;
+    inhibitory = weight<0.0;
 }
 
 /* Simulation related methods */
