@@ -12,9 +12,9 @@ NeuCor::NeuCor(int n_neurons) {
     runAll = false;
     totalGenNeurons = 0;
 
-    learningRate = 0.6;
-    presynapticTraceDecay = 0.5;
-    postsynapticTraceDecay = 0.9;
+    learningRate = 0.2;
+    presynapticTraceDecay = 0.6;
+    postsynapticTraceDecay = 0.8;
 
     totalGenNeurons = n_neurons;
     for (int n = 0; n<n_neurons; n++){
