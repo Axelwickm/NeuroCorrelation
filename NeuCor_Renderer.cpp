@@ -190,6 +190,31 @@ NeuCor_Renderer::NeuCor_Renderer(NeuCor* _brain)
     glfwSetCursorPos(window, width/2.0, height/2.0);
     updateCamPos();
     destructCallback = NULL;
+
+    /* Init matrices */
+    camDir = glm::vec3 (
+        cos(camVA) * sin(camHA),
+        sin(camVA),
+        cos(camVA) * cos(camHA)
+    );
+    glm::vec3 right = glm::vec3(
+        -cos(camHA),
+        0,
+        sin(camHA)
+    );
+    camUp = glm::cross( right, camDir );
+
+    float aspect = (float) width / (float)height;
+
+    glm::mat4 Projection = glm::perspective(glm::radians(65.0f), (float) aspect, 0.05f, 100.0f);
+    glm::mat4 View = glm::lookAt(
+        camPos,
+        camPos+camDir,
+        camUp
+    );
+    vp = Projection * View;
+
+    cameraRadius = glm::distance(camPos, vec3(0,0,0)); // For orbit camera mode
 }
 
 NeuCor_Renderer::realTimeStats::realTimeStats(){
