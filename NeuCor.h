@@ -209,6 +209,8 @@ class Synapse: public simulator {
         friend class NeuCor_Renderer;
 
         void synapticPlasticity();                      // Called when spike is delivered, and when parent neuron fires. Changes the weight of the synapse
+        float averageSynapseTrace, averageNeuronTrace;
+        unsigned synapticPlasticityCalls;
 
         float getPrePot() const;                        // Used by renderer to show parent end voltage
         float getPostPot() const;                       // Used by renderer to show target end voltage

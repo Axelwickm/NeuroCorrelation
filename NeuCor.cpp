@@ -345,6 +345,9 @@ Synapse::Synapse(NeuCor* p, std::size_t parent, std::size_t target)
     coord3 n2 = parentNet->getNeuron(parent)->position();
     length = n2.getDist(n1);
 
+    averageSynapseTrace = 0.0, averageNeuronTrace = 0.0;
+    synapticPlasticityCalls = 0;
+
     AP_polW = 0, AP_depolFac = 0, AP_deltaStart = 0, AP_fireTime = 0;
     AP_speed = 2.0;
 }
@@ -360,6 +363,9 @@ Synapse::Synapse(const Synapse &other):simulator(other.parentNet), traceDecayRat
     length = other.length;
     weight = other.weight;
 
+    averageSynapseTrace = other.averageSynapseTrace, averageNeuronTrace = other.averageNeuronTrace;
+    synapticPlasticityCalls = other.synapticPlasticityCalls;
+
     AP_polW = 0, AP_depolFac = 0, AP_deltaStart = 0, AP_fireTime = 0;
     AP_speed = 2.0;
 }
@@ -374,6 +380,9 @@ Synapse& Synapse::operator= (const Synapse &other){
 
     length = other.length;
     weight = other.weight;
+
+    averageSynapseTrace = other.averageSynapseTrace, averageNeuronTrace = other.averageNeuronTrace;
+    synapticPlasticityCalls = other.synapticPlasticityCalls;
 
     AP_polW = 0, AP_depolFac = 0, AP_deltaStart = 0, AP_fireTime = 0;
     AP_speed = 2.0;
@@ -580,7 +589,17 @@ void Synapse::synapticPlasticity(){
     if (traceT == 1) traceT = 0;
     if (traceS == 1) traceS = 0;
 
-    if (weight == 0 && !inhibitory && rand()%120 == 0) weight += 1.0; // 1/120 chance of weight being boosted (this allows for signal expansion and reservation throughout the brain)
+    synapticPlasticityCalls++;
+    averageSynapseTrace += traceS;
+    averageNeuronTrace += traceT;
+
+    traceT = (float) averageNeuronTrace/synapticPlasticityCalls;
+    traceS = (float) averageSynapseTrace/synapticPlasticityCalls;
+
+    if (weight == 0 && !inhibitory && rand()%120 == 0){ // This gives the synapse a 1/120 chance of getting a second chance in life
+        weight += 1.0; // Weight being boosted (this allows for signal expansion and reservation throughout the brain)
+        synapticPlasticityCalls = 0; averageSynapseTrace = 0; averageNeuronTrace = 0; // Resets average-bias
+    }
 
     float weightChange = traceS - traceT;
     weight += weightChange*parentNet->learningRate;
