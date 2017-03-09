@@ -1051,7 +1051,7 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, neuronWindow* neuWin){
                 neuWin->usingRelative = false;
             }
             ImGui::SameLine(); ImGui::Text("%i -> %i", syn->pN, syn->tN);
-            if (0.0f < syn->getWeight() ) ImGui::TextColored(ImColor(116, 102, 116),"EXCITATORY");
+            if (!syn->inhibitory) ImGui::TextColored(ImColor(116, 102, 116),"EXCITATORY");
             else ImGui::TextColored(ImColor(26, 26, 116),"inhibitory");
             ImGui::Text("weight: %.2f", syn->getWeight());
 
