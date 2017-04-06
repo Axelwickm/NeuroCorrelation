@@ -1429,8 +1429,10 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
             static std::deque<std::vector<int> > firePlot;
             int firePlotSize = rasterPlotTime/(brain->runSpeed);
 
-            firePlot.emplace_back();
-            firePlot.back().reserve(neuronCount/5);
+            if (!paused) {
+                firePlot.emplace_back();
+                firePlot.back().reserve(neuronCount/5);
+            }
             for (auto &neu: brain->neurons) {
                 if (brainTime - neu.lastFire < brain->runSpeed){
                     firePlot.back().push_back(neu.getID());
