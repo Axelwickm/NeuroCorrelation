@@ -65,7 +65,7 @@ void NeuCor::makeConnections(){
 }
 
 void NeuCor::createNeuron(coord3 position){
-    #define SPAWN_DENSITY 6
+    #define SPAWN_DENSITY 8
     #define SPAWN_SIZE 2.0
     #define SPAWN_SPHERE true
 
