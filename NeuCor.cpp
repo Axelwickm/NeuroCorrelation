@@ -12,9 +12,12 @@ NeuCor::NeuCor(int n_neurons) {
     runAll = false;
     totalGenNeurons = 0;
 
-    learningRate = 0.2;
-    presynapticTraceDecay = 0.6;
-    postsynapticTraceDecay = 0.8;
+    learningRate = 1.0;
+
+    presynapticTraceDecay = 0.75;
+    postsynapticTraceDecay = 0.65;
+    presynapticFactor = 0.13;
+    postsynapticFactor = 0.30;
 
     totalGenNeurons = n_neurons;
     for (int n = 0; n<n_neurons; n++){
@@ -23,13 +26,10 @@ NeuCor::NeuCor(int n_neurons) {
         createNeuron(d);
     }
     totalGenNeurons = 0;
-    std::cout<<"Making connections for: ";
+
     for (int n = 0; n<n_neurons; n++){
-        if (n != 0) std::cout<<", ";
-        std::cout<<n;
         neurons.at(n).makeConnections();
     }
-    std::cout<<'\n';
 }
 
 NeuCor::~NeuCor(){}
@@ -52,6 +52,9 @@ void NeuCor::setInputRateArray(float inputs[], unsigned inputCount, coord3 input
             inputHandler.pop_back();
         }
     }
+}
+
+    inputHandler.at(inputID).lastFire += t;
 }
 
 void NeuCor::makeConnections(){
@@ -507,7 +510,14 @@ void Neuron::fire(){
 
     //vesicles -= 5.0;
 }
+
+void Neuron::scheduleFire(float const time){
+    scheduledFireTime = parentNet->getTime()+time;
+    parentNet->queueSimulation(this, time);
+}
+
 void Neuron::transfer(){
+    run();
     parentNet->queueSimulation(this, AP_cutoff);
 }
 void Neuron::givePotential(float pot){
@@ -526,7 +536,9 @@ void Neuron::charge_passive(float deltaT, float currentT){
 }
 
 void Neuron::charge_thresholdCheck(float deltaT, float currentT){
-    if (threshold < potential() && (lastFire != lastFire || AP_cutoff < (float) currentT-lastFire) && 0.0 < vesicles) fire();
+    if ( (threshold < potential() || scheduledFireTime == parentNet->getTime())
+        && (lastFire != lastFire || AP_cutoff < (float) currentT-lastFire) && 0.0 < vesicles)
+            fire();
 }
 
 void Neuron::charge_insynapses(float deltaT, float currentT){
@@ -536,7 +548,7 @@ void Neuron::charge_insynapses(float deltaT, float currentT){
         float timeOffset = currentT - s->AP_fireTime;
         if (timeOffset <= 0.0 || s->AP_fireTime == 0) continue;
 
-        newPot += deltaT*s->AP_depolFac;
+        newPot += deltaT*s->AP_depolFac*0.9943*exp(0.3702*deltaT);
 
         if (AP_cutoff < timeOffset) s->AP_fireTime = 0;
     }
@@ -563,7 +575,6 @@ void Synapse::run(){
     if (AP_fireTime < parentNet->getTime()) return;
 
     parentNet->getNeuron(tN)->transfer();
-    parentNet->queueSimulation(parentNet->getNeuron(tN), 0.1);
 
     lastSpikeArrival = parentNet->getTime();
 
@@ -572,7 +583,7 @@ void Synapse::run(){
 void Synapse::fire(float polW, float depolFac, float deltaStart){
     if (AP_fireTime != 0) return;
     AP_polW = polW, AP_depolFac = depolFac, AP_deltaStart = deltaStart;
-    AP_depolFac *= 80.0;
+    AP_depolFac *= 52.0;
     AP_depolFac *= weight;
 
     AP_fireTime = length*AP_speed;
@@ -593,16 +604,31 @@ void Synapse::synapticPlasticity(){
     averageSynapseTrace += traceS;
     averageNeuronTrace += traceT;
 
-    traceT = (float) averageNeuronTrace/synapticPlasticityCalls;
-    traceS = (float) averageSynapseTrace/synapticPlasticityCalls;
+    //traceS = (float) averageSynapseTrace/synapticPlasticityCalls;
+    //traceT = (float) averageNeuronTrace/synapticPlasticityCalls;
 
-    if (weight == 0 && !inhibitory && rand()%120 == 0){ // This gives the synapse a 1/120 chance of getting a second chance in life
+    if (weight == 0 && !inhibitory && rand()%120 == 0 && false){ // This gives the synapse a 1/120 chance of getting a second chance in life
         weight += 1.0; // Weight being boosted (this allows for signal expansion and reservation throughout the brain)
         synapticPlasticityCalls = 0; averageSynapseTrace = 0; averageNeuronTrace = 0; // Resets average-bias
     }
 
-    float weightChange = traceS - traceT;
+    float weightChange = parentNet->presynapticFactor*traceS - parentNet->postsynapticFactor*traceT;
     weight += weightChange*parentNet->learningRate;
+/*
+    float maxWeight = 0.0;
+    for (auto &s: parentNet->getNeuron(tN)->inSynapses) {
+        auto syn = parentNet->getSynapse(s);
+        if (maxWeight<syn->getWeight()) maxWeight = syn->getWeight();
+    }
+
+    for (auto &s: parentNet->getNeuron(tN)->inSynapses){
+        auto syn = parentNet->getSynapse(s);
+        float w1 = syn->getWeight();
+        if (0<syn->getWeight() && maxWeight!=0.0) syn->setWeight(syn->getWeight()/maxWeight);
+        float w2 = syn->getWeight();
+        int wqeqwe = 0;
+    } */
+
     if (!inhibitory) weight = fmax(fmin(weight, 1.0), 0.0);
     else weight = fmax(fmin(weight, 0.0), -1.0);
     //std::cout<<"Delta w = "<<weightChange<<'\n';

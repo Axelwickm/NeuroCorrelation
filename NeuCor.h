@@ -43,6 +43,7 @@ class NeuCor {
         float getTime() const;               // The amount of time (in ms) that has been simulated
         float learningRate;                  // Used as a factor when synapse weight is changed
         float presynapticTraceDecay, postsynapticTraceDecay; // When a synapse (presynaptic) or neuron (postsynaptic) is fired a trace is left. This trace decays exponentially by these rates
+        float presynapticFactor, postsynapticFactor;         // How much the trace variables are factored into the plasticity function
 
         // This is how input signals interface with the brain. Every given input has a position in the brain, which is used to determined what nearby neurons are fired.
         // Input rate is defined in Hz as floats. Since the memory address of the array (inputs) is what's stored, the brain will use the updated values automatically.
@@ -147,6 +148,7 @@ class Neuron: public simulator {
         void fire();                         // Initiates neuron firing sequence, increases activity, updates weight of both incoming and outgoing synapses
         void transfer();                     // Schedule simulation at maximum input voltage from synapses, thus firing if needed. Called by in-synapses
         void givePotential(float pot);       // Instantly adds given amount of potential
+        void scheduleFire(float const time);    // Time in future that the neuron will fire
 
         float getTrace() const;              // Returns the amount of trace left after firing. Used for calculating synapse weight change
 
@@ -181,6 +183,8 @@ class Neuron: public simulator {
 
         float activityStartTime;                        // ms simulation time
         unsigned firings;                               // Number of firings since activity start time started
+
+        float scheduledFireTime;
 
         void charge_passive(float deltaT, float currentT);          // Exponential decay/growth towards base level
         void charge_thresholdCheck(float deltaT, float currentT);   // Checks if neuron should fire, and if so calls fire()
