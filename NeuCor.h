@@ -49,6 +49,7 @@ class NeuCor {
         // Input rate is defined in Hz as floats. Since the memory address of the array (inputs) is what's stored, the brain will use the updated values automatically.
         // If the inputs positions are NULL, they are generated randomly and input radius is 1.0
         void setInputRateArray(float inputs[], unsigned inputCount, coord3 inputPositions[] = {NULL}, float inputRadius[] = {NULL});
+        void addInputOffset(unsigned inputID, float t);    // Adds time offset (in ms) to a given input
 
         void createNeuron(coord3 position);  // Creates neuron at given coordinates
         void createSynapse(std::size_t toID, std::size_t fromID, float weight);

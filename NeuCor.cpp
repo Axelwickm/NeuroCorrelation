@@ -54,6 +54,7 @@ void NeuCor::setInputRateArray(float inputs[], unsigned inputCount, coord3 input
     }
 }
 
+void NeuCor::addInputOffset(unsigned inputID, float t){
     inputHandler.at(inputID).lastFire += t;
 }
 
