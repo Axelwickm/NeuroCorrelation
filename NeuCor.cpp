@@ -462,6 +462,11 @@ void NeuCor::run(){
     for (int i = 0; i<inputHandler.size(); i++){
         inputHandler.at(i).schedule(runSpeed, inputArray[i]);
     }
+
+    for (auto &neuron: neurons){ // Background firing
+        if (rand()%(int)(600.0/runSpeed) == 0) neurons.at(rand()%neurons.size()).scheduleFire((float) rand()/RAND_MAX*runSpeed);
+    }
+
     float const targetTime = currentTime + runSpeed;
     while (simulationQueue.size() != 0){
         currentTime = simulationQueue.top().stime;
