@@ -203,7 +203,7 @@ deletedSimulator::deletedSimulator(NeuCor* p): simulator(p) {};
 InputFirer::InputFirer(NeuCor* p, coord3 position, float radius)
 :simulator(p), radius(radius) {
     if (position.x == position.x) a = position; // If x isn't NAN
-    else a = {(float) rand()/RAND_MAX,(float) rand()/RAND_MAX,(float) rand()/RAND_MAX};
+    else a = {((float) rand()/RAND_MAX-0.5f)*5.f,((float) rand()/RAND_MAX-0.5f)*5.f,((float) rand()/RAND_MAX-0.5f)*5.f};
 
     //  Make b a random point within a given distance of a
     /*float longitude = 2.0*3.1459*(float) rand()/RAND_MAX;
