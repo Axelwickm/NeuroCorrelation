@@ -23,12 +23,15 @@ int main(int argc, char* args[]){
 
     switch (currentSimulation){
         case SIM_USER_INPUT:{
-            int n_neurons = 100; int n_inputs = 1;
+            int n_neurons = 100; int n_inputs = 1; int inputLinks = 0;
             { // Getting user input
                 std::cout<<"Number of neurons:\n";
                 std::cin>>n_neurons;
                 std::cout<<"Number of inputs:\n";
                 std::cin>>n_inputs;
+                /*std::cout<<"Number of input links (how many inputs have the same frequency):\n";
+                std::cin>>inputLinks;
+                inputLinks = min(n_inputs/2, inputLinks);*/
             }
 
             NeuCor brain(n_neurons);
@@ -52,6 +55,7 @@ int main(int argc, char* args[]){
             while (!windowDestroyed) {
                 brainRenderer.pollWindow();
                 brainRenderer.updateView();
+                for (int i = 0; i<inputLinks; i++) inputs[i*2+1] = inputs[i*2];
             };
             break;
         }
