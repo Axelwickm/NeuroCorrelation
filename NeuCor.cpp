@@ -610,8 +610,6 @@ void Synapse::synapticPlasticity(){
     averageSynapseTrace += traceS;
     averageNeuronTrace += traceT;
 
-    //traceS = (float) averageSynapseTrace/synapticPlasticityCalls;
-    //traceT = (float) averageNeuronTrace/synapticPlasticityCalls;
 
     if (weight == 0 && !inhibitory && rand()%120 == 0 && false){ // This gives the synapse a 1/120 chance of getting a second chance in life
         weight += 1.0; // Weight being boosted (this allows for signal expansion and reservation throughout the brain)
@@ -620,24 +618,9 @@ void Synapse::synapticPlasticity(){
 
     float weightChange = parentNet->presynapticFactor*traceS - parentNet->postsynapticFactor*traceT;
     weight += weightChange*parentNet->learningRate;
-/*
-    float maxWeight = 0.0;
-    for (auto &s: parentNet->getNeuron(tN)->inSynapses) {
-        auto syn = parentNet->getSynapse(s);
-        if (maxWeight<syn->getWeight()) maxWeight = syn->getWeight();
-    }
-
-    for (auto &s: parentNet->getNeuron(tN)->inSynapses){
-        auto syn = parentNet->getSynapse(s);
-        float w1 = syn->getWeight();
-        if (0<syn->getWeight() && maxWeight!=0.0) syn->setWeight(syn->getWeight()/maxWeight);
-        float w2 = syn->getWeight();
-        int wqeqwe = 0;
-    } */
 
     if (!inhibitory) weight = fmax(fmin(weight, 1.0), 0.0);
     else weight = fmax(fmin(weight, 0.0), -1.0);
-    //std::cout<<"Delta w = "<<weightChange<<'\n';
 
     //if (weight < 0) parentNet->queFlip(std::pair<std::size_t, std::size_t>(pN, tN)); // Que flipping of synapse if weight is 0
 }
