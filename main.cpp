@@ -45,6 +45,7 @@ int main(int argc, char* args[]){
                 val = rand()%60;
             }
             brain.setInputRateArray(inputs, sizeof(inputs)/sizeof(float));
+            brain.setDetectors(1);
 
             NeuCor_Renderer brainRenderer(&brain);
             brainRenderer.realRunspeed = false;
@@ -56,6 +57,7 @@ int main(int argc, char* args[]){
                 brainRenderer.pollWindow();
                 brainRenderer.updateView();
                 for (int i = 0; i<inputLinks; i++) inputs[i*2+1] = inputs[i*2];
+                std::cout<<brain.getDetectorVoltages().at(0)<<std::endl;
             };
             break;
         }

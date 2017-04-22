@@ -27,6 +27,7 @@ struct coord3 {
 struct simulation;
 class simulator;
 class InputFirer;
+class VoltageDetector;
 class Neuron;
 class Synapse;
 
@@ -51,6 +52,10 @@ class NeuCor {
         void setInputRateArray(float inputs[], unsigned inputCount, coord3 inputPositions[] = {NULL}, float inputRadius[] = {NULL});
         void addInputOffset(unsigned inputID, float t);    // Adds time offset (in ms) to a given input
 
+        void setDetectors(unsigned detectorNumber, coord3 detectorPositions[] = {NULL}, float detectorRadius[] = {NULL});
+        float getDetectorVoltage(unsigned ID);
+        std::vector<float> getDetectorVoltages();
+
         void createNeuron(coord3 position);  // Creates neuron at given coordinates
         void createSynapse(std::size_t toID, std::size_t fromID, float weight);
         void makeConnections();              // Connects all neurons closer than 1 unit to each other.
@@ -59,6 +64,7 @@ class NeuCor {
         friend class Neuron;
         friend class Synapse;
         friend class InputFirer;
+        friend class VoltageDetector;
         friend class NeuCor_Renderer;
 
         void queueSimulation(simulator* s, const float time); // Schedules calling run() of simulator s a given number of ms in the future
@@ -75,6 +81,7 @@ class NeuCor {
         float* inputArray;                   // Holds defined input rate array
         unsigned inputArraySize;
         std::vector<InputFirer> inputHandler;
+        std::vector<VoltageDetector> voltageDetectors;
 
         boost::container::stable_vector<Neuron> neurons;                // Where all neurons are stored
         Neuron* getNeuron(std::size_t ID);
@@ -135,6 +142,17 @@ struct InputFirer: public simulator {
     void schedule(float deltaT, float frequency);           // Schedules itself to be run at even intervals (frequency) for the next given ms (deltaT)
     float lastFire;                                         // The last scheduled time
     void run();                                             // Runs all neurons in near vector
+};
+
+struct VoltageDetector {
+    NeuCor* parentNet;
+    VoltageDetector(NeuCor* p, coord3 position = {NAN,NAN,NAN}, float radius = 1.0); // If positions are NAN, a random position is assigned
+
+    coord3 a;                                               // Position
+    float radius;
+    std::vector<std::size_t> near;                          // IDs of all neurons closer than radius
+
+    float getVoltage();
 };
 
 // Implements Neurons as simulator objects

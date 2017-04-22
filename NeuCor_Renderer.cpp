@@ -943,6 +943,25 @@ void NeuCor_Renderer::renderInterface(){
         }
         inputHandlerID++;
     }
+
+    // Render voltage detectors
+    int voltageDetectorID = 0;
+    for (auto &VD: brain->voltageDetectors){
+        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+        float voltage = brain->getDetectorVoltage(voltageDetectorID);
+
+        glm::vec3 screenCoords = screenCoordinates(glm::vec3(VD.a.x, VD.a.y, VD.a.z));
+        draw_list->AddCircle(ImVec2(screenCoords.x, screenCoords.y), 5, ImColor(0.9f*(voltage+70.f)/60.f, 0.2f, 0.75f));
+
+        double xpos, ypos;
+        glfwGetCursorPos(window, &xpos, &ypos);
+        if (glm::distance(glm::vec2(screenCoords), glm::vec2(xpos, ypos)) < 10){
+            ImGui::BeginTooltip();
+            ImGui::Text("Voltage detector %i: %.0f mV", voltageDetectorID, voltage);
+            ImGui::EndTooltip();
+        }
+        voltageDetectorID++;
+    }
     ImGui::End();
 
     // Render neuron windows which are open

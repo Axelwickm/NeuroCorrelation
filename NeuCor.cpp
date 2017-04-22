@@ -58,6 +58,25 @@ void NeuCor::addInputOffset(unsigned inputID, float t){
     inputHandler.at(inputID).lastFire += t;
 }
 
+void NeuCor::setDetectors(unsigned detectorNumber, coord3 detectorPositions[], float detectorRadius[]){
+    for (unsigned i = 0; i<detectorNumber; i++){
+            if (detectorPositions != NULL)
+                voltageDetectors.emplace_back(this, detectorPositions[i], detectorRadius[i]);
+            else
+                voltageDetectors.emplace_back(this);
+        }
+}
+
+float NeuCor::getDetectorVoltage(unsigned ID){
+    return voltageDetectors.at(ID).getVoltage();
+}
+
+std::vector<float> NeuCor::getDetectorVoltages(){
+    std::vector<float> voltages;
+    for (auto &d: voltageDetectors) voltages.push_back(d.getVoltage());
+    return voltages;
+}
+
 void NeuCor::makeConnections(){
     for (int n = 0; n<neurons.size(); n++){
         neurons.at(n).makeConnections();
@@ -236,6 +255,27 @@ void InputFirer::schedule(float deltaT, float frequency){
             lastFire = fireTime;
         }
     }
+}
+
+VoltageDetector::VoltageDetector(NeuCor* p, coord3 position, float radius)
+:radius(radius), parentNet(p) {
+    if (position.x == position.x) a = position; // If x isn't NAN
+    else a = {((float) rand()/RAND_MAX-0.5f)*3.f,((float) rand()/RAND_MAX-0.5f)*3.f,((float) rand()/RAND_MAX-0.5f)*3.f};
+
+    for (auto &neu: parentNet->neurons){
+        if (neu.position().getDist(a) < radius){
+            near.push_back(neu.getID());
+        }
+    }
+}
+
+float VoltageDetector::getVoltage() {
+    float avgV = 0;
+    for (auto neuID: near){
+        parentNet->getNeuron(neuID)->run();
+        avgV += parentNet->potAct.at(neuID*2);
+    }
+    return avgV/near.size();
 }
 
 Neuron::Neuron(NeuCor* p, coord3 position)
