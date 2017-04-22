@@ -226,6 +226,9 @@ class Synapse: public simulator {
 
         void run();                                                 // Delivers voltage to target neuron at right time
         void fire(float polW, float depolFac, float deltaStart);    // Gets spike shape information (polarization width, depolarization factor, spike time offset). Schedules itself to run at delivery time
+
+        float getWeight() const;
+        void setWeight(float w);
     protected:
         friend class NeuCor;
         friend class Neuron;
@@ -237,8 +240,7 @@ class Synapse: public simulator {
 
         float getPrePot() const;                        // Used by renderer to show parent end voltage
         float getPostPot() const;                       // Used by renderer to show target end voltage
-        float getWeight() const;
-        void setWeight(float w);
+
 
         void flipDirection();                           // Flips direction of the synapse. This moves this object ownership, changing the memory addresses of itself and some of the other synapses owned by the same parent neuron
 
