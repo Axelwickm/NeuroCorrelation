@@ -220,7 +220,7 @@ simulator::simulator(NeuCor* p){
 deletedSimulator::deletedSimulator(NeuCor* p): simulator(p) {};
 
 InputFirer::InputFirer(NeuCor* p, coord3 position, float radius)
-:simulator(p), radius(radius) {
+:simulator(p), radius(radius), lastFire(0.0) {
     if (position.x == position.x) a = position; // If x isn't NAN
     else a = {((float) rand()/RAND_MAX-0.5f)*5.f,((float) rand()/RAND_MAX-0.5f)*5.f,((float) rand()/RAND_MAX-0.5f)*5.f};
 
