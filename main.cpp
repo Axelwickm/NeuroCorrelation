@@ -29,9 +29,9 @@ int main(int argc, char* args[]){
                 std::cin>>n_neurons;
                 std::cout<<"Number of inputs:\n";
                 std::cin>>n_inputs;
-                /*std::cout<<"Number of input links (how many inputs have the same frequency):\n";
+                std::cout<<"Number of input links (how many inputs have the same frequency):\n";
                 std::cin>>inputLinks;
-                inputLinks = min(n_inputs/2, inputLinks);*/
+                inputLinks = min(n_inputs/2, inputLinks);
             }
 
             NeuCor brain(n_neurons);
@@ -57,7 +57,7 @@ int main(int argc, char* args[]){
                 brainRenderer.pollWindow();
                 brainRenderer.updateView();
                 for (int i = 0; i<inputLinks; i++) inputs[i*2+1] = inputs[i*2];
-                std::cout<<brain.getDetectorVoltages().at(0)<<std::endl;
+                //std::cout<<brain.getDetectorVoltages().at(0)<<std::endl;
             };
             break;
         }

@@ -57,6 +57,7 @@ class NeuCor_Renderer {
         enum graphicsModule {MODULE_BRAIN, MODULE_TIME, MODULE_SELECTED_NEURONS, MODULE_STATS, MODULE_CONTROLS, MODULE_count};
         bool moduleInitOpen[5] = {true, true, true, false, false};
         bool dockHovered;
+        int hoveredInput;
         struct module {
             graphicsModule type;
             ImVec2 pos;

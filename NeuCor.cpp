@@ -224,6 +224,8 @@ InputFirer::InputFirer(NeuCor* p, coord3 position, float radius)
     if (position.x == position.x) a = position; // If x isn't NAN
     else a = {((float) rand()/RAND_MAX-0.5f)*5.f,((float) rand()/RAND_MAX-0.5f)*5.f,((float) rand()/RAND_MAX-0.5f)*5.f};
 
+    enabled = true;
+
     //  Make b a random point within a given distance of a
     /*float longitude = 2.0*3.1459*(float) rand()/RAND_MAX;
     float latitude = acos(2.0*(float) rand()/RAND_MAX-1.0);
@@ -239,12 +241,14 @@ InputFirer::InputFirer(NeuCor* p, coord3 position, float radius)
 }
 
 void InputFirer::run(){
-    for (auto neuID: near)
-        parentNet->getNeuron(neuID)->fire();
+    if (enabled){
+        for (auto neuID: near)
+            parentNet->getNeuron(neuID)->fire();
+    }
 }
 
 void InputFirer::schedule(float deltaT, float frequency){
-    if (frequency == 0) return;
+    if (frequency == 0 || !enabled) return;
 
     if (lastFire != lastFire) lastFire = 0;
     float currentT = parentNet->getTime();

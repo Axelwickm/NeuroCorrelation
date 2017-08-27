@@ -164,6 +164,8 @@ NeuCor_Renderer::NeuCor_Renderer(NeuCor* _brain)
     mouseInWindow = true;
     showInterface = true;
 
+    hoveredInput = -1;
+
     FPS = 0;
 
     realTimeStats logger();
@@ -927,12 +929,18 @@ void NeuCor_Renderer::renderInterface(){
     ImGui::SetNextWindowPos( ImVec2(0,0) ); // Naked background window
     ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
     ImGui::Begin("BCKGND", NULL, ImGui::GetIO().DisplaySize, 0.0f, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus );
+    hoveredInput = -1;
     int inputHandlerID = 0;
     for (auto &inFi: brain->inputHandler){
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
+
+        ImColor color;
+        if (inFi.enabled) color = ImColor(0.8 - 10.0f/((float) ((float) brain->getTime()-inFi.lastFire)*10.0f+1.0f), 0.5f, 0.5f);
+        else color = ImColor(0.1f, 0.1f, 0.1f);
+
         glm::vec3 screenCoords = screenCoordinates(glm::vec3(inFi.a.x, inFi.a.y, inFi.a.z));
-        draw_list->AddCircle(ImVec2(screenCoords.x, screenCoords.y), 10, ImColor(0.8 - 10.0f/((float) ((float) brain->getTime()-inFi.lastFire)*10.0f+1.0f), 0.5f, 0.5f));
+        draw_list->AddCircle(ImVec2(screenCoords.x, screenCoords.y), 10, color);
 
         double xpos, ypos;
         glfwGetCursorPos(window, &xpos, &ypos);
@@ -940,6 +948,7 @@ void NeuCor_Renderer::renderInterface(){
             ImGui::BeginTooltip();
             ImGui::Text("Input %i: %.0f Hz", inputHandlerID, brain->inputArray[inputHandlerID]);
             ImGui::EndTooltip();
+            hoveredInput = inputHandlerID;
         }
         inputHandlerID++;
     }
@@ -1652,25 +1661,32 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
 
     case (MOUSE_BUTTON):
         if (std::get<1>(TTparams) == GLFW_MOUSE_BUTTON_LEFT && std::get<2>(TTparams) == GLFW_PRESS && !navigationMode && !ImGui::IsMouseHoveringAnyWindow()){ // Neuron selection
-            #define minDistance 10.0
-
-            double xpos, ypos;
-            glfwGetCursorPos(window, &xpos, &ypos);
-            glm::vec2 cursorPos (xpos, ypos);
-
-            float closestDistance = INFINITY;
-            std::size_t ID;
-            for (auto &neu: brain->neurons){
-                coord3 neuronPos = neu.position();
-                glm::vec3 screenPos = screenCoordinates(glm::vec3(neuronPos.x, neuronPos.y, neuronPos.z));
-                float flatDist = glm::distance(cursorPos, glm::vec2(screenPos));
-                if (flatDist < closestDistance){
-                    closestDistance = flatDist;
-                    ID = neu.getID();
-                }
+            // Toggle input firer
+            if (hoveredInput != -1){
+                brain->inputHandler.at(hoveredInput).enabled = ! brain->inputHandler.at(hoveredInput).enabled;
             }
-            if (closestDistance < minDistance){
-                if (!selectNeuron(ID, true)) deselectNeuron(ID);   // Tries to select, if false the neuron is already selected and is then deselected.
+            // Or select neuron
+            else {
+                #define minDistance 10.0
+
+                double xpos, ypos;
+                glfwGetCursorPos(window, &xpos, &ypos);
+                glm::vec2 cursorPos (xpos, ypos);
+
+                float closestDistance = INFINITY;
+                std::size_t ID;
+                for (auto &neu: brain->neurons){
+                    coord3 neuronPos = neu.position();
+                    glm::vec3 screenPos = screenCoordinates(glm::vec3(neuronPos.x, neuronPos.y, neuronPos.z));
+                    float flatDist = glm::distance(cursorPos, glm::vec2(screenPos));
+                    if (flatDist < closestDistance){
+                        closestDistance = flatDist;
+                        ID = neu.getID();
+                    }
+                }
+                if (closestDistance < minDistance){
+                    if (!selectNeuron(ID, true)) deselectNeuron(ID);   // Tries to select, if false the neuron is already selected and is then deselected.
+                }
             }
         }
         if (std::get<1>(TTparams) == GLFW_MOUSE_BUTTON_RIGHT && std::get<2>(TTparams) == GLFW_PRESS && !dockHovered) { // Switch to navigation mode

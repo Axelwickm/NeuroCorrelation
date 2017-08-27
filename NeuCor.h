@@ -135,6 +135,7 @@ struct deletedSimulator: public simulator {
 // Schedule is called every time the brain's run function is called
 struct InputFirer: public simulator {
     InputFirer(NeuCor* p, coord3 position = {NAN,NAN,NAN}, float radius = 1.0); // If positions are NAN, a random position is assigned
+    bool enabled;
     coord3 a;                                               // Position
     float radius;
     std::vector<std::size_t> near;                          // IDs of all neurons closer than radius
