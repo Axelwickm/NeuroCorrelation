@@ -1,7 +1,7 @@
 #include "NeuCor_Renderer.h"
 
 /*  .h & .cpp includes  */
-#include <NeuCor.h>
+#include "NeuCor.h"
 #include "tinyexpr/tinyexpr.h"
 
 #include <GL/glew.h>
@@ -9,6 +9,7 @@
 #include <GLFW/glfw3.h>
 
 #include <glm/glm.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
 using namespace glm;
 
 /*  .cpp includes  */
@@ -23,9 +24,9 @@ using namespace glm;
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include <picopng/picopng.cpp>
-#include <imgui_impl_glfw_gl3.h>
-#include <imgui/imgui_internal.h>
+#include "picopng/picopng.cpp"
+#include "imgui_impl_glfw_gl3.h"
+#include "imgui/imgui_internal.h"
 
 std::map<GLFWwindow*, NeuCor_Renderer*> windowRegistry;
 
@@ -293,8 +294,8 @@ void NeuCor_Renderer::initOpenGL(GLFWwindow* window){
 
     glLineWidth(2.5);
 
-    synapseProgramID = LoadShaders( "synapse.shader", "synapse.Fshader" );
-    neuronProgramID = LoadShaders( "neuron.shader", "neuron.Fshader" );
+    synapseProgramID = LoadShaders( "resources/synapse.shader", "resources/synapse.Fshader" );
+    neuronProgramID = LoadShaders( "resources/neuron.shader", "resources/neuron.Fshader" );
 
     glUseProgram(neuronProgramID);
 	ViewProjMatrixID[0] = glGetUniformLocation(neuronProgramID, "VP");
@@ -336,7 +337,7 @@ void NeuCor_Renderer::initOpenGL(GLFWwindow* window){
 }
 
 void NeuCor_Renderer::loadResources() {
-    const char* filename = "neuron.png";
+    const char* filename = "resources/neuron.png";
 
     //load and decode
     std::vector<unsigned char> buffer, image;
@@ -363,7 +364,7 @@ void NeuCor_Renderer::loadResources() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
-    filename = "neuron_small.png";
+    filename = "resources/neuron_small.png";
 
     //load and decode
     buffer, image;

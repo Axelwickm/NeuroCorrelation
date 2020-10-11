@@ -2,7 +2,7 @@
 #define NEUCOR_RENDERER_H
 
 /*  .h & .cpp includes  */
-#include <NeuCor.h>
+#include "NeuCor.h"
 
 #include <string>
 #include <vector>
