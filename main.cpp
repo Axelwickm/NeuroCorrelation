@@ -29,10 +29,10 @@ namespace SIMULATIONS {
         NeuCor brain(750);
         NeuCor_Renderer brainRenderer(&brain);
         brainRenderer.runBrainOnUpdate = true;
-        brainRenderer.realRunspeed = false;
+        brainRenderer.realRunspeed = true;
         brainRenderer.setDestructCallback(windowDestroy);
 
-        brain.runSpeed = 1;
+        brain.runSpeed = 4;
 
         float inputs[] = {(float) rand()/RAND_MAX*75.f, (float) rand()/RAND_MAX*75.f, (float) rand()/RAND_MAX*75.f}; // 3 inputs with random firing rate between 0 and 75 Hz
         float inputRadius[] = {0.8, 0.8, 0.8};
@@ -141,11 +141,11 @@ namespace SIMULATIONS {
         NeuCor brain(750);
         NeuCor_Renderer brainRenderer(&brain);
         brainRenderer.runBrainOnUpdate = true;
-        brainRenderer.realRunspeed = false;
+        brainRenderer.realRunspeed = true;
         brainRenderer.setDestructCallback(windowDestroy);
 
         brain.runAll = false;
-        brain.runSpeed = 0.025;
+        brain.runSpeed = 4;
 
         float inputs[] = {35.f}; // 1 input with random firing rate between 0 and 75 Hz
         float inputRadius[] = {0.8};
