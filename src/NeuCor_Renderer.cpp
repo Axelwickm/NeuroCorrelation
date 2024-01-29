@@ -2,7 +2,7 @@
 
 /*  .h & .cpp includes  */
 #include "NeuCor.h"
-#include "tinyexpr/tinyexpr.h"
+#include "tinyexpr.h"
 
 #include <GL/glew.h>
 #define GLFW_INCLUDE_GLU
@@ -26,7 +26,7 @@ using namespace glm;
 
 #include "picopng/picopng.cpp"
 #include "imgui_impl_glfw_gl3.h"
-#include "imgui/imgui_internal.h"
+#include "imgui_internal.h"
 
 std::map<GLFWwindow*, NeuCor_Renderer*> windowRegistry;
 

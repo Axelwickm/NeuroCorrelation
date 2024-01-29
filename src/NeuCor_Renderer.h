@@ -14,8 +14,8 @@
 #define GLFW_INCLUDE_GLU
 #include <GLFW/glfw3.h>
 
-#include "imgui/imgui.h"
-#include "tinyexpr/tinyexpr.h"
+#include "imgui.h"
+#include "tinyexpr.h"
 
 #include <glm/glm.hpp>
 using namespace glm;
