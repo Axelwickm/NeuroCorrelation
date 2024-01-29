@@ -247,7 +247,7 @@ void NeuCor_Renderer::initGLFW(){
     glfwWindowHint(GLFW_SAMPLES, 4); // 4x antialiasing
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // We want OpenGL 3.3
 
-    cameraMode = cameraModes::CAMERA_MOUSE_LOOK;
+    cameraMode = cameraModes::CAMERA_ORBIT;
     renderMode = renderingModes::RENDER_VOLTAGE;
 
 
