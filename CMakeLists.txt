@@ -14,6 +14,8 @@ find_package(glfw3 3.3 REQUIRED)
 
 include_directories(${GLEW_INCLUDE_DIRS})
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+
 add_executable(NeuroCorrelation
 	tinyexpr/tinyexpr.h tinyexpr/tinyexpr.c
 	imgui/imgui.h imgui/imgui.cpp imgui/imgui_internal.h imgui/imgui_draw.cpp
