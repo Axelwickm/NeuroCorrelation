@@ -1,0 +1,13 @@
+{
+  "name": "@neurocorrelation/web",
+  "version": "0.1.0",
+  "type": "module",
+  "files": [
+    "dist",
+    "index.mjs"
+  ],
+  "main": "./index.mjs",
+  "exports": {
+    ".": "./index.mjs"
+  }
+}

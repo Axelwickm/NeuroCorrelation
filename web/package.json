@@ -1,0 +1,13 @@
+{
+  "name": "neurocorrelation-web-workspace",
+  "private": true,
+  "workspaces": [
+    "package",
+    "example"
+  ],
+  "scripts": {
+    "build:wasm": "bash ./scripts/build_wasm.sh",
+    "build": "npm run build:wasm && npm --workspace @neurocorrelation/example run build",
+    "dev": "npm run build:wasm && npm --workspace @neurocorrelation/example run dev"
+  }
+}

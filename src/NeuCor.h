@@ -1,8 +1,8 @@
 #ifndef NEUCOR_H
 #define NEUCOR_H
 
+#include <deque>
 #include <vector>
-#include <boost/container/stable_vector.hpp>
 #include <map>
 #include <queue>
 #include <array>
@@ -26,8 +26,8 @@ struct coord3 {
 // Prototypes.
 struct simulation;
 class simulator;
-class InputFirer;
-class VoltageDetector;
+struct InputFirer;
+struct VoltageDetector;
 class Neuron;
 class Synapse;
 
@@ -35,6 +35,32 @@ class Synapse;
 // This owns all the simulated objects, and is used to run them.
 class NeuCor {
     public:
+        struct NeuronSnapshot {
+            std::size_t id;
+            coord3 position;
+            float potential;
+            float activity;
+        };
+
+        struct SynapseSnapshot {
+            std::size_t fromID;
+            std::size_t toID;
+            coord3 from;
+            coord3 to;
+            float weight;
+            float prePotential;
+            float postPotential;
+            bool inhibitory;
+        };
+
+        struct InputSnapshot {
+            std::size_t id;
+            coord3 position;
+            float radius;
+            float frequency;
+            bool enabled;
+        };
+
         NeuCor(int n_neurons);               // Number of initial neurons (n_neurons)
         ~NeuCor();
 
@@ -49,22 +75,26 @@ class NeuCor {
         // This is how input signals interface with the brain. Every given input has a position in the brain, which is used to determined what nearby neurons are fired.
         // Input rate is defined in Hz as floats. Since the memory address of the array (inputs) is what's stored, the brain will use the updated values automatically.
         // If the inputs positions are NULL, they are generated randomly and input radius is 1.0
-        void setInputRateArray(float inputs[], unsigned inputCount, coord3 inputPositions[] = {NULL}, float inputRadius[] = {NULL});
+        void setInputRateArray(float inputs[], unsigned inputCount, coord3 inputPositions[] = nullptr, float inputRadius[] = nullptr);
         void addInputOffset(unsigned inputID, float t);    // Adds time offset (in ms) to a given input
 
-        void setDetectors(unsigned detectorNumber, coord3 detectorPositions[] = {NULL}, float detectorRadius[] = {NULL});
+        void setDetectors(unsigned detectorNumber, coord3 detectorPositions[] = nullptr, float detectorRadius[] = nullptr);
         float getDetectorVoltage(unsigned ID);
         std::vector<float> getDetectorVoltages();
 
         void createNeuron(coord3 position);  // Creates neuron at given coordinates
         void createSynapse(std::size_t toID, std::size_t fromID, float weight);
         void makeConnections();              // Connects all neurons closer than 1 unit to each other.
+        std::size_t getNeuronCount() const;
+        std::vector<NeuronSnapshot> getNeuronSnapshots() const;
+        std::vector<SynapseSnapshot> getSynapseSnapshots() const;
+        std::vector<InputSnapshot> getInputSnapshots() const;
     protected:
         friend class simulator;
         friend class Neuron;
         friend class Synapse;
-        friend class InputFirer;
-        friend class VoltageDetector;
+        friend struct InputFirer;
+        friend struct VoltageDetector;
         friend class NeuCor_Renderer;
 
         void queueSimulation(simulator* s, const float time); // Schedules calling run() of simulator s a given number of ms in the future
@@ -83,10 +113,13 @@ class NeuCor {
         std::vector<InputFirer> inputHandler;
         std::vector<VoltageDetector> voltageDetectors;
 
-        boost::container::stable_vector<Neuron> neurons;                // Where all neurons are stored
+        std::deque<Neuron> neurons;                                     // Where all neurons are stored
         Neuron* getNeuron(std::size_t ID);
+        const Neuron* getNeuron(std::size_t ID) const;
         Synapse* getSynapse(std::size_t toID, std::size_t fromID);
+        const Synapse* getSynapse(std::size_t toID, std::size_t fromID) const;
         Synapse* getSynapse(std::pair<std::size_t, std::size_t> ID);
+        const Synapse* getSynapse(std::pair<std::size_t, std::size_t> ID) const;
         void queFlip(std::pair<std::size_t, std::size_t>);              // Queues an synapse to be flipped when possible
 
         void deleteSynapse(std::size_t toID, std::size_t fromID);
@@ -116,6 +149,7 @@ struct simulation {
 class simulator {
     public:
         simulator(NeuCor* p);                // Needs pointer to parent network object (NeuCor)
+        virtual ~simulator() = default;
         NeuCor* parentNet;
 
         virtual void run() = 0;              // Run-function which updates the simulator to the current time of parent network
@@ -126,7 +160,7 @@ class simulator {
 // Empty simulator which does nothing when run is called
 struct deletedSimulator: public simulator {
     deletedSimulator(NeuCor* p);
-    void run(){}; // Run-function which does nothing
+    void run() override {}; // Run-function which does nothing
 };
 
 
@@ -142,7 +176,7 @@ struct InputFirer: public simulator {
 
     void schedule(float deltaT, float frequency);           // Schedules itself to be run at even intervals (frequency) for the next given ms (deltaT)
     float lastFire;                                         // The last scheduled time
-    void run();                                             // Runs all neurons in near vector
+    void run() override;                                    // Runs all neurons in near vector
 };
 
 struct VoltageDetector {
@@ -160,11 +194,11 @@ struct VoltageDetector {
 class Neuron: public simulator {
     public:
         Neuron(NeuCor* p, coord3 position);  // Parent network pointer and position coordinate (random if NAN)
-        ~Neuron();
+        ~Neuron() override;
         Neuron& operator=(const Neuron& other);
 
         void makeConnections();              // Creates connections to all neurons closer than 1 unit
-        void run();                          // Updates the neuron to current simulation time
+        void run() override;                 // Updates the neuron to current simulation time
         void fire();                         // Initiates neuron firing sequence, increases activity, updates weight of both incoming and outgoing synapses
         void transfer();                     // Schedule simulation at maximum input voltage from synapses, thus firing if needed. Called by in-synapses
         void givePotential(float pot);       // Instantly adds given amount of potential
@@ -223,9 +257,9 @@ class Synapse: public simulator {
         Synapse(NeuCor* p, std::size_t parent, std::size_t target); // ID of neuron where synapse comes from (parent), and where it goes (target)
         Synapse(const Synapse &other);
         Synapse& operator=(const Synapse &other);
-        ~Synapse();
+        ~Synapse() override;
 
-        void run();                                                 // Delivers voltage to target neuron at right time
+        void run() override;                                        // Delivers voltage to target neuron at right time
         void fire(float polW, float depolFac, float deltaStart);    // Gets spike shape information (polarization width, depolarization factor, spike time offset). Schedules itself to run at delivery time
 
         float getWeight() const;

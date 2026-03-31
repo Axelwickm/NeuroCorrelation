@@ -1,0 +1,6 @@
+.git
+.playwright-mcp
+build
+web/example/dist
+web/node_modules
+web/package/dist

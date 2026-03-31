@@ -1,2 +1,7 @@
 build/
 Makefile
+.playwright-mcp/
+web/node_modules/
+web/example/node_modules/
+web/example/dist/
+web/package/dist/

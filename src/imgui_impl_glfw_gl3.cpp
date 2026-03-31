@@ -8,10 +8,9 @@
 
 #include "imgui.h"
 #include "imgui_impl_glfw_gl3.h"
+#include "NeuCor_GL.h"
 
 // GL3W/GLFW
-#include <GL/glew.h>    // This example is using gl3w to access OpenGL functions (because it is small). You may use glew/glad/glLoadGen/etc. whatever already works for you.
-#include <GLFW/glfw3.h>
 #ifdef _WIN32
 #undef APIENTRY
 #define GLFW_EXPOSE_NATIVE_WIN32
@@ -206,6 +205,35 @@ bool ImGui_ImplGlfwGL3_CreateDeviceObjects()
     glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &last_array_buffer);
     glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &last_vertex_array);
 
+#ifdef __EMSCRIPTEN__
+    const GLchar *vertex_shader =
+        "#version 300 es\n"
+        "precision highp float;\n"
+        "uniform mat4 ProjMtx;\n"
+        "in vec2 Position;\n"
+        "in vec2 UV;\n"
+        "in vec4 Color;\n"
+        "out vec2 Frag_UV;\n"
+        "out vec4 Frag_Color;\n"
+        "void main()\n"
+        "{\n"
+        "	Frag_UV = UV;\n"
+        "	Frag_Color = Color;\n"
+        "	gl_Position = ProjMtx * vec4(Position.xy,0,1);\n"
+        "}\n";
+
+    const GLchar* fragment_shader =
+        "#version 300 es\n"
+        "precision mediump float;\n"
+        "uniform sampler2D Texture;\n"
+        "in vec2 Frag_UV;\n"
+        "in vec4 Frag_Color;\n"
+        "out vec4 Out_Color;\n"
+        "void main()\n"
+        "{\n"
+        "	Out_Color = Frag_Color * texture(Texture, Frag_UV.st);\n"
+        "}\n";
+#else
     const GLchar *vertex_shader =
         "#version 330\n"
         "uniform mat4 ProjMtx;\n"
@@ -231,6 +259,7 @@ bool ImGui_ImplGlfwGL3_CreateDeviceObjects()
         "{\n"
         "	Out_Color = Frag_Color * texture( Texture, Frag_UV.st);\n"
         "}\n";
+#endif
 
     g_ShaderHandle = glCreateProgram();
     g_VertHandle = glCreateShader(GL_VERTEX_SHADER);

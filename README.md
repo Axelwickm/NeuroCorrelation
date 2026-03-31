@@ -16,6 +16,7 @@ This simulation shows how correlated input, over time form connection, while unc
 ### Prerequisites
 - Docker
 - Git
+- Node.js and npm (for the web build)
 
 ### Installation
 1. Clone the repository and initialize submodules:
@@ -27,6 +28,56 @@ This simulation shows how correlated input, over time form connection, while unc
 2. Build the Docker container: `docker build -t neurocorrelation . `
 3. Allow local Docker to display GUI (for Unix-like systems): `xhost +local:docker`
 4. Run the Docker container: `docker run -it --rm --name neurocorrelation -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix --device /dev/dri:/dev/dri --gpus all --ipc=host neurocorrelation`
+
+## Web Build
+
+The browser build lives under [`web/`](web) and uses Dockerized Emscripten to compile the existing C++ app to WebAssembly, then serves it through a small Vite example app.
+
+### One-time setup
+
+Install the web workspace dependencies:
+
+```bash
+cd web
+npm install
+```
+
+### Build only the wasm package
+
+This compiles the C++ sources to `web/package/dist/`:
+
+```bash
+cd web
+npm run build:wasm
+```
+
+Output files:
+
+- `web/package/dist/neurocorrelation.mjs`
+- `web/package/dist/neurocorrelation.wasm`
+- `web/package/dist/neurocorrelation.data`
+
+### Run the browser example locally
+
+This rebuilds the wasm bundle first, then starts the Vite dev server for the example app:
+
+```bash
+cd web
+npm run dev
+```
+
+Open the URL printed by Vite, typically `http://localhost:5173`.
+
+### Production build for the example app
+
+This builds both the wasm package and the example site:
+
+```bash
+cd web
+npm run build
+```
+
+The generated example site is written to `web/example/dist/`.
 
 ## Controls
 

@@ -1,15 +1,32 @@
 #include "NeuCor.h"
 #include "NeuCor_Renderer.h"
 
+#include <algorithm>
+#include <exception>
+#include <functional>
+#include <memory>
 #include <stdlib.h>
 #include <time.h>
 #include <iostream>
+#include <vector>
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
 
 
 bool windowDestroyed = false;
 void windowDestroy() {
     windowDestroyed = true;
 }
+
+#ifdef __EMSCRIPTEN__
+extern "C" {
+EMSCRIPTEN_KEEPALIVE void neurocorrelation_request_shutdown() {
+    windowDestroy();
+}
+}
+#endif
 
 void showUsage(){
     printf("Neuro Correlation usage: "
@@ -24,56 +41,92 @@ void showUsage(){
 
 
 namespace SIMULATIONS {
-
-    void standard(){
-        NeuCor brain(750);
-        NeuCor_Renderer brainRenderer(&brain);
-        brainRenderer.runBrainOnUpdate = true;
-        brainRenderer.realRunspeed = true;
-        brainRenderer.setDestructCallback(windowDestroy);
-
-        brain.runSpeed = 4;
-
-        float inputs[] = {(float) rand()/RAND_MAX*75.f, (float) rand()/RAND_MAX*75.f, (float) rand()/RAND_MAX*75.f}; // 3 inputs with random firing rate between 0 and 75 Hz
-        float inputRadius[] = {0.8, 0.8, 0.8};
-        coord3 inputPositions[] = {{cosf(0)*2.f,sinf(0)*2.f,0},{cosf(2.0944)*2.f,sinf(2.0944)*2.f,0}, {cosf(2.0944*2.f)*2.f,sinf(2.0944*2.f)*2.f,0}}; // Inputs in triangle
-        brain.setInputRateArray(inputs, sizeof(inputs)/sizeof(float), inputPositions, inputRadius);
-
-        std::cout<<"Starting program loop\n";
-        while (!windowDestroyed) {
-            for (auto &i: inputs){ // Constantly change inputs
-                i += ((float) rand()/RAND_MAX-0.5f)*2.f;
-                i = std::min(std::max((double) i, 0.0), 75.0);
-            }
-            inputs[1] = inputs[0]; // Input 1 = Input 0, they are correlated and should connect.
-
-            if (10000.f < brain.getTime()){
-                brain.learningRate = 0;
-
-                inputs[0] = 0; inputs[1] = 0;
-                inputs[2] = 0;
-
-                if (10800.f < brain.getTime()){
-                    inputs[0] = 50; inputs[1] = 50;
-                    inputs[2] = 0;
-                }
-                else if (10600.f < brain.getTime()){
-                    inputs[0] = 0; inputs[1] = 0;
-                    inputs[2] = 0;
-                }
-                else if (10200.f < brain.getTime()){
-                    inputs[0] = 0; inputs[1] = 0;
-                    inputs[2] = 50;
-                }
-            }
-
-            brainRenderer.pollWindow();
-            brainRenderer.updateView();
-        };
+    float randomRate() {
+        return (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * 75.0f;
     }
 
-    void user_input(){
-        int n_neurons = 100; int n_inputs = 1; int inputLinks = 0;
+    struct SimulationSession {
+        std::unique_ptr<NeuCor> brain;
+        std::unique_ptr<NeuCor_Renderer> renderer;
+        std::vector<float> inputs;
+        std::vector<float> inputRadius;
+        std::vector<coord3> inputPositions;
+        std::function<void(SimulationSession&)> onFrame;
+
+        void tick() {
+            if (onFrame) onFrame(*this);
+            renderer->pollWindow();
+            if (!windowDestroyed) renderer->updateView();
+        }
+    };
+
+    std::unique_ptr<SimulationSession> createSession(std::unique_ptr<NeuCor> brain) {
+        windowDestroyed = false;
+
+        std::unique_ptr<SimulationSession> session(new SimulationSession());
+        session->brain = std::move(brain);
+        session->renderer.reset(new NeuCor_Renderer(session->brain.get()));
+        session->renderer->setDestructCallback(windowDestroy);
+        return session;
+    }
+
+    void runSession(std::unique_ptr<SimulationSession> session) {
+        std::cout<<"Starting program loop\n";
+        while (!windowDestroyed) {
+            session->tick();
+        }
+    }
+
+    std::unique_ptr<SimulationSession> buildStandard() {
+        std::unique_ptr<SimulationSession> session = createSession(std::unique_ptr<NeuCor>(new NeuCor(750)));
+        session->renderer->runBrainOnUpdate = true;
+        session->renderer->realRunspeed = true;
+        session->brain->runSpeed = 4;
+
+        session->inputs = {randomRate(), randomRate(), randomRate()};
+        session->inputRadius = {0.8f, 0.8f, 0.8f};
+        session->inputPositions = {
+            {cosf(0.0f) * 2.0f, sinf(0.0f) * 2.0f, 0.0f},
+            {cosf(2.0944f) * 2.0f, sinf(2.0944f) * 2.0f, 0.0f},
+            {cosf(4.1888f) * 2.0f, sinf(4.1888f) * 2.0f, 0.0f},
+        };
+        session->brain->setInputRateArray(
+            session->inputs.data(),
+            session->inputs.size(),
+            session->inputPositions.data(),
+            session->inputRadius.data()
+        );
+
+        session->onFrame = [](SimulationSession& state) {
+            for (float& input : state.inputs) {
+                input += ((static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) - 0.5f) * 2.0f;
+                input = std::clamp(input, 0.0f, 75.0f);
+            }
+            state.inputs[1] = state.inputs[0];
+
+            if (10000.0f < state.brain->getTime()) {
+                state.brain->learningRate = 0;
+                state.inputs[0] = 0.0f;
+                state.inputs[1] = 0.0f;
+                state.inputs[2] = 0.0f;
+
+                if (10800.0f < state.brain->getTime()) {
+                    state.inputs[0] = 50.0f;
+                    state.inputs[1] = 50.0f;
+                }
+                else if (10200.0f < state.brain->getTime() && state.brain->getTime() <= 10600.0f) {
+                    state.inputs[2] = 50.0f;
+                }
+            }
+        };
+
+        return session;
+    }
+
+    std::unique_ptr<SimulationSession> buildUserInput() {
+        int n_neurons = 100;
+        int n_inputs = 1;
+        int inputLinks = 0;
         { // Getting user input
             std::cout<<"Number of neurons:\n";
             std::cin>>n_neurons;
@@ -81,86 +134,124 @@ namespace SIMULATIONS {
             std::cin>>n_inputs;
             std::cout<<"Number of input links (how many inputs have the same frequency):\n";
             std::cin>>inputLinks;
-            inputLinks = min(n_inputs/2, inputLinks);
+            inputLinks = std::min(n_inputs / 2, inputLinks);
         }
 
-        NeuCor brain(n_neurons);
-        brain.runAll = true;
-        brain.runSpeed = 0.02;
+        std::unique_ptr<SimulationSession> session = createSession(std::unique_ptr<NeuCor>(new NeuCor(n_neurons)));
+        session->brain->runAll = true;
+        session->brain->runSpeed = 0.02f;
+        session->renderer->realRunspeed = false;
+        session->renderer->runBrainOnUpdate = true;
 
-
-        float inputs[n_inputs];
-        for (auto &val: inputs){
-            val = rand()%60;
+        session->inputs.resize(n_inputs);
+        for (float& value : session->inputs){
+            value = static_cast<float>(rand() % 60);
         }
-        brain.setInputRateArray(inputs, sizeof(inputs)/sizeof(float));
-        brain.setDetectors(1);
+        session->brain->setInputRateArray(session->inputs.data(), session->inputs.size());
+        session->brain->setDetectors(1);
 
-        NeuCor_Renderer brainRenderer(&brain);
-        brainRenderer.realRunspeed = false;
-        brainRenderer.runBrainOnUpdate = true;
-        brainRenderer.setDestructCallback(windowDestroy);
-
-        std::cout<<"Starting program loop\n";
-        while (!windowDestroyed) {
-            brainRenderer.pollWindow();
-            brainRenderer.updateView();
-            for (int i = 0; i<inputLinks; i++) inputs[i*2+1] = inputs[i*2];
-            //std::cout<<brain.getDetectorVoltages().at(0)<<std::endl;
+        session->onFrame = [inputLinks](SimulationSession& state) {
+            for (int i = 0; i < inputLinks; ++i) {
+                state.inputs[i * 2 + 1] = state.inputs[i * 2];
+            }
         };
+
+        return session;
+    }
+
+    std::unique_ptr<SimulationSession> buildFewNeurons() {
+        std::unique_ptr<SimulationSession> session = createSession(std::unique_ptr<NeuCor>(new NeuCor(0)));
+        session->brain->runAll = true;
+        session->brain->runSpeed = 0.02f;
+        session->renderer->realRunspeed = false;
+        session->renderer->runBrainOnUpdate = true;
+
+        const std::vector<coord3> neuronPositions = {{0, 0, 0}, {0.3f, 0.3f, 0}, {0.3f, -0.3f, 0}};
+        for (const coord3& neuronPosition : neuronPositions) {
+            session->brain->createNeuron(neuronPosition);
+        }
+        session->brain->createSynapse(1, 0, 0.5f);
+        session->brain->createSynapse(2, 0, 0.5f);
+
+        session->inputs = {50.0f, 50.0f, 50.0f};
+        session->inputPositions.assign(neuronPositions.begin(), neuronPositions.end());
+        session->inputRadius = {0.1f, 0.1f, 0.1f};
+        session->brain->setInputRateArray(
+            session->inputs.data(),
+            session->inputs.size(),
+            session->inputPositions.data(),
+            session->inputRadius.data()
+        );
+        session->brain->addInputOffset(1, 2.0f);
+        session->brain->addInputOffset(2, -2.0f);
+
+        return session;
+    }
+
+    std::unique_ptr<SimulationSession> buildOneInput() {
+        std::unique_ptr<SimulationSession> session = createSession(std::unique_ptr<NeuCor>(new NeuCor(750)));
+        session->renderer->runBrainOnUpdate = true;
+        session->renderer->realRunspeed = true;
+
+        session->brain->runAll = false;
+        session->brain->runSpeed = 4.0f;
+
+        session->inputs = {35.0f};
+        session->inputRadius = {0.8f};
+        session->inputPositions = {{2.0f, 0.0f, 0.0f}};
+        session->brain->setInputRateArray(
+            session->inputs.data(),
+            session->inputs.size(),
+            session->inputPositions.data(),
+            session->inputRadius.data()
+        );
+
+        return session;
+    }
+
+    void standard(){
+        runSession(buildStandard());
+    }
+
+    void user_input(){
+#ifdef __EMSCRIPTEN__
+        std::cerr<<"USER_INPUT is not supported in the browser build. Falling back to STANDARD.\n";
+        runSession(buildStandard());
+#else
+        runSession(buildUserInput());
+#endif
     }
 
     void few_neurons(){
-        NeuCor brain(0);
-        brain.runAll = true;
-        brain.runSpeed = 0.02;
-
-        coord3 neuronPositions[] = {{0, 0, 0}, {0.3, 0.3, 0}, {0.3, -0.3, 0}};
-        for (auto &n: neuronPositions) brain.createNeuron(n);
-        brain.createSynapse(1, 0, 0.5f);  brain.createSynapse(2, 0, 0.5);
-
-        float inputs[] = {50, 50, 50};
-        coord3 inputPositions[] = {neuronPositions[0], neuronPositions[1], neuronPositions[2]};
-        float inputRadius[] = {0.1, 0.1, 0.1};
-        brain.setInputRateArray(inputs, sizeof(inputs)/sizeof(float), inputPositions, inputRadius);
-        brain.addInputOffset(1, 2.0); brain.addInputOffset(2, -2.0);
-
-        NeuCor_Renderer brainRenderer(&brain);
-        brainRenderer.realRunspeed = false;
-        brainRenderer.runBrainOnUpdate = true;
-        brainRenderer.setDestructCallback(windowDestroy);
-
-        std::cout<<"Starting program loop\n";
-        while (!windowDestroyed) {
-            brainRenderer.pollWindow();
-            brainRenderer.updateView();
-        };
+        runSession(buildFewNeurons());
     }
 
     void one_input(){
-        NeuCor brain(750);
-        NeuCor_Renderer brainRenderer(&brain);
-        brainRenderer.runBrainOnUpdate = true;
-        brainRenderer.realRunspeed = true;
-        brainRenderer.setDestructCallback(windowDestroy);
-
-        brain.runAll = false;
-        brain.runSpeed = 4;
-
-        float inputs[] = {35.f}; // 1 input with random firing rate between 0 and 75 Hz
-        float inputRadius[] = {0.8};
-        coord3 inputPositions[] = {{2, 0, 0}};
-        brain.setInputRateArray(inputs, sizeof(inputs)/sizeof(float), inputPositions, inputRadius);
-
-        std::cout<<"Starting program loop\n";
-        while (!windowDestroyed) {
-            brainRenderer.pollWindow();
-            brainRenderer.updateView();
-        };
-
+        runSession(buildOneInput());
     }
 
 }
+
+#ifdef __EMSCRIPTEN__
+namespace {
+    std::unique_ptr<SIMULATIONS::SimulationSession> g_browserSession;
+
+    void browserFrame() {
+        if (!g_browserSession || windowDestroyed) {
+            emscripten_cancel_main_loop();
+            g_browserSession.reset();
+            return;
+        }
+        try {
+            g_browserSession->tick();
+        }
+        catch (const std::exception& error) {
+            std::cerr << "Browser frame exception: " << error.what() << '\n';
+            windowDestroyed = true;
+        }
+    }
+}
+#endif
 
 int main(int argc, char* argv[]){
     unsigned seed = time(NULL);
@@ -193,6 +284,30 @@ int main(int argc, char* argv[]){
     fflush(stdout);
 
     // Start simulation
+#ifdef __EMSCRIPTEN__
+    if (simulation == "USER_INPUT") {
+        std::cerr<<"USER_INPUT is not supported in the browser build. Falling back to STANDARD.\n";
+        simulation = "STANDARD";
+    }
+
+    if (simulation == "STANDARD"){
+        g_browserSession = SIMULATIONS::buildStandard();
+    }
+    else if (simulation == "FEW_NEURONS"){
+        g_browserSession = SIMULATIONS::buildFewNeurons();
+    }
+    else if (simulation == "ONE_INPUT"){
+        g_browserSession = SIMULATIONS::buildOneInput();
+    }
+    else {
+        fprintf(stderr, "Simulation not found\n");
+        return 1;
+    }
+
+    std::cout<<"Starting program loop\n";
+    emscripten_set_main_loop(browserFrame, 0, true);
+    return 0;
+#else
     if (simulation == "STANDARD"){
         SIMULATIONS::standard();
     }
@@ -211,4 +326,5 @@ int main(int argc, char* argv[]){
     }
 
     return 0;
+#endif
 }

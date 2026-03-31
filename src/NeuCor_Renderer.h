@@ -10,9 +10,7 @@
 #include <map>
 #include <memory>
 
-#include <GL/glew.h>
-#define GLFW_INCLUDE_GLU
-#include <GLFW/glfw3.h>
+#include "NeuCor_GL.h"
 
 #include "imgui.h"
 #include "tinyexpr.h"
@@ -125,14 +123,22 @@ class NeuCor_Renderer {
         GLuint synapseProgramID;
         GLuint ViewProjMatrixID[2];
         GLuint aspectID[2];
+        GLuint sceneVertexArrayID;
 
         glm::vec3 camPos;
         glm::vec3 camDir;
         glm::vec3 camUp;
+        glm::vec3 orbitFocusPoint;
         float camHA,camVA;
         glm::mat4 vp;
         double cursorX, cursorY;
         bool navigationMode, mouseInWindow, showInterface;
+        bool closeNotified;
+        bool webScenePointerDown;
+        bool webSceneDragging;
+        bool webNavigationTemporary;
+        double webScenePressX;
+        double webScenePressY;
 
         GLFWwindow* window;
         CallbackType destructCallback;

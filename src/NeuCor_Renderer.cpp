@@ -2,11 +2,8 @@
 
 /*  .h & .cpp includes  */
 #include "NeuCor.h"
+#include "NeuCor_GL.h"
 #include "tinyexpr.h"
-
-#include <GL/glew.h>
-#define GLFW_INCLUDE_GLU
-#include <GLFW/glfw3.h>
 
 #include <glm/glm.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
@@ -28,7 +25,57 @@ using namespace glm;
 #include "imgui_impl_glfw_gl3.h"
 #include "imgui_internal.h"
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten/html5.h>
+#endif
+
 std::map<GLFWwindow*, NeuCor_Renderer*> windowRegistry;
+
+namespace {
+#ifdef __EMSCRIPTEN__
+std::string trimLeadingWhitespace(const std::string& source) {
+    std::size_t first = source.find_first_not_of(" \t\r\n");
+    if (first == std::string::npos) {
+        return std::string();
+    }
+    return source.substr(first);
+}
+
+std::string adaptShaderSourceForWebGL(const std::string& source, bool fragmentShader) {
+    std::string body = trimLeadingWhitespace(source);
+    if (body.rfind("#version", 0) == 0) {
+        std::size_t firstLineEnd = body.find('\n');
+        body = firstLineEnd == std::string::npos ? std::string() : body.substr(firstLineEnd + 1);
+    }
+    std::string prefix = "#version 300 es\n";
+    prefix += fragmentShader ? "precision mediump float;\n" : "precision highp float;\n";
+    return prefix + body;
+}
+
+bool getCanvasCssSize(int& outWidth, int& outHeight) {
+    double cssWidth = 0.0;
+    double cssHeight = 0.0;
+    if (emscripten_get_element_css_size("#canvas", &cssWidth, &cssHeight) != EMSCRIPTEN_RESULT_SUCCESS) {
+        return false;
+    }
+    if (cssWidth <= 0.0 || cssHeight <= 0.0) {
+        return false;
+    }
+    outWidth = static_cast<int>(cssWidth + 0.5);
+    outHeight = static_cast<int>(cssHeight + 0.5);
+    return true;
+}
+#endif
+
+std::string resourcePath(const char* filename) {
+#ifdef __EMSCRIPTEN__
+    return std::string("/resources/") + filename;
+#else
+    return std::string("resources/") + filename;
+#endif
+}
+
+} // namespace
 
 /* glfw error function helper */
 void glfw_ErrorCallback(int error, const char* description){
@@ -73,8 +120,7 @@ GLuint LoadShaders(const char * vertex_file_path,const char * fragment_file_path
 			VertexShaderCode += "\n" + Line;
 		VertexShaderStream.close();
 	}else{
-		printf("Impossible to open %s. Are you in the right directory ? Don't forget to read the FAQ !\n", vertex_file_path);
-		getchar();
+		printf("Impossible to open %s.\n", vertex_file_path);
 		return 0;
 	}
 
@@ -87,6 +133,11 @@ GLuint LoadShaders(const char * vertex_file_path,const char * fragment_file_path
 			FragmentShaderCode += "\n" + Line;
 		FragmentShaderStream.close();
 	}
+
+#ifdef __EMSCRIPTEN__
+    VertexShaderCode = adaptShaderSourceForWebGL(VertexShaderCode, false);
+    FragmentShaderCode = adaptShaderSourceForWebGL(FragmentShaderCode, true);
+#endif
 
 	GLint Result = GL_FALSE;
 	int InfoLogLength;
@@ -154,7 +205,7 @@ GLuint LoadShaders(const char * vertex_file_path,const char * fragment_file_path
 
 
 NeuCor_Renderer::NeuCor_Renderer(NeuCor* _brain)
-:camPos(5,5,5), camDir(0,0,0), camUp(0,1,0), camHA(0.75), camVA(3.8), lastTime(0), deltaTime(1)
+:camPos(5,5,5), camDir(0,0,0), camUp(0,1,0), orbitFocusPoint(0,0,0), camHA(0.75), camVA(3.8), lastTime(0), deltaTime(1)
 {
     brain = _brain;
     runBrainOnUpdate = true;
@@ -164,6 +215,14 @@ NeuCor_Renderer::NeuCor_Renderer(NeuCor* _brain)
     navigationMode = false;
     mouseInWindow = true;
     showInterface = true;
+    dockHovered = false;
+    closeNotified = false;
+    webScenePointerDown = false;
+    webSceneDragging = false;
+    webNavigationTemporary = false;
+    webScenePressX = 0.0;
+    webScenePressY = 0.0;
+    sceneVertexArrayID = 0;
 
     hoveredInput = -1;
 
@@ -190,8 +249,9 @@ NeuCor_Renderer::NeuCor_Renderer(NeuCor* _brain)
 
     /* Load resources */
     loadResources();
+#ifndef __EMSCRIPTEN__
     glfwSetCursorPos(window, width/2.0, height/2.0);
-    updateCamPos();
+#endif
     destructCallback = NULL;
 
     /* Init matrices */
@@ -218,6 +278,7 @@ NeuCor_Renderer::NeuCor_Renderer(NeuCor* _brain)
     vp = Projection * View;
 
     cameraRadius = glm::distance(camPos, vec3(0,0,0)); // For orbit camera mode
+    updateCamPos();
 }
 
 NeuCor_Renderer::realTimeStats::realTimeStats(){
@@ -228,14 +289,17 @@ NeuCor_Renderer::realTimeStats::realTimeStats(){
 }
 
 NeuCor_Renderer::~NeuCor_Renderer() {
-    /* Destroy window and terminate glfw */
     ImGui_ImplGlfwGL3_Shutdown();
-    glfwDestroyWindow(window);
+    if (sceneVertexArrayID != 0) {
+        glDeleteVertexArrays(1, &sceneVertexArrayID);
+        sceneVertexArrayID = 0;
+    }
+    if (window != nullptr) {
+        windowRegistry.erase(window);
+        glfwDestroyWindow(window);
+        window = nullptr;
+    }
     glfwTerminate();
-    exit(EXIT_SUCCESS);
-
-    /* Call the destruct callback function if it has been set */
-    if (destructCallback != NULL) destructCallback();
 }
 
 
@@ -245,14 +309,26 @@ void NeuCor_Renderer::initGLFW(){
     glfwSetErrorCallback(glfw_ErrorCallback);
 
     glfwWindowHint(GLFW_SAMPLES, 4); // 4x antialiasing
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // We want OpenGL 3.3
+#ifdef __EMSCRIPTEN__
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+#else
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+#endif
 
-    cameraMode = cameraModes::CAMERA_ORBIT;
+    cameraMode = cameraModes::CAMERA_ORBIT_MOMENTUM;
     renderMode = renderingModes::RENDER_VOLTAGE;
 
 
+    int initialWidth = 1000;
+    int initialHeight = 1000;
+#ifdef __EMSCRIPTEN__
+    getCanvasCssSize(initialWidth, initialHeight);
+#endif
+
     /* Create window */
-    window = glfwCreateWindow(1000, 1000, "Neural Correlation", NULL, NULL);
+    window = glfwCreateWindow(initialWidth, initialHeight, "Neural Correlation", NULL, NULL);
     if (!window) {
         glfwTerminate();
 
@@ -262,12 +338,16 @@ void NeuCor_Renderer::initGLFW(){
 
     glfwGetWindowSize(window, &width, &height);
     glfwMakeContextCurrent(window);
+#ifndef __EMSCRIPTEN__
     glewExperimental = true; // Needed in core profile
     if (glewInit() != GLEW_OK) {
         fprintf(stderr, "Failed to initialize GLEW\n");
     }
+#endif
     /* Prep for OpenGl */
+#ifndef __EMSCRIPTEN__
     glfwSwapInterval(1);
+#endif
 
     glfwSetKeyCallback(window, glfw_KeyCallback);
     glfwSetCharCallback(window, glfw_CharCallback);
@@ -276,9 +356,10 @@ void NeuCor_Renderer::initGLFW(){
     glfwSetWindowFocusCallback(window, glfw_FocusCallback);
 
     glfwSetCursorEnterCallback(window, glfw_CursorCallback);
+#ifndef __EMSCRIPTEN__
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+#endif
     glfwPollEvents();
-    glfwSetCursorPos(window, width/2, height /2);
     cursorX = width/2.0; cursorY = height/2.0;
 }
 void NeuCor_Renderer::initOpenGL(GLFWwindow* window){
@@ -294,16 +375,24 @@ void NeuCor_Renderer::initOpenGL(GLFWwindow* window){
 
     glLineWidth(2.5);
 
-    synapseProgramID = LoadShaders( "resources/synapse.shader", "resources/synapse.Fshader" );
-    neuronProgramID = LoadShaders( "resources/neuron.shader", "resources/neuron.Fshader" );
+    const std::string synapseVertexPath = resourcePath("synapse.shader");
+    const std::string synapseFragmentPath = resourcePath("synapse.Fshader");
+    const std::string neuronVertexPath = resourcePath("neuron.shader");
+    const std::string neuronFragmentPath = resourcePath("neuron.Fshader");
 
-    glUseProgram(neuronProgramID);
+    synapseProgramID = LoadShaders(synapseVertexPath.c_str(), synapseFragmentPath.c_str());
+    neuronProgramID = LoadShaders(neuronVertexPath.c_str(), neuronFragmentPath.c_str());
+
+    glGenVertexArrays(1, &sceneVertexArrayID);
+    glBindVertexArray(sceneVertexArrayID);
+
+	glUseProgram(neuronProgramID);
 	ViewProjMatrixID[0] = glGetUniformLocation(neuronProgramID, "VP");
 	aspectID[0] = glGetUniformLocation(neuronProgramID, "aspect");
 
 	glUseProgram(synapseProgramID);
-	ViewProjMatrixID[1] = glGetUniformLocation(neuronProgramID, "VP");
-	aspectID[1] = glGetUniformLocation(neuronProgramID, "aspect");
+	ViewProjMatrixID[1] = glGetUniformLocation(synapseProgramID, "VP");
+	aspectID[1] = glGetUniformLocation(synapseProgramID, "aspect");
 
     static const GLfloat g_vertex_buffer_data[] = {
         -0.5f, -0.5f, 0.0f,
@@ -337,11 +426,11 @@ void NeuCor_Renderer::initOpenGL(GLFWwindow* window){
 }
 
 void NeuCor_Renderer::loadResources() {
-    const char* filename = "resources/neuron.png";
+    std::string filename = resourcePath("neuron.png");
 
     //load and decode
     std::vector<unsigned char> buffer, image;
-    loadFile(buffer, filename);
+    loadFile(buffer, filename.c_str());
     unsigned long w, h;
 
     int error = decodePNG(image, w, h, &buffer[0], (unsigned long)buffer.size());
@@ -364,11 +453,11 @@ void NeuCor_Renderer::loadResources() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
-    filename = "resources/neuron_small.png";
+    filename = resourcePath("neuron_small.png");
 
     //load and decode
     buffer, image;
-    loadFile(buffer, filename);
+    loadFile(buffer, filename.c_str());
 
     error = decodePNG(image, w, h, &buffer[0], (unsigned long)buffer.size());
     if(error != 0) std::cout << "error: " << error << '\n';
@@ -453,6 +542,7 @@ void NeuCor_Renderer::updateView(){
 
 
     updateCamPos();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     if (renderMode == RENDER_ACTIVITY && evaluated != NULL) activityFunction(-1, true);
     else if (renderMode == RENDER_NOSYNAPSES) logger.synapseCount = 0;
@@ -512,16 +602,15 @@ void NeuCor_Renderer::updateView(){
     // Render synapses
     renderSynapses:
 
+    glBindVertexArray(sceneVertexArrayID);
     glUseProgram(synapseProgramID);
 
 
     glBindBuffer(GL_ARRAY_BUFFER, synapse_PT_buffer);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, connections.size() * sizeof(coord3), NULL);
-    glBufferData(GL_ARRAY_BUFFER, connections.size() * sizeof(coord3), &connections[0], GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, connections.size() * sizeof(coord3), connections.data(), GL_DYNAMIC_DRAW);
 
     glBindBuffer(GL_ARRAY_BUFFER, synapse_potential_buffer);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, synPot.size() * sizeof(GLfloat), NULL);
-    glBufferData(GL_ARRAY_BUFFER, synPot.size() * sizeof(GLfloat), &synPot[0], GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, synPot.size() * sizeof(GLfloat), synPot.data(), GL_DYNAMIC_DRAW);
 
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, synapse_PT_buffer);
@@ -571,12 +660,10 @@ void NeuCor_Renderer::updateView(){
     unsigned neuronC = brain->positions.size();
 
     glBindBuffer(GL_ARRAY_BUFFER, neuron_position_buffer);
-    glBufferData(GL_ARRAY_BUFFER, neuronC * 3 * sizeof(GLfloat), NULL, GL_DYNAMIC_DRAW); // Buffer orphaning
-    glBufferSubData(GL_ARRAY_BUFFER, 0, neuronC * 3 * sizeof(GLfloat), &brain->positions[0]);
+    glBufferData(GL_ARRAY_BUFFER, neuronC * 3 * sizeof(GLfloat), brain->positions.data(), GL_DYNAMIC_DRAW);
 
     glBindBuffer(GL_ARRAY_BUFFER, neuron_potAct_buffer);
-    glBufferData(GL_ARRAY_BUFFER, neuronC * 2 * sizeof(GLfloat), NULL, GL_DYNAMIC_DRAW); // Buffer orphaning
-    glBufferSubData(GL_ARRAY_BUFFER, 0, neuronC * 2 * sizeof(GLfloat), &brain->potAct[0]);
+    glBufferData(GL_ARRAY_BUFFER, neuronC * 2 * sizeof(GLfloat), brain->potAct.data(), GL_DYNAMIC_DRAW);
 
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, billboard_vertex_buffer);
@@ -625,8 +712,15 @@ void NeuCor_Renderer::updateView(){
     glDisableVertexAttribArray(2);
 
     // Hide cursor if the cursor is in the window, and navigation mode is on, else show it.
-    if (navigationMode && mouseInWindow) {glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); ImGui::CaptureMouseFromApp(false);}
+    if (navigationMode && mouseInWindow) {
+#ifndef __EMSCRIPTEN__
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+#endif
+        ImGui::CaptureMouseFromApp(false);
+    }
+#ifndef __EMSCRIPTEN__
     else glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+#endif
 
 
 
@@ -654,22 +748,32 @@ void NeuCor_Renderer::updateView(){
     }
     if (showInterface) renderInterface();
 
+#ifndef __EMSCRIPTEN__
     glfwSwapBuffers(window);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+#endif
 }
 
 void NeuCor_Renderer::pollWindow(){
     glfwPollEvents();
 
     int temp_width, temp_height;
+#ifdef __EMSCRIPTEN__
+    if (!getCanvasCssSize(temp_width, temp_height)) {
+        glfwGetWindowSize(window, &temp_width, &temp_height);
+    }
+#else
     glfwGetWindowSize(window, &temp_width, &temp_height);
+#endif
     if (temp_width != width || temp_height != height){
         width = temp_width;
         height = temp_height;
         glViewport(0, 0, width, height);
     }
     if (glfwWindowShouldClose(window)){
-        delete this;
+        if (!closeNotified) {
+            closeNotified = true;
+            if (destructCallback != NULL) destructCallback();
+        }
     }
 }
 void NeuCor_Renderer::setDestructCallback(CallbackType callbackF){
@@ -677,6 +781,10 @@ void NeuCor_Renderer::setDestructCallback(CallbackType callbackF){
 }
 
 void NeuCor_Renderer::updateCamPos(){
+    const bool navigationActive = navigationMode || webNavigationTemporary;
+    const float mouseLookSensitivity = 0.08f;
+    const float orbitSensitivity = 0.15f;
+
     // Slow down time
     if (glfwGetKey(window, GLFW_KEY_PERIOD ) == GLFW_PRESS){
         brain->runSpeed = powf(brain->runSpeed, 0.99);
@@ -687,7 +795,19 @@ void NeuCor_Renderer::updateCamPos(){
         brain->runSpeed = powf(brain->runSpeed, 1.01);
         //std::cout<<"Run-speed: "<<brain->runSpeed<<'\n';
     }
-    if ((!navigationMode && !(cameraMode == CAMERA_ORBIT_MOMENTUM)) || !mouseInWindow) return;
+    if (webScenePointerDown && !navigationMode && !dockHovered) {
+        double currentX, currentY;
+        glfwGetCursorPos(window, &currentX, &currentY);
+        const glm::vec2 dragDelta(
+            static_cast<float>(currentX - webScenePressX),
+            static_cast<float>(currentY - webScenePressY)
+        );
+        if (4.0f < glm::length(dragDelta)) {
+            webSceneDragging = true;
+            webNavigationTemporary = true;
+        }
+    }
+    if ((!navigationActive && !(cameraMode == CAMERA_ORBIT_MOMENTUM)) || !mouseInWindow) return;
 
     float aspect = (float) width / (float)height;
     double xpos, ypos;
@@ -699,8 +819,8 @@ void NeuCor_Renderer::updateCamPos(){
         float deltaX = cursorX-xpos;
         float deltaY = cursorY-ypos;
 
-        camHA -= 0.15 * deltaTime * deltaX;
-        camVA  += 0.15 * deltaTime * deltaY;
+        camHA -= mouseLookSensitivity * deltaTime * deltaX;
+        camVA  += mouseLookSensitivity * deltaTime * deltaY;
 
         camDir = glm::vec3 (
             cos(camVA) * sin(camHA),
@@ -748,24 +868,25 @@ void NeuCor_Renderer::updateCamPos(){
         static glm::vec2 momentum(0.0, 0.0);
 
         glm::vec2 cameraPan(0.0, 0.0);
-        if (ImGui::IsMouseDragging(0, 0) && navigationMode){
+        bool dragScene = navigationMode
+            && !webNavigationTemporary
+            && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+        if (dragScene){
             cameraPan = glm::vec2(-deltaX, deltaY)/50.f;
         }
         else {
             if (cameraMode == CAMERA_ORBIT_MOMENTUM){
-                if (navigationMode) momentum += glm::vec2(deltaX, -deltaY) * deltaTime / 100.f;
+                if (navigationActive) momentum += glm::vec2(deltaX, -deltaY) * deltaTime / 100.f;
                 camHA += momentum.x*deltaTime;
                 camVA += momentum.y*deltaTime;
             }
             else {
-                camHA -= 0.15 * deltaTime * deltaX;
-                camVA  += 0.15 * deltaTime * deltaY;
+                camHA -= orbitSensitivity * deltaTime * deltaX;
+                camVA  += orbitSensitivity * deltaTime * deltaY;
                 momentum = glm::vec2(0.0, 0.0);
             }
         }
-        static glm::vec3 focusPoint(0.0, 0.0, 0.0);
-
-        camPos = focusPoint + glm::vec3(cos(camHA) * cos(camVA), sin(camVA), -sin(camHA) * cos(camVA)) * cameraRadius;
+        camPos = orbitFocusPoint + glm::vec3(cos(camHA) * cos(camVA), sin(camVA), -sin(camHA) * cos(camVA)) * cameraRadius;
         camUp =  glm::normalize(
             glm::vec3(cos(camHA) * cos(camVA + 1.570796f),
             sin(camVA + 1.570796f),
@@ -774,10 +895,10 @@ void NeuCor_Renderer::updateCamPos(){
         glm::mat4 Projection = glm::perspective(glm::radians(65.0f), (float) aspect, 0.05f, 100.0f);
         glm::mat4 View = glm::lookAt(
             camPos,
-            focusPoint,
+            orbitFocusPoint,
             camUp
         );
-        focusPoint += glm::vec3( glm::vec4(cameraPan, 0.0, 0.0) * View );
+        orbitFocusPoint += glm::vec3( glm::vec4(cameraPan, 0.0, 0.0) * View );
 
         vp = Projection * View;
     }
@@ -1632,12 +1753,44 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
 
 void NeuCor_Renderer::resetCursor(){
     cursorX = NAN; cursorY = NAN;
+#ifndef __EMSCRIPTEN__
     glfwSetCursorPos(window, width/2.0, height/2.0);
+#endif
 }
 
 template<typename ... callbackParameters>
 void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ... params){
     std::tuple<callbackParameters...> TTparams(params... );
+
+    auto handleSceneClick = [&](){
+        // Toggle input firer
+        if (hoveredInput != -1){
+            brain->inputHandler.at(hoveredInput).enabled = ! brain->inputHandler.at(hoveredInput).enabled;
+        }
+        // Or select neuron
+        else {
+            #define minDistance 10.0
+
+            double xpos, ypos;
+            glfwGetCursorPos(window, &xpos, &ypos);
+            glm::vec2 cursorPos (xpos, ypos);
+
+            float closestDistance = INFINITY;
+            std::size_t ID;
+            for (auto &neu: brain->neurons){
+                coord3 neuronPos = neu.position();
+                glm::vec3 screenPos = screenCoordinates(glm::vec3(neuronPos.x, neuronPos.y, neuronPos.z));
+                float flatDist = glm::distance(cursorPos, glm::vec2(screenPos));
+                if (flatDist < closestDistance){
+                    closestDistance = flatDist;
+                    ID = neu.getID();
+                }
+            }
+            if (closestDistance < minDistance){
+                if (!selectNeuron(ID, true)) deselectNeuron(ID);   // Tries to select, if false the neuron is already selected and is then deselected.
+            }
+        }
+    };
 
     switch (errand){
 
@@ -1649,8 +1802,23 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
 
     case (CHAR_ACTION):
         if (std::get<1>(TTparams) == 99 || std::get<1>(TTparams) == 67){ // Iterate to next camera mode on C-key press
+            cameraModes previousMode = cameraMode;
             cameraMode = static_cast<cameraModes>(cameraMode+1);
             if (cameraMode == cameraModes::CAMERA_count) cameraMode = static_cast<cameraModes>(cameraMode-(int) cameraModes::CAMERA_count);
+            if ((previousMode == CAMERA_ORBIT || previousMode == CAMERA_ORBIT_MOMENTUM) && cameraMode == CAMERA_MOUSE_LOOK) {
+                camDir = glm::normalize(orbitFocusPoint - camPos);
+                camVA = asinf(camDir.y);
+                camHA = atan2f(camDir.x, camDir.z);
+                glm::vec3 right = glm::vec3(
+                    -cos(camHA),
+                    0,
+                    sin(camHA)
+                );
+                camUp = glm::cross(right, camDir);
+            }
+            else if (previousMode == CAMERA_MOUSE_LOOK && (cameraMode == CAMERA_ORBIT || cameraMode == CAMERA_ORBIT_MOMENTUM)) {
+                orbitFocusPoint = camPos + camDir * cameraRadius;
+            }
             std::cout<<"Camera mode: "<<cameraModeNames.at(cameraMode)<<'\n';
         }
         else if (std::get<1>(TTparams) == 109 || std::get<1>(TTparams) == 77){ // Iterate to next rendering mode on M-key press
@@ -1661,33 +1829,21 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
         break;
 
     case (MOUSE_BUTTON):
-        if (std::get<1>(TTparams) == GLFW_MOUSE_BUTTON_LEFT && std::get<2>(TTparams) == GLFW_PRESS && !navigationMode && !ImGui::IsMouseHoveringAnyWindow()){ // Neuron selection
-            // Toggle input firer
-            if (hoveredInput != -1){
-                brain->inputHandler.at(hoveredInput).enabled = ! brain->inputHandler.at(hoveredInput).enabled;
+        if (std::get<1>(TTparams) == GLFW_MOUSE_BUTTON_LEFT) {
+            if (std::get<2>(TTparams) == GLFW_PRESS && !navigationMode && !ImGui::IsMouseHoveringAnyWindow()){
+                glfwGetCursorPos(window, &webScenePressX, &webScenePressY);
+                webScenePointerDown = true;
+                webSceneDragging = false;
             }
-            // Or select neuron
-            else {
-                #define minDistance 10.0
-
-                double xpos, ypos;
-                glfwGetCursorPos(window, &xpos, &ypos);
-                glm::vec2 cursorPos (xpos, ypos);
-
-                float closestDistance = INFINITY;
-                std::size_t ID;
-                for (auto &neu: brain->neurons){
-                    coord3 neuronPos = neu.position();
-                    glm::vec3 screenPos = screenCoordinates(glm::vec3(neuronPos.x, neuronPos.y, neuronPos.z));
-                    float flatDist = glm::distance(cursorPos, glm::vec2(screenPos));
-                    if (flatDist < closestDistance){
-                        closestDistance = flatDist;
-                        ID = neu.getID();
-                    }
+            else if (std::get<2>(TTparams) == GLFW_RELEASE){
+                if (webNavigationTemporary) {
+                    webNavigationTemporary = false;
                 }
-                if (closestDistance < minDistance){
-                    if (!selectNeuron(ID, true)) deselectNeuron(ID);   // Tries to select, if false the neuron is already selected and is then deselected.
+                if (!webSceneDragging && !navigationMode && !ImGui::IsMouseHoveringAnyWindow()) {
+                    handleSceneClick();
                 }
+                webScenePointerDown = false;
+                webSceneDragging = false;
             }
         }
         if (std::get<1>(TTparams) == GLFW_MOUSE_BUTTON_RIGHT && std::get<2>(TTparams) == GLFW_PRESS && !dockHovered) { // Switch to navigation mode
@@ -1707,6 +1863,11 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
 
     case (MOUSE_ENTER):
         mouseInWindow = std::get<1>(TTparams) && glfwGetWindowAttrib(window, GLFW_FOCUSED);
+        if (!mouseInWindow && webNavigationTemporary) {
+            webNavigationTemporary = false;
+            webScenePointerDown = false;
+            webSceneDragging = false;
+        }
         if (mouseInWindow && navigationMode) resetCursor();
         break;
     }

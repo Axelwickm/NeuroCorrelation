@@ -1,16 +1,24 @@
 #include "NeuCor.h"
 
+#include <cassert>
 #include <vector>
-#include <boost/container/stable_vector.hpp>
 #include <map>
 #include <queue>
 #include <stdlib.h>
 #include <iostream>
 
+namespace {
+inline float randomUnit() {
+    return static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+}
+}
+
 NeuCor::NeuCor(int n_neurons) {
     runSpeed = 1.0;
     runAll = false;
     totalGenNeurons = 0;
+    inputArray = nullptr;
+    inputArraySize = 0;
 
     learningRate = 1.0;
 
@@ -83,6 +91,65 @@ void NeuCor::makeConnections(){
     }
 }
 
+std::size_t NeuCor::getNeuronCount() const {
+    return neurons.size();
+}
+
+std::vector<NeuCor::NeuronSnapshot> NeuCor::getNeuronSnapshots() const {
+    std::vector<NeuronSnapshot> snapshots;
+    snapshots.reserve(neurons.size());
+
+    for (const auto& neuron: neurons) {
+        snapshots.push_back({
+            neuron.getID(),
+            neuron.position(),
+            neuron.potential(),
+            neuron.activity(),
+        });
+    }
+
+    return snapshots;
+}
+
+std::vector<NeuCor::SynapseSnapshot> NeuCor::getSynapseSnapshots() const {
+    std::vector<SynapseSnapshot> snapshots;
+
+    for (const auto& neuron: neurons) {
+        for (const auto& synapse: neuron.outSynapses) {
+            snapshots.push_back({
+                synapse.pN,
+                synapse.tN,
+                getNeuron(synapse.pN)->position(),
+                getNeuron(synapse.tN)->position(),
+                synapse.getWeight(),
+                synapse.getPrePot(),
+                synapse.getPostPot(),
+                synapse.getWeight() < 0.0f,
+            });
+        }
+    }
+
+    return snapshots;
+}
+
+std::vector<NeuCor::InputSnapshot> NeuCor::getInputSnapshots() const {
+    std::vector<InputSnapshot> snapshots;
+    snapshots.reserve(inputHandler.size());
+
+    for (std::size_t i = 0; i < inputHandler.size(); ++i) {
+        const InputFirer& input = inputHandler.at(i);
+        snapshots.push_back({
+            i,
+            input.a,
+            input.radius,
+            inputArray != nullptr && i < inputArraySize ? inputArray[i] : 0.0f,
+            input.enabled,
+        });
+    }
+
+    return snapshots;
+}
+
 void NeuCor::createNeuron(coord3 position){
     #define SPAWN_DENSITY 8
     #define SPAWN_SIZE 2.0
@@ -94,17 +161,17 @@ void NeuCor::createNeuron(coord3 position){
     if (position.x != position.x && SPAWN_SPHERE){
         if (totalGenNeurons != 0 ) spawnSize = powf(totalGenNeurons/(1.3333*3.1459*SPAWN_DENSITY),0.33333)*2.0;
         do {
-            position.x = ((float) rand()/RAND_MAX-0.5)*spawnSize;
-            position.y = ((float) rand()/RAND_MAX-0.5)*spawnSize;
-            position.z = ((float) rand()/RAND_MAX-0.5)*spawnSize;
+            position.x = (randomUnit()-0.5f)*spawnSize;
+            position.y = (randomUnit()-0.5f)*spawnSize;
+            position.z = (randomUnit()-0.5f)*spawnSize;
         } while ( pow(position.x,2) + pow(position.y,2) + pow(position.z,2) > pow(spawnSize/2.0,2.0) );
 
     }
     else if (position.x != position.x){
         if (totalGenNeurons != 0 ) spawnSize = powf(totalGenNeurons/SPAWN_DENSITY,0.33333);
-        position.x = ((float) rand()/RAND_MAX-0.5)*spawnSize;
-        position.y = ((float) rand()/RAND_MAX-0.5)*spawnSize;
-        position.z = ((float) rand()/RAND_MAX-0.5)*spawnSize;
+        position.x = (randomUnit()-0.5f)*spawnSize;
+        position.y = (randomUnit()-0.5f)*spawnSize;
+        position.z = (randomUnit()-0.5f)*spawnSize;
     }
 
     if (freeNeuronIDs.size() == 0 || false){
@@ -150,7 +217,7 @@ std::tuple<std::size_t, std::size_t> NeuCor::registerNeuron(coord3 pos, float po
     return std::make_tuple(posIndx, PTIndx);
 }
 std::size_t NeuCor::getFreeID() const {
-    if (freeNeuronIDs.size() == 0) return neurons.size()-1;
+    if (freeNeuronIDs.size() == 0) return neurons.size();
     else return freeNeuronIDs.back();
 }
 
@@ -169,13 +236,28 @@ void NeuCor::resetActivities(){
 Neuron* NeuCor::getNeuron(std::size_t ID) {
     return &neurons.at(ID);
 }
+const Neuron* NeuCor::getNeuron(std::size_t ID) const {
+    return &neurons.at(ID);
+}
 
 Synapse* NeuCor::getSynapse(std::size_t fromID, std::size_t toID){
     for (size_t i = 0; i<getNeuron(fromID)->outSynapses.size(); i++)
         if (getNeuron(fromID)->outSynapses.at(i).tN == toID)
             return &getNeuron(fromID)->outSynapses.at(i);
+
+    return nullptr;
+}
+const Synapse* NeuCor::getSynapse(std::size_t fromID, std::size_t toID) const{
+    for (std::size_t i = 0; i < getNeuron(fromID)->outSynapses.size(); i++)
+        if (getNeuron(fromID)->outSynapses.at(i).tN == toID)
+            return &getNeuron(fromID)->outSynapses.at(i);
+
+    return nullptr;
 }
 Synapse* NeuCor::getSynapse(std::pair<std::size_t, std::size_t> ID){
+    return getSynapse(ID.first, ID.second);
+}
+const Synapse* NeuCor::getSynapse(std::pair<std::size_t, std::size_t> ID) const{
     return getSynapse(ID.first, ID.second);
 }
 
@@ -222,7 +304,7 @@ deletedSimulator::deletedSimulator(NeuCor* p): simulator(p) {};
 InputFirer::InputFirer(NeuCor* p, coord3 position, float radius)
 :simulator(p), radius(radius), lastFire(0.0) {
     if (position.x == position.x) a = position; // If x isn't NAN
-    else a = {((float) rand()/RAND_MAX-0.5f)*5.f,((float) rand()/RAND_MAX-0.5f)*5.f,((float) rand()/RAND_MAX-0.5f)*5.f};
+    else a = {(randomUnit()-0.5f)*5.f,(randomUnit()-0.5f)*5.f,(randomUnit()-0.5f)*5.f};
 
     enabled = true;
 
@@ -262,9 +344,9 @@ void InputFirer::schedule(float deltaT, float frequency){
 }
 
 VoltageDetector::VoltageDetector(NeuCor* p, coord3 position, float radius)
-:radius(radius), parentNet(p) {
+:parentNet(p), radius(radius) {
     if (position.x == position.x) a = position; // If x isn't NAN
-    else a = {((float) rand()/RAND_MAX-0.5f)*3.f,((float) rand()/RAND_MAX-0.5f)*3.f,((float) rand()/RAND_MAX-0.5f)*3.f};
+    else a = {(randomUnit()-0.5f)*3.f,(randomUnit()-0.5f)*3.f,(randomUnit()-0.5f)*3.f};
 
     for (auto &neu: parentNet->neurons){
         if (neu.position().getDist(a) < radius){
@@ -329,6 +411,8 @@ Neuron& Neuron::operator=(const Neuron& other){
     activityStartTime = other.activityStartTime;
     firings = other.firings;
     setActivity(0);
+
+    return *this;
 }
 void Neuron::makeConnections(){
     coord3 nPos = position();
@@ -383,9 +467,9 @@ Synapse::Synapse(NeuCor* p, std::size_t parent, std::size_t target)
 
     lastSpikeArrival = -INFINITY;
 
-    weight = (float) rand()/RAND_MAX*0.8 + 0.2;
+    weight = randomUnit()*0.8f + 0.2f;
 
-    if ((float) rand()/RAND_MAX < 0.2) weight = -weight;
+    if (randomUnit() < 0.2f) weight = -weight;
 
     inhibitory = weight < 0.0;
 
@@ -434,6 +518,8 @@ Synapse& Synapse::operator= (const Synapse &other){
 
     AP_polW = 0, AP_depolFac = 0, AP_deltaStart = 0, AP_fireTime = 0;
     AP_speed = other.AP_speed;
+
+    return *this;
 }
 Synapse::~Synapse(){
 
@@ -457,7 +543,7 @@ void Synapse::flipDirection(){
 }
 
 
-#define AP_RENDER_BEHAVIOUR;                                \
+#define AP_RENDER_BEHAVIOUR                                 \
     val = fmin(fmax(val,0.0),0.7);                           \
     if (val < 0.5) val = 8.0*1000.0*powf(val/5.0,3.0);        \
     else val = 8.0*powf(3.5-5*val,2.0);
@@ -508,8 +594,8 @@ void NeuCor::run(){
         inputHandler.at(i).schedule(runSpeed, inputArray[i]);
     }
 
-    for (auto &neuron: neurons){ // Background firing
-        if (rand()%(int)(600.0/runSpeed) == 0) neurons.at(rand()%neurons.size()).scheduleFire((float) rand()/RAND_MAX*runSpeed);
+    for (std::size_t i = 0; i < neurons.size(); ++i){ // Background firing
+        if (rand()%(int)(600.0/runSpeed) == 0) neurons.at(rand()%neurons.size()).scheduleFire(randomUnit()*runSpeed);
     }
 
     float const targetTime = currentTime + runSpeed;
