@@ -1,6 +1,7 @@
 #include "NeuCor.h"
 
 #include <cassert>
+#include <algorithm>
 #include <vector>
 #include <map>
 #include <queue>
@@ -581,9 +582,14 @@ void Synapse::setWeight(float w) {
 
 void NeuCor::run(){
     assert(0 <= runSpeed);
+    if (runSpeed <= 0.0f) {
+        return;
+    }
 
     for (auto it = synapseFlippingQueue.begin(); it != synapseFlippingQueue.end(); it++)
-        getSynapse(*it)->flipDirection();
+        if (Synapse* synapse = getSynapse(*it)) {
+            synapse->flipDirection();
+        }
     synapseFlippingQueue.clear();
 
     if (runAll){
@@ -591,11 +597,13 @@ void NeuCor::run(){
     }
 
     for (int i = 0; i<inputHandler.size(); i++){
-        inputHandler.at(i).schedule(runSpeed, inputArray[i]);
+        const float inputFrequency = inputArray != nullptr && static_cast<unsigned>(i) < inputArraySize ? inputArray[i] : 0.0f;
+        inputHandler.at(i).schedule(runSpeed, inputFrequency);
     }
 
     for (std::size_t i = 0; i < neurons.size(); ++i){ // Background firing
-        if (rand()%(int)(600.0/runSpeed) == 0) neurons.at(rand()%neurons.size()).scheduleFire(randomUnit()*runSpeed);
+        const int backgroundFirePeriod = std::max(1, static_cast<int>(600.0f / runSpeed));
+        if (rand()%backgroundFirePeriod == 0) neurons.at(rand()%neurons.size()).scheduleFire(randomUnit()*runSpeed);
     }
 
     float const targetTime = currentTime + runSpeed;

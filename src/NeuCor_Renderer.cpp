@@ -33,6 +33,11 @@ using namespace glm;
 std::map<GLFWwindow*, NeuCor_Renderer*> windowRegistry;
 
 namespace {
+NeuCor_Renderer* findRenderer(GLFWwindow* window) {
+    auto it = windowRegistry.find(window);
+    return it == windowRegistry.end() ? nullptr : it->second;
+}
+
 #ifdef __EMSCRIPTEN__
 std::string trimLeadingWhitespace(const std::string& source) {
     std::size_t first = source.find_first_not_of(" \t\r\n");
@@ -90,26 +95,38 @@ void glfw_ErrorCallback(int error, const char* description){
 }
 /* glfw key callback function helper */
 static void glfw_KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    windowRegistry.at(window)->inputCallback(NeuCor_Renderer::KEY_ACTION, window, key, scancode, action, mods);
+    if (auto* renderer = findRenderer(window)) {
+        renderer->inputCallback(NeuCor_Renderer::KEY_ACTION, window, key, scancode, action, mods);
+    }
     ImGui_ImplGlfwGL3_KeyCallback(window, key, scancode, action, mods);
 }
 void glfw_CharCallback(GLFWwindow* window, unsigned int c){
-     windowRegistry.at(window)->inputCallback(NeuCor_Renderer::CHAR_ACTION, window, (int) c, -1, -1, -1);
+     if (auto* renderer = findRenderer(window)) {
+         renderer->inputCallback(NeuCor_Renderer::CHAR_ACTION, window, (int) c, -1, -1, -1);
+     }
      ImGui_ImplGlfwGL3_CharCallback(window, c);
 }
 void glfw_MouseButtonCallback(GLFWwindow* window, int button, int action, int mods){
-    windowRegistry.at(window)->inputCallback(NeuCor_Renderer::MOUSE_BUTTON, window, button, action, mods, -1);
+    if (auto* renderer = findRenderer(window)) {
+        renderer->inputCallback(NeuCor_Renderer::MOUSE_BUTTON, window, button, action, mods, -1);
+    }
     ImGui_ImplGlfwGL3_MouseButtonCallback(window, button, action, mods);
 }
 void glfw_ScrollCallback(GLFWwindow* window, double xoffset, double yoffset){
-    windowRegistry.at(window)->inputCallback(NeuCor_Renderer::MOUSE_SCROLL, window, (int) xoffset, (int) yoffset, -1, -1);
+    if (auto* renderer = findRenderer(window)) {
+        renderer->inputCallback(NeuCor_Renderer::MOUSE_SCROLL, window, (int) xoffset, (int) yoffset, -1, -1);
+    }
     ImGui_ImplGlfwGL3_ScrollCallback(window, xoffset, yoffset);
 }
 void glfw_CursorCallback(GLFWwindow* window, int entered){
-    windowRegistry.at(window)->inputCallback(NeuCor_Renderer::MOUSE_ENTER, window, entered, -1, -1, -1);
+    if (auto* renderer = findRenderer(window)) {
+        renderer->inputCallback(NeuCor_Renderer::MOUSE_ENTER, window, entered, -1, -1, -1);
+    }
 }
 void glfw_FocusCallback(GLFWwindow*window, int focused){
-    windowRegistry.at(window)->inputCallback(NeuCor_Renderer::MOUSE_ENTER, window, focused, -1, -1, -1);
+    if (auto* renderer = findRenderer(window)) {
+        renderer->inputCallback(NeuCor_Renderer::MOUSE_ENTER, window, focused, -1, -1, -1);
+    }
 }
 
 GLuint LoadShaders(const char * vertex_file_path,const char * fragment_file_path){
@@ -441,8 +458,16 @@ void NeuCor_Renderer::loadResources() {
     loadFile(buffer, filename.c_str());
     unsigned long w, h;
 
+    if (buffer.empty()) {
+        std::cerr << "Failed to load resource: " << filename << '\n';
+        return;
+    }
+
     int error = decodePNG(image, w, h, &buffer[0], (unsigned long)buffer.size());
-    if(error != 0) std::cout << "error: " << error << '\n';
+    if(error != 0 || image.empty()) {
+        std::cerr << "Failed to decode resource: " << filename << " error: " << error << '\n';
+        return;
+    }
 
 
     unsigned char * neuronimgData = &image[0];
@@ -464,11 +489,20 @@ void NeuCor_Renderer::loadResources() {
     filename = resourcePath("neuron_small.png");
 
     //load and decode
-    buffer, image;
+    buffer.clear();
+    image.clear();
     loadFile(buffer, filename.c_str());
 
+    if (buffer.empty()) {
+        std::cerr << "Failed to load resource: " << filename << '\n';
+        return;
+    }
+
     error = decodePNG(image, w, h, &buffer[0], (unsigned long)buffer.size());
-    if(error != 0) std::cout << "error: " << error << '\n';
+    if(error != 0 || image.empty()) {
+        std::cerr << "Failed to decode resource: " << filename << " error: " << error << '\n';
+        return;
+    }
 
 
     unsigned char * neuron_smallimgData = &image[0];
@@ -1253,14 +1287,21 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, neuronWindow* neuWin){
     ImGui::Text("Voltage graph");
 
     std::deque<realTimeStats::neuronSnapshot>* neuTimeline = &logger.timeline.at(ID);
-    float voltageData[neuTimeline->size()];
-    for (int i = 0; i < neuTimeline->size(); i++){
-        voltageData[i] = neuTimeline->at(i).voltage;
+    std::vector<float> voltageData;
+    voltageData.reserve(neuTimeline->size());
+    for (std::size_t i = 0; i < neuTimeline->size(); i++){
+        voltageData.push_back(neuTimeline->at(i).voltage);
     }
     #define voltageGraphWidth 300
     #define voltageGraphHeight 100
 
-    ImGui::PlotLines("", voltageData, neuTimeline->size(), 0, "", -90.0f, 50.0f, ImVec2(300, 100));
+    if (!voltageData.empty()) {
+        ImGui::PlotLines("", voltageData.data(), voltageData.size(), 0, "", -90.0f, 50.0f, ImVec2(300, 100));
+    }
+    else {
+        ImGui::TextDisabled("No samples yet.");
+        ImGui::Dummy(ImVec2(300, 100));
+    }
     ImVec2 thresholdLine( ImGui::GetItemRectMin().x, ImGui::GetItemRectMin().y + voltageGraphHeight * 0.75 );
     ImDrawList* drawList = ImGui::GetWindowDrawList();
     drawList->AddLine(thresholdLine, ImVec2(thresholdLine.x + voltageGraphWidth, thresholdLine.y), ImColor(50, 50, 50));
@@ -1321,16 +1362,25 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, neuronWindow* neuWin){
             if (0.0f < syn.getWeight() ) ImGui::TextColored(ImColor(116, 102, 116),"EXCITATORY");
             else ImGui::TextColored(ImColor(26, 26, 116),"inhibitory");
             ImGui::Text("weight: %.2f", syn.getWeight());
-            float weightData[neuTimeline->size()];
-            for (int j = 0; j < neuTimeline->size(); j++){
-                weightData[j] = neuTimeline->at(j).synapseWeights.at(i);
+            std::vector<float> weightData;
+            weightData.reserve(neuTimeline->size());
+            for (std::size_t j = 0; j < neuTimeline->size(); j++){
+                const auto& snapshot = neuTimeline->at(j);
+                if (i < snapshot.synapseWeights.size()) {
+                    weightData.push_back(snapshot.synapseWeights.at(i));
+                }
             }
-            ImGui::PlotLines("", weightData, neuTimeline->size(), 0, "", -1.0f, 1.0f, ImVec2(77, 48));
-            if (ImGui::IsItemHovered()){
-                ImGui::BeginTooltip();
-                ImGui::PlotLines("", weightData, neuTimeline->size(), 0, "", -1.0f, 1.0f, ImVec2(500, 200));
-                ImGui::Text("weight: %.3f", syn.getWeight());
-                ImGui::EndTooltip();
+            if (!weightData.empty()) {
+                ImGui::PlotLines("", weightData.data(), weightData.size(), 0, "", -1.0f, 1.0f, ImVec2(77, 48));
+                if (ImGui::IsItemHovered()){
+                    ImGui::BeginTooltip();
+                    ImGui::PlotLines("", weightData.data(), weightData.size(), 0, "", -1.0f, 1.0f, ImVec2(500, 200));
+                    ImGui::Text("weight: %.3f", syn.getWeight());
+                    ImGui::EndTooltip();
+                }
+            }
+            else {
+                ImGui::TextDisabled("No samples yet.");
             }
 
         }
@@ -1561,25 +1611,29 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
             static std::vector<float> activityDistribution;
             activityDistribution.resize(a_spans, 0);
 
-            if (logger.activityUpdateTimer <= 0 && a_updatesOn || logger.activityUpdateTimer < -100){
+            const float activityRange = a_range_max - a_range_min;
+            if ((logger.activityUpdateTimer <= 0 && a_updatesOn) || logger.activityUpdateTimer < -100){
                 int above = 0, below = 0;
                 for (auto &a: activityDistribution) a = 0;
-                for (auto &neu : brain->neurons){
-                    int spanIndex = floor(a_spans*((float) neu.activity()-a_range_min)/((float) a_range_max-a_range_min));
-                    if (spanIndex < 0){
-                        below++;
-                        continue;
+                if (0.0f < activityRange) {
+                    for (auto &neu : brain->neurons){
+                        int spanIndex = floor(a_spans*((float) neu.activity()-a_range_min)/activityRange);
+                        if (spanIndex < 0){
+                            below++;
+                            continue;
+                        }
+                        else if (spanIndex >= activityDistribution.size()){
+                            above++;
+                            continue;
+                        }
+                        activityDistribution.at(spanIndex)++;
                     }
-                    else if (spanIndex >= activityDistribution.size()){
-                        above++;
-                        continue;
-                    }
-                    activityDistribution.at(spanIndex)++;
                 }
                 logger.activityUpdateTimer = a_updatePeriod;
             }
-            float* a_data = &activityDistribution[0];
-            ImGui::PlotHistogram("", a_data, activityDistribution.size(), 0, "", FLT_MAX, FLT_MAX, ImVec2(0, 200));
+            if (!activityDistribution.empty()) {
+                ImGui::PlotHistogram("", activityDistribution.data(), activityDistribution.size(), 0, "", FLT_MAX, FLT_MAX, ImVec2(0, 200));
+            }
 
             if (ImGui::IsItemClicked()) ImGui::OpenPopup("Activity distribution settings");
             if (ImGui::BeginPopup("Activity distribution settings")){
@@ -1609,27 +1663,31 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
             static std::vector<float> weightDistribution;
             weightDistribution.resize(w_spans, 0);
 
-            if (logger.weightUpdateTimer <= 0 && w_updatesOn || logger.weightUpdateTimer < -100){
+            const float weightRange = w_range_max - w_range_min;
+            if ((logger.weightUpdateTimer <= 0 && w_updatesOn) || logger.weightUpdateTimer < -100){
                 int above = 0, below = 0;
                 for (auto &w: weightDistribution) w = 0;
-                for (auto &neu : brain->neurons){
-                    for (auto &syn : neu.outSynapses){
-                        int spanIndex = floor(w_spans*((float) syn.getWeight()-w_range_min)/((float) w_range_max-w_range_min));
-                        if (spanIndex < 0){
-                            below++;
-                            continue;
+                if (0.0f < weightRange) {
+                    for (auto &neu : brain->neurons){
+                        for (auto &syn : neu.outSynapses){
+                            int spanIndex = floor(w_spans*((float) syn.getWeight()-w_range_min)/weightRange);
+                            if (spanIndex < 0){
+                                below++;
+                                continue;
+                            }
+                            else if (spanIndex >= weightDistribution.size()){
+                                above++;
+                                continue;
+                            }
+                            weightDistribution.at(spanIndex)++;
                         }
-                        else if (spanIndex >= weightDistribution.size()){
-                            above++;
-                            continue;
-                        }
-                        weightDistribution.at(spanIndex)++;
                     }
                 }
                 logger.weightUpdateTimer = w_updatePeriod;
             }
-            float* w_data = &weightDistribution[0];
-            ImGui::PlotHistogram("", w_data, weightDistribution.size(), 0, "", FLT_MAX, FLT_MAX, ImVec2(0, 200));
+            if (!weightDistribution.empty()) {
+                ImGui::PlotHistogram("", weightDistribution.data(), weightDistribution.size(), 0, "", FLT_MAX, FLT_MAX, ImVec2(0, 200));
+            }
 
             if (ImGui::IsItemClicked()) ImGui::OpenPopup("Weight distribution settings");
             if (ImGui::BeginPopup("Weight distribution settings")){
@@ -1660,18 +1718,20 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
             float brainTime = brain->getTime();
             int neuronCount = brain->neurons.size();
             static std::deque<std::vector<int> > firePlot;
-            int firePlotSize = rasterPlotTime/(brain->runSpeed);
+            int firePlotSize = brain->runSpeed > 0.0f ? static_cast<int>(rasterPlotTime / brain->runSpeed) : 0;
 
             if (!paused) {
                 firePlot.emplace_back();
                 firePlot.back().reserve(neuronCount/5);
             }
-            for (auto &neu: brain->neurons) {
-                if (brainTime - neu.lastFire < brain->runSpeed){
-                    firePlot.back().push_back(neu.getID());
+            if (!firePlot.empty()) {
+                for (auto &neu: brain->neurons) {
+                    if (brainTime - neu.lastFire < brain->runSpeed){
+                        firePlot.back().push_back(neu.getID());
+                    }
                 }
+                firePlot.back().shrink_to_fit();
             }
-            firePlot.back().shrink_to_fit();
             for (int i = 0; i < (int) firePlot.size()-firePlotSize; i++)
                 firePlot.pop_front();
             float i = 0;
