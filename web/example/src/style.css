@@ -20,16 +20,15 @@ body,
 
 body {
   min-height: 100vh;
-  display: grid;
-  place-items: center;
 }
 
 .page {
   width: min(100%, 1360px);
   min-height: 100vh;
+  margin: 0 auto;
   padding: 24px 16px;
   display: grid;
-  align-content: center;
+  align-content: start;
   gap: 14px;
 }
 

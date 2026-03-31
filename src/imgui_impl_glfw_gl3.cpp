@@ -9,6 +9,9 @@
 #include "imgui.h"
 #include "imgui_impl_glfw_gl3.h"
 #include "NeuCor_GL.h"
+#ifdef __EMSCRIPTEN__
+#include <emscripten/html5.h>
+#endif
 
 // GL3W/GLFW
 #ifdef _WIN32
@@ -28,6 +31,19 @@ static int          g_ShaderHandle = 0, g_VertHandle = 0, g_FragHandle = 0;
 static int          g_AttribLocationTex = 0, g_AttribLocationProjMtx = 0;
 static int          g_AttribLocationPosition = 0, g_AttribLocationUV = 0, g_AttribLocationColor = 0;
 static unsigned int g_VboHandle = 0, g_VaoHandle = 0, g_ElementsHandle = 0;
+
+#ifdef __EMSCRIPTEN__
+static bool ImGui_ImplGlfwGL3_GetCanvasCssSize(int* out_width, int* out_height)
+{
+    double css_width = 0.0;
+    double css_height = 0.0;
+    if (emscripten_get_element_css_size("#canvas", &css_width, &css_height) != EMSCRIPTEN_RESULT_SUCCESS)
+        return false;
+    *out_width = (int)css_width;
+    *out_height = (int)css_height;
+    return *out_width > 0 && *out_height > 0;
+}
+#endif
 
 // This is the main rendering function that you have to implement and provide to ImGui (via setting up 'RenderDrawListsFn' in the ImGuiIO structure)
 // If text or lines are blurry when integrating ImGui in your engine:
@@ -390,8 +406,15 @@ void ImGui_ImplGlfwGL3_NewFrame()
     // Setup display size (every frame to accommodate for window resizing)
     int w, h;
     int display_w, display_h;
+#ifdef __EMSCRIPTEN__
+    if (!ImGui_ImplGlfwGL3_GetCanvasCssSize(&w, &h))
+        glfwGetWindowSize(g_Window, &w, &h);
+    display_w = w;
+    display_h = h;
+#else
     glfwGetWindowSize(g_Window, &w, &h);
     glfwGetFramebufferSize(g_Window, &display_w, &display_h);
+#endif
     io.DisplaySize = ImVec2((float)w, (float)h);
     io.DisplayFramebufferScale = ImVec2(w > 0 ? ((float)display_w / w) : 0, h > 0 ? ((float)display_h / h) : 0);
 

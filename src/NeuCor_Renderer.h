@@ -85,6 +85,7 @@ class NeuCor_Renderer {
         void renderNeuronWindow(int ID, neuronWindow* neuWin = NULL);
         inline void renderLine(int ID);
         void updateCamPos();
+        void frameSceneIfNeeded();
         float cameraRadius;
         void resetCursor();
 
@@ -134,6 +135,7 @@ class NeuCor_Renderer {
         double cursorX, cursorY;
         bool navigationMode, mouseInWindow, showInterface;
         bool closeNotified;
+        bool initialSceneFramed;
         bool webScenePointerDown;
         bool webSceneDragging;
         bool webNavigationTemporary;

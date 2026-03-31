@@ -13,6 +13,7 @@ using namespace glm;
 
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 #include <vector>
 #include <stdlib.h>
 #include <memory>
@@ -223,6 +224,7 @@ NeuCor_Renderer::NeuCor_Renderer(NeuCor* _brain)
     showInterface = true;
     dockHovered = false;
     closeNotified = false;
+    initialSceneFramed = false;
     webScenePointerDown = false;
     webSceneDragging = false;
     webNavigationTemporary = false;
@@ -547,6 +549,7 @@ void NeuCor_Renderer::updateView(){
     else if (runBrainOnUpdate && !paused) brain->run();
 
 
+    frameSceneIfNeeded();
     updateCamPos();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -795,6 +798,57 @@ void NeuCor_Renderer::setDestructCallback(CallbackType callbackF){
     destructCallback = callbackF;
 }
 
+void NeuCor_Renderer::frameSceneIfNeeded() {
+    if (initialSceneFramed) return;
+
+    std::vector<glm::vec3> scenePoints;
+    scenePoints.reserve(brain->positions.size() + brain->inputHandler.size() + brain->voltageDetectors.size());
+
+    for (const coord3& pos : brain->positions) {
+        if (pos.x == pos.x && pos.y == pos.y && pos.z == pos.z) {
+            scenePoints.emplace_back(pos.x, pos.y, pos.z);
+        }
+    }
+    for (const auto& input : brain->inputHandler) {
+        if (input.a.x == input.a.x && input.a.y == input.a.y && input.a.z == input.a.z) {
+            scenePoints.emplace_back(input.a.x, input.a.y, input.a.z);
+        }
+    }
+    for (const auto& detector : brain->voltageDetectors) {
+        if (detector.a.x == detector.a.x && detector.a.y == detector.a.y && detector.a.z == detector.a.z) {
+            scenePoints.emplace_back(detector.a.x, detector.a.y, detector.a.z);
+        }
+    }
+    if (scenePoints.empty()) return;
+
+    glm::vec3 minPoint = scenePoints.front();
+    glm::vec3 maxPoint = scenePoints.front();
+    for (const glm::vec3& point : scenePoints) {
+        minPoint = glm::min(minPoint, point);
+        maxPoint = glm::max(maxPoint, point);
+    }
+
+    orbitFocusPoint = (minPoint + maxPoint) * 0.5f;
+
+    float maxDistance = 0.0f;
+    for (const glm::vec3& point : scenePoints) {
+        maxDistance = std::max(maxDistance, glm::distance(point, orbitFocusPoint));
+    }
+    cameraRadius = std::max(2.5f, maxDistance * 2.4f);
+
+    camPos = orbitFocusPoint + glm::vec3(cos(camHA) * cos(camVA), sin(camVA), -sin(camHA) * cos(camVA)) * cameraRadius;
+    camDir = glm::normalize(orbitFocusPoint - camPos);
+    glm::vec3 right = glm::vec3(
+        -cos(camHA),
+        0,
+        sin(camHA)
+    );
+    camUp = glm::cross(right, camDir);
+    cursorX = NAN;
+    cursorY = NAN;
+    initialSceneFramed = true;
+}
+
 void NeuCor_Renderer::updateCamPos(){
     const bool navigationActive = navigationMode || webNavigationTemporary;
     const float mouseLookSensitivity = 0.08f;
@@ -1026,11 +1080,20 @@ void NeuCor_Renderer::renderInterface(){
 
     {   // Dock
         static bool openDock = true;
-        static int lastWidth;
-        if (!openDock &&  10 < lastWidth)
-            ImGui::SetNextWindowSize(ImVec2(lastWidth-20, 0));
-        if (openDock &&  lastWidth < std::min( int(width/2.5), 300))
-            ImGui::SetNextWindowSize(ImVec2(lastWidth+20, 0));
+        static float lastWidth = 0.0f;
+        static int lastDockCanvasWidth = 0;
+        static int lastDockCanvasHeight = 0;
+        const float closedWidth = 10.0f;
+        const float openWidth = std::min(width / 2.5f, 300.0f);
+        const float targetWidth = openDock ? openWidth : closedWidth;
+        const bool dockCanvasSizeChanged = lastDockCanvasWidth != width || lastDockCanvasHeight != height;
+
+        if (lastWidth <= 0.0f) lastWidth = targetWidth;
+        if (openDock && lastWidth > openWidth) lastWidth = openWidth;
+        if (!openDock && lastWidth < closedWidth) lastWidth = closedWidth;
+
+        if (lastWidth < targetWidth) lastWidth = std::min(targetWidth, lastWidth + 20.0f);
+        else if (targetWidth < lastWidth) lastWidth = std::max(targetWidth, lastWidth - 20.0f);
 
 
         ImGuiWindowFlags window_flags = 0;
@@ -1040,9 +1103,14 @@ void NeuCor_Renderer::renderInterface(){
         window_flags |= ImGuiWindowFlags_NoResize;
         window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus;
         ImGui::SetNextWindowPos(ImVec2(0,0));
-        ImGui::SetNextWindowSizeConstraints(ImVec2(10, height), ImVec2(width/2.5, height));
+        ImGui::SetNextWindowSize(ImVec2(lastWidth, static_cast<float>(height)));
         ImGui::Begin("", NULL, window_flags);
+        if (dockCanvasSizeChanged) {
+            ImGui::SetScrollY(0.0f);
+        }
         lastWidth = ImGui::GetWindowWidth();
+        lastDockCanvasWidth = width;
+        lastDockCanvasHeight = height;
 
         if (40 < ImGui::GetWindowWidth()){
             for (int i = 0; i<modules.size(); i++){ // Render modules in dock
