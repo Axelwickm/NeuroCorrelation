@@ -77,6 +77,12 @@ std::string resourcePath(const char* filename) {
 
 } // namespace
 
+static double rescaleAxis(double value, int oldExtent, int newExtent) {
+    if (value != value) return value;
+    if (oldExtent <= 0 || newExtent <= 0) return value;
+    return (value / static_cast<double>(oldExtent)) * static_cast<double>(newExtent);
+}
+
 /* glfw error function helper */
 void glfw_ErrorCallback(int error, const char* description){
     fputs(description, stderr);
@@ -765,9 +771,18 @@ void NeuCor_Renderer::pollWindow(){
     glfwGetWindowSize(window, &temp_width, &temp_height);
 #endif
     if (temp_width != width || temp_height != height){
+        const int oldWidth = width;
+        const int oldHeight = height;
         width = temp_width;
         height = temp_height;
+        cursorX = rescaleAxis(cursorX, oldWidth, width);
+        cursorY = rescaleAxis(cursorY, oldHeight, height);
+        webScenePressX = rescaleAxis(webScenePressX, oldWidth, width);
+        webScenePressY = rescaleAxis(webScenePressY, oldHeight, height);
         glViewport(0, 0, width, height);
+#ifndef __EMSCRIPTEN__
+        if (navigationMode) resetCursor();
+#endif
     }
     if (glfwWindowShouldClose(window)){
         if (!closeNotified) {
