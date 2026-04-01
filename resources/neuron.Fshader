@@ -7,7 +7,6 @@ in float opacity;
 out vec4 color;
 
 void main(){
-  color = texture( myTextureSampler, UV ).rgba;
-
-  color *= opacity;
+  color = texture(myTextureSampler, UV).rgba;
+  color.a *= opacity;
 }

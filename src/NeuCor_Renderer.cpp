@@ -18,12 +18,14 @@ using namespace glm;
 #include <stdlib.h>
 #include <memory>
 #include <stdio.h>
+#include <cassert>
 
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "picopng/picopng.cpp"
-#include "imgui_impl_glfw_gl3.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
 #include "imgui_internal.h"
 
 #ifdef __EMSCRIPTEN__
@@ -36,6 +38,14 @@ namespace {
 NeuCor_Renderer* findRenderer(GLFWwindow* window) {
     auto it = windowRegistry.find(window);
     return it == windowRegistry.end() ? nullptr : it->second;
+}
+
+bool imguiContextReady() {
+    return ImGui::GetCurrentContext() != nullptr;
+}
+
+bool imguiWantsMouse() {
+    return imguiContextReady() && ImGui::GetIO().WantCaptureMouse;
 }
 
 #ifdef __EMSCRIPTEN__
@@ -98,34 +108,53 @@ static void glfw_KeyCallback(GLFWwindow* window, int key, int scancode, int acti
     if (auto* renderer = findRenderer(window)) {
         renderer->inputCallback(NeuCor_Renderer::KEY_ACTION, window, key, scancode, action, mods);
     }
-    ImGui_ImplGlfwGL3_KeyCallback(window, key, scancode, action, mods);
+    if (imguiContextReady()) {
+        ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
+    }
 }
 void glfw_CharCallback(GLFWwindow* window, unsigned int c){
      if (auto* renderer = findRenderer(window)) {
          renderer->inputCallback(NeuCor_Renderer::CHAR_ACTION, window, (int) c, -1, -1, -1);
      }
-     ImGui_ImplGlfwGL3_CharCallback(window, c);
+     if (imguiContextReady()) {
+         ImGui_ImplGlfw_CharCallback(window, c);
+     }
 }
 void glfw_MouseButtonCallback(GLFWwindow* window, int button, int action, int mods){
     if (auto* renderer = findRenderer(window)) {
         renderer->inputCallback(NeuCor_Renderer::MOUSE_BUTTON, window, button, action, mods, -1);
     }
-    ImGui_ImplGlfwGL3_MouseButtonCallback(window, button, action, mods);
+    if (imguiContextReady()) {
+        ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
+    }
 }
 void glfw_ScrollCallback(GLFWwindow* window, double xoffset, double yoffset){
     if (auto* renderer = findRenderer(window)) {
         renderer->inputCallback(NeuCor_Renderer::MOUSE_SCROLL, window, (int) xoffset, (int) yoffset, -1, -1);
     }
-    ImGui_ImplGlfwGL3_ScrollCallback(window, xoffset, yoffset);
+    if (imguiContextReady()) {
+        ImGui_ImplGlfw_ScrollCallback(window, xoffset, yoffset);
+    }
 }
 void glfw_CursorCallback(GLFWwindow* window, int entered){
     if (auto* renderer = findRenderer(window)) {
         renderer->inputCallback(NeuCor_Renderer::MOUSE_ENTER, window, entered, -1, -1, -1);
     }
+    if (imguiContextReady()) {
+        ImGui_ImplGlfw_CursorEnterCallback(window, entered);
+    }
+}
+void glfw_CursorPosCallback(GLFWwindow* window, double xpos, double ypos){
+    if (imguiContextReady()) {
+        ImGui_ImplGlfw_CursorPosCallback(window, xpos, ypos);
+    }
 }
 void glfw_FocusCallback(GLFWwindow*window, int focused){
     if (auto* renderer = findRenderer(window)) {
-        renderer->inputCallback(NeuCor_Renderer::MOUSE_ENTER, window, focused, -1, -1, -1);
+        renderer->inputCallback(NeuCor_Renderer::WINDOW_FOCUS, window, focused, -1, -1, -1);
+    }
+    if (imguiContextReady()) {
+        ImGui_ImplGlfw_WindowFocusCallback(window, focused);
     }
 }
 
@@ -253,12 +282,13 @@ NeuCor_Renderer::NeuCor_Renderer(NeuCor* _brain)
 
     FPS = 0;
 
-    realTimeStats logger();
-
     /* Initiates GLFW, OpenGL & ImGui*/
     initGLFW();
     initOpenGL(window);
-    ImGui_ImplGlfwGL3_Init(window, false);
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGui_ImplGlfw_InitForOpenGL(window, false);
+    ImGui_ImplOpenGL3_Init();
 
     /* Place all graphics modules in a vector (order defines position) */
     for (int i = 0; i<MODULE_count; i++){
@@ -314,7 +344,9 @@ NeuCor_Renderer::realTimeStats::realTimeStats(){
 }
 
 NeuCor_Renderer::~NeuCor_Renderer() {
-    ImGui_ImplGlfwGL3_Shutdown();
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
     if (sceneVertexArrayID != 0) {
         glDeleteVertexArrays(1, &sceneVertexArrayID);
         sceneVertexArrayID = 0;
@@ -379,7 +411,7 @@ void NeuCor_Renderer::initGLFW(){
     glfwSetMouseButtonCallback(window, glfw_MouseButtonCallback);
     glfwSetScrollCallback(window, glfw_ScrollCallback);
     glfwSetWindowFocusCallback(window, glfw_FocusCallback);
-
+    glfwSetCursorPosCallback(window, glfw_CursorPosCallback);
     glfwSetCursorEnterCallback(window, glfw_CursorCallback);
 #ifndef __EMSCRIPTEN__
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -414,6 +446,9 @@ void NeuCor_Renderer::initOpenGL(GLFWwindow* window){
 	glUseProgram(neuronProgramID);
 	ViewProjMatrixID[0] = glGetUniformLocation(neuronProgramID, "VP");
 	aspectID[0] = glGetUniformLocation(neuronProgramID, "aspect");
+    neuronTextureSamplerID = glGetUniformLocation(neuronProgramID, "myTextureSampler");
+    assert(neuronTextureSamplerID != -1 && "Neuron shader is missing myTextureSampler uniform");
+    glUniform1i(neuronTextureSamplerID, 0);
 
 	glUseProgram(synapseProgramID);
 	ViewProjMatrixID[1] = glGetUniformLocation(synapseProgramID, "VP");
@@ -460,13 +495,13 @@ void NeuCor_Renderer::loadResources() {
 
     if (buffer.empty()) {
         std::cerr << "Failed to load resource: " << filename << '\n';
-        return;
+        std::abort();
     }
 
     int error = decodePNG(image, w, h, &buffer[0], (unsigned long)buffer.size());
     if(error != 0 || image.empty()) {
         std::cerr << "Failed to decode resource: " << filename << " error: " << error << '\n';
-        return;
+        std::abort();
     }
 
 
@@ -482,6 +517,16 @@ void NeuCor_Renderer::loadResources() {
 
     // Give the image to OpenGL
     glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, neuronimgData);
+    assert(glIsTexture(neuronTexID) == GL_TRUE && "Failed to create neuron texture");
+#ifndef __EMSCRIPTEN__
+    {
+        GLint uploadedWidth = 0;
+        GLint uploadedHeight = 0;
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &uploadedWidth);
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &uploadedHeight);
+        assert(uploadedWidth == static_cast<GLint>(w) && uploadedHeight == static_cast<GLint>(h) && "Neuron texture upload size mismatch");
+    }
+#endif
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -495,13 +540,13 @@ void NeuCor_Renderer::loadResources() {
 
     if (buffer.empty()) {
         std::cerr << "Failed to load resource: " << filename << '\n';
-        return;
+        std::abort();
     }
 
     error = decodePNG(image, w, h, &buffer[0], (unsigned long)buffer.size());
     if(error != 0 || image.empty()) {
         std::cerr << "Failed to decode resource: " << filename << " error: " << error << '\n';
-        return;
+        std::abort();
     }
 
 
@@ -517,6 +562,16 @@ void NeuCor_Renderer::loadResources() {
 
     // Give the image to OpenGL
     glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, neuron_smallimgData);
+    assert(glIsTexture(neuron_smallTexID) == GL_TRUE && "Failed to create neuron_small texture");
+#ifndef __EMSCRIPTEN__
+    {
+        GLint uploadedWidth = 0;
+        GLint uploadedHeight = 0;
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &uploadedWidth);
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &uploadedHeight);
+        assert(uploadedWidth == static_cast<GLint>(w) && uploadedHeight == static_cast<GLint>(h) && "Neuron small texture upload size mismatch");
+    }
+#endif
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -585,6 +640,13 @@ void NeuCor_Renderer::updateView(){
 
     frameSceneIfNeeded();
     updateCamPos();
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDisable(GL_CULL_FACE);
+    glLineWidth(2.5f);
+    glBindVertexArray(sceneVertexArrayID);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     if (renderMode == RENDER_ACTIVITY && evaluated != NULL) activityFunction(-1, true);
@@ -645,7 +707,6 @@ void NeuCor_Renderer::updateView(){
     // Render synapses
     renderSynapses:
 
-    glBindVertexArray(sceneVertexArrayID);
     glUseProgram(synapseProgramID);
 
 
@@ -693,7 +754,16 @@ void NeuCor_Renderer::updateView(){
     // Render neurons
     renderNeurons:
 
+    glEnable(GL_BLEND);
+    glBlendEquation(GL_FUNC_ADD);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDepthMask(GL_TRUE);
     glUseProgram(neuronProgramID);
+    assert(neuronTextureSamplerID != -1 && "Neuron texture sampler uniform was not initialized");
+    assert(glIsTexture(neuronTexID) == GL_TRUE && "Neuron texture is not a valid GL texture");
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, neuronTexID);
+    glUniform1i(neuronTextureSamplerID, 0);
 
 
     glUniform1f(aspectID[0], aspect);
@@ -759,7 +829,6 @@ void NeuCor_Renderer::updateView(){
 #ifndef __EMSCRIPTEN__
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 #endif
-        ImGui::CaptureMouseFromApp(false);
     }
 #ifndef __EMSCRIPTEN__
     else glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
@@ -910,7 +979,7 @@ void NeuCor_Renderer::updateCamPos(){
             webNavigationTemporary = true;
         }
     }
-    if ((!navigationActive && !(cameraMode == CAMERA_ORBIT_MOMENTUM)) || !mouseInWindow) return;
+    if (!navigationActive && cameraMode != CAMERA_ORBIT_MOMENTUM) return;
 
     float aspect = (float) width / (float)height;
     double xpos, ypos;
@@ -1105,7 +1174,16 @@ inline void NeuCor_Renderer::renderLine(int ID){
 }
 
 void NeuCor_Renderer::renderInterface(){
-    ImGui_ImplGlfwGL3_NewFrame();
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    static bool openDock = true;
+    static float lastWidth = 0.0f;
+    static int lastDockCanvasWidth = 0;
+    static int lastDockCanvasHeight = 0;
+    const float closedWidth = 10.0f;
+    const float openWidth = std::min(width / 2.5f, 300.0f);
 
     for (int i = 0; i<modules.size(); i++){ // Render modules as windows
         if (modules[i].windowed) renderModule(&modules[i], true);
@@ -1113,12 +1191,6 @@ void NeuCor_Renderer::renderInterface(){
 
 
     {   // Dock
-        static bool openDock = true;
-        static float lastWidth = 0.0f;
-        static int lastDockCanvasWidth = 0;
-        static int lastDockCanvasHeight = 0;
-        const float closedWidth = 10.0f;
-        const float openWidth = std::min(width / 2.5f, 300.0f);
         const float targetWidth = openDock ? openWidth : closedWidth;
         const bool dockCanvasSizeChanged = lastDockCanvasWidth != width || lastDockCanvasHeight != height;
 
@@ -1138,7 +1210,8 @@ void NeuCor_Renderer::renderInterface(){
         window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus;
         ImGui::SetNextWindowPos(ImVec2(0,0));
         ImGui::SetNextWindowSize(ImVec2(lastWidth, static_cast<float>(height)));
-        ImGui::Begin("", NULL, window_flags);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(closedWidth, 0.0f));
+        ImGui::Begin("##Dock", NULL, window_flags);
         if (dockCanvasSizeChanged) {
             ImGui::SetScrollY(0.0f);
         }
@@ -1151,23 +1224,25 @@ void NeuCor_Renderer::renderInterface(){
                 if (!modules[i].windowed || modules[i].snapped) renderModule(&modules[i], false);
             }
         }
-
-        ImGui::Dummy(ImVec2(0, ImGui::GetContentRegionAvail().y-20));
-        ImGui::Dummy(ImVec2(ImGui::GetContentRegionAvail().x-25, 0));
-        ImGui::SameLine();
-        ImGui::RadioButton("", openDock);
-        if (ImGui::IsItemClicked()){
-            openDock = !openDock;
+        if (openDock) {
+            ImGui::Dummy(ImVec2(0, ImGui::GetContentRegionAvail().y-20));
+            ImGui::Dummy(ImVec2(ImGui::GetContentRegionAvail().x-25, 0));
+            ImGui::SameLine();
+            ImGui::RadioButton("##dock_toggle", openDock);
+            if (ImGui::IsItemClicked()){
+                openDock = !openDock;
+            }
         }
-        dockHovered = ImGui::IsWindowHovered();
         ImGui::End();
+        ImGui::PopStyleVar();
 
     }
 
     // Render inputs firers
     ImGui::SetNextWindowPos( ImVec2(0,0) ); // Naked background window
     ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
-    ImGui::Begin("BCKGND", NULL, ImGui::GetIO().DisplaySize, 0.0f, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus );
+    ImGui::SetNextWindowBgAlpha(0.0f);
+    ImGui::Begin("BCKGND", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus );
     hoveredInput = -1;
     int inputHandlerID = 0;
     for (auto &inFi: brain->inputHandler){
@@ -1212,12 +1287,56 @@ void NeuCor_Renderer::renderInterface(){
     }
     ImGui::End();
 
+    if (!openDock) {
+        const float collapsedToggleMargin = 14.0f;
+        const float collapsedToggleRadius = 6.0f;
+        const ImVec2 collapsedToggleCenter(
+            collapsedToggleMargin + collapsedToggleRadius,
+            static_cast<float>(height) - collapsedToggleMargin - collapsedToggleRadius
+        );
+
+        ImDrawList* fg = ImGui::GetForegroundDrawList();
+        fg->AddCircleFilled(
+            collapsedToggleCenter,
+            collapsedToggleRadius + 8.0f,
+            IM_COL32(40, 40, 40, 70)
+        );
+        fg->AddCircle(
+            collapsedToggleCenter,
+            collapsedToggleRadius,
+            IM_COL32(210, 210, 210, 230),
+            0,
+            2.0f
+        );
+
+        const ImVec2 mousePos = ImGui::GetMousePos();
+        const float dx = mousePos.x - collapsedToggleCenter.x;
+        const float dy = mousePos.y - collapsedToggleCenter.y;
+        const float hitRadius = collapsedToggleRadius + 10.0f;
+        const bool collapsedToggleHovered = (dx * dx + dy * dy) <= (hitRadius * hitRadius);
+        if (collapsedToggleHovered) {
+            fg->AddCircle(
+                collapsedToggleCenter,
+                collapsedToggleRadius + 4.0f,
+                IM_COL32(255, 255, 255, 110),
+                0,
+                1.5f
+            );
+            dockHovered = true;
+            if (ImGui::IsMouseClicked(0)) {
+                openDock = true;
+            }
+        }
+    }
+
     // Render neuron windows which are open
     for (auto ID: selectedNeurons){
         if (neuronWindows.at(ID).open) renderNeuronWindow(ID);
     }
 
+    dockHovered = dockHovered || ImGui::GetIO().WantCaptureMouse;
     ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
  float NeuCor_Renderer::getDeltaTime(){
@@ -1241,7 +1360,7 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, neuronWindow* neuWin){
     else if (neuWin->beingDragged) neuWin->relativePosition = ImVec2(neuWin->currentWindowPos.x - screenGLM.x, neuWin->currentWindowPos.y - screenGLM.y);
 
     if (neuWin->nextCollapsed != 0) ImGui::SetNextWindowCollapsed(neuWin->nextCollapsed == 1);
-    else ImGui::SetNextWindowCollapsed(true, ImGuiSetCond_Appearing);
+    else ImGui::SetNextWindowCollapsed(true, ImGuiCond_Appearing);
 
     neuWin->nextPosition = ImVec2(-1, -1);
     neuWin->nextCollapsed = 0;
@@ -1249,11 +1368,11 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, neuronWindow* neuWin){
 
     char buffer[100];
     std::sprintf(buffer, "Neuron %i", ID);
-    ImGui::PushStyleColor(ImGuiCol_TitleBgCollapsed, ImColor(116, 102, 116, (int) floor(50 + neuPot*180.0f)));
+    ImGui::PushStyleColor(ImGuiCol_TitleBgCollapsed, ImColor(116, 102, 116, (int) floor(50 + neuPot*180.0f)).Value);
     bool collapsed = !ImGui::Begin(buffer, &neuWin->open, ImGuiWindowFlags_NoResize);
 
     neuWin->currentWindowPos = ImGui::GetWindowPos();
-    if (ImGui::IsMouseHoveringWindow() && ImGui::IsMouseDragging()){
+    if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup | ImGuiHoveredFlags_AllowWhenBlockedByActiveItem) && ImGui::IsMouseDragging(0)){
         neuWin->beingDragged = true;
     }
     else neuWin->beingDragged = false;
@@ -1273,8 +1392,8 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, neuronWindow* neuWin){
 
 
     ImGui::Text("Current voltage: %.01f mV", neuPot);
-    ImGui::SameLine(); ImGui::Dummy(ImVec2(ImGui::GetContentRegionAvailWidth() - 30, 0)); ImGui::SameLine();
-    ImGui::RadioButton("", neuWin->usingRelative);
+    ImGui::SameLine(); ImGui::Dummy(ImVec2(ImGui::GetContentRegionAvail().x - 30, 0)); ImGui::SameLine();
+    ImGui::RadioButton("##follow_neuron", neuWin->usingRelative);
     if (ImGui::IsItemClicked()){
         neuWin->usingRelative = !neuWin->usingRelative;
         neuWin->relativePosition = ImVec2(neuWin->currentWindowPos.x - screenGLM.x, neuWin->currentWindowPos.y - screenGLM.y);
@@ -1296,7 +1415,7 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, neuronWindow* neuWin){
     #define voltageGraphHeight 100
 
     if (!voltageData.empty()) {
-        ImGui::PlotLines("", voltageData.data(), voltageData.size(), 0, "", -90.0f, 50.0f, ImVec2(300, 100));
+        ImGui::PlotLines("##voltage_graph", voltageData.data(), voltageData.size(), 0, "", -90.0f, 50.0f, ImVec2(300, 100));
     }
     else {
         ImGui::TextDisabled("No samples yet.");
@@ -1307,15 +1426,16 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, neuronWindow* neuWin){
     drawList->AddLine(thresholdLine, ImVec2(thresholdLine.x + voltageGraphWidth, thresholdLine.y), ImColor(50, 50, 50));
     ImGui::Separator();
 
-    float windowWidth = ImGui::GetWindowContentRegionWidth();
+    float windowWidth = ImGui::GetContentRegionAvail().x;
 
-    ImGui::BeginChild("In synapses", ImVec2(windowWidth * 0.38f, 0), ImGuiWindowFlags_HorizontalScrollbar);
+    ImGui::BeginChild("In synapses", ImVec2(windowWidth * 0.38f, 0), ImGuiChildFlags_None, ImGuiWindowFlags_HorizontalScrollbar);
     ImGui::Text("In synapses");
     for (auto &synM: neu->inSynapses){
         Synapse* syn = brain->getSynapse(synM);
+        ImGui::PushID(static_cast<int>(synM.first));
 
-        ImGui::PushStyleColor(ImGuiCol_Header, ImColor(116, 102, 116, (int) floor(50 + syn->getPrePot()*180.0f)));
-        std::sprintf(buffer,"%i", syn->pN);
+        ImGui::PushStyleColor(ImGuiCol_Header, ImColor(116, 102, 116, (int) floor(50 + syn->getPrePot()*180.0f)).Value);
+        std::sprintf(buffer,"%zu", syn->pN);
         if (ImGui::CollapsingHeader(buffer)){
             if (ImGui::Button("Open")) {
                 selectNeuron(syn->pN, true);
@@ -1324,13 +1444,14 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, neuronWindow* neuWin){
                 neuronWindows.at(syn->pN).nextCollapsed = 2;
                 neuWin->usingRelative = false;
             }
-            ImGui::SameLine(); ImGui::Text("%i -> %i", syn->pN, syn->tN);
+            ImGui::SameLine(); ImGui::Text("%zu -> %zu", syn->pN, syn->tN);
             if (!syn->inhibitory) ImGui::TextColored(ImColor(116, 102, 116),"EXCITATORY");
             else ImGui::TextColored(ImColor(26, 26, 116),"inhibitory");
             ImGui::Text("weight: %.2f", syn->getWeight());
 
         }
         ImGui::PopStyleColor(1);
+        ImGui::PopID();
     }
     float childHeight = ImGui::GetWindowContentRegionMax().y;
     ImGui::EndChild();
@@ -1340,18 +1461,26 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, neuronWindow* neuWin){
         float neuPotScaled = 0.4 + (neuPot+70.f)/200.f;
         float imageSize = fmin(windowWidth*0.2, 100.0f);
         ImGui::Dummy(ImVec2(imageSize, ImGui::GetWindowContentRegionMax().y/2.0f-imageSize/2.0f)); // Vertically centred
-        ImGui::Image((void*) neuron_smallTexID, ImVec2(imageSize, imageSize), ImVec2(0,0), ImVec2(1,1), ImVec4(neuPotScaled, neuPotScaled, neuPotScaled, neuPotScaled));
+        ImGui::ImageWithBg(
+            ImTextureRef((ImTextureID)(intptr_t)neuron_smallTexID),
+            ImVec2(imageSize, imageSize),
+            ImVec2(0,0),
+            ImVec2(1,1),
+            ImVec4(0, 0, 0, 0),
+            ImVec4(neuPotScaled, neuPotScaled, neuPotScaled, neuPotScaled)
+        );
     ImGui::EndChild();
     ImGui::SameLine();
 
-    ImGui::BeginChild("Out synapses", ImVec2(windowWidth * 0.38f, 0), ImGuiWindowFlags_HorizontalScrollbar);
+    ImGui::BeginChild("Out synapses", ImVec2(windowWidth * 0.38f, 0), ImGuiChildFlags_None, ImGuiWindowFlags_HorizontalScrollbar);
     ImGui::Text("Out synapses");
     int i = 0;
     for (auto &syn: neu->outSynapses){
-        ImGui::PushStyleColor(ImGuiCol_Header, ImColor(116, 102, 116, (int) floor(50 + syn.getPostPot()*180.0f)));
-        std::sprintf(buffer,"%i", syn.tN);
+        ImGui::PushID(i);
+        ImGui::PushStyleColor(ImGuiCol_Header, ImColor(116, 102, 116, (int) floor(50 + syn.getPostPot()*180.0f)).Value);
+        std::sprintf(buffer,"%zu", syn.tN);
         if (ImGui::CollapsingHeader(buffer)){
-            ImGui::Text("%i -> %i", syn.pN, syn.tN);
+            ImGui::Text("%zu -> %zu", syn.pN, syn.tN);
             if (ImGui::Button("Open")){
                 selectNeuron(syn.tN, true);
                 ImVec2 currentWindowPos = ImGui::GetWindowPos();
@@ -1371,10 +1500,10 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, neuronWindow* neuWin){
                 }
             }
             if (!weightData.empty()) {
-                ImGui::PlotLines("", weightData.data(), weightData.size(), 0, "", -1.0f, 1.0f, ImVec2(77, 48));
+                ImGui::PlotLines("##weight_graph_small", weightData.data(), weightData.size(), 0, "", -1.0f, 1.0f, ImVec2(77, 48));
                 if (ImGui::IsItemHovered()){
                     ImGui::BeginTooltip();
-                    ImGui::PlotLines("", weightData.data(), weightData.size(), 0, "", -1.0f, 1.0f, ImVec2(500, 200));
+                    ImGui::PlotLines("##weight_graph_large", weightData.data(), weightData.size(), 0, "", -1.0f, 1.0f, ImVec2(500, 200));
                     ImGui::Text("weight: %.3f", syn.getWeight());
                     ImGui::EndTooltip();
                 }
@@ -1385,6 +1514,7 @@ void NeuCor_Renderer::renderNeuronWindow(int ID, neuronWindow* neuWin){
 
         }
         ImGui::PopStyleColor(1);
+        ImGui::PopID();
         i++;
     }
     ImGui::EndChild();
@@ -1405,7 +1535,7 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
     }
 
     // Set module treenodes initial state
-    if (!windowed) ImGui::SetNextTreeNodeOpen(moduleInitOpen[(int) mod->type], ImGuiSetCond_Once);
+    if (!windowed) ImGui::SetNextItemOpen(moduleInitOpen[(int) mod->type], ImGuiCond_Once);
 
     switch (mod->type){
 
@@ -1429,11 +1559,11 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
         ImGui::Text("Camera mode:");
         if(ImGui::Button("<"))
             cameraMode = static_cast<cameraModes>((cameraMode-1+cameraModes::CAMERA_count)%cameraModes::CAMERA_count);
-        ImGui::SameLine(); ImGui::Text(cameraModeNames.at(cameraMode).data()); ImGui::SameLine(180,0);
+        ImGui::SameLine(); ImGui::Text("%s", cameraModeNames.at(cameraMode).data()); ImGui::SameLine(180,0);
         if (glfwGetKey(window, GLFW_KEY_C ) == GLFW_PRESS){
-            ImGui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(2.0f, 0.6f, 0.6f));
-            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(2.0f, 0.7f, 0.7f));
-            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(2.0f, 0.8f, 0.8f));
+            ImGui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(2.0f, 0.6f, 0.6f).Value);
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(2.0f, 0.7f, 0.7f).Value);
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(2.0f, 0.8f, 0.8f).Value);
         }
         if(ImGui::Button(">"))
             cameraMode = static_cast<cameraModes>((cameraMode+1)%cameraModes::CAMERA_count);
@@ -1445,11 +1575,11 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
         if(ImGui::Button("<"))
             renderMode = static_cast<renderingModes>((renderMode-1+renderingModes::RENDER_count)%renderingModes::RENDER_count);
         ImGui::PopID();
-        ImGui::SameLine(); ImGui::Text(renderingModeNames.at(renderMode).data()); ImGui::SameLine(180,0);
+        ImGui::SameLine(); ImGui::Text("%s", renderingModeNames.at(renderMode).data()); ImGui::SameLine(180,0);
         if (glfwGetKey(window, GLFW_KEY_M ) == GLFW_PRESS){
-            ImGui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(2.0f, 0.6f, 0.6f));
-            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(2.0f, 0.7f, 0.7f));
-            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(2.0f, 0.8f, 0.8f));
+            ImGui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(2.0f, 0.6f, 0.6f).Value);
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(2.0f, 0.7f, 0.7f).Value);
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(2.0f, 0.8f, 0.8f).Value);
         }
         ImGui::PushID("render right button");
         if(ImGui::Button(">"))
@@ -1460,19 +1590,19 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
             ImGui::Checkbox("Only active", &RENDER_PLASTICITY_onlyActive);
         }
         else if (renderMode == RENDER_CLOSENESS){
-            ImGui::DragFloat("Strength factor", &closenessIntensity, 0.01, 0, 20, "%.2f", 2.0);
+            ImGui::DragFloat("Strength factor", &closenessIntensity, 0.01, 0, 20, "%.2f");
         }
         else if (renderMode == RENDER_ACTIVITY){
-            char* letters[] = {"a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"};
-            if (currentActivity == ""){
+            const char* letters[] = {"a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"};
+            if (currentActivity[0] == '\0'){
                 currentActivity = "a";
                 for (int i = 0; variables.find(currentActivity) != variables.end(); i++)
                     currentActivity = letters[i];
 
-                variables.insert(std::pair<char*, std::pair<std::unique_ptr<double>, std::vector<float> > >(currentActivity,
+                variables.insert(std::pair<const char*, std::pair<std::unique_ptr<double>, std::vector<float> > >(currentActivity,
                                                   std::pair<std::unique_ptr<double>, std::vector<float> >(std::unique_ptr<double>(new double), std::vector<float>())));
             }
-            if (ImGui::Button(currentActivity, ImVec2(50,50)) && variables.size() != sizeof(letters)/sizeof(char*)){
+            if (ImGui::Button(currentActivity, ImVec2(50,50)) && variables.size() != sizeof(letters)/sizeof(const char*)){
 
                 if (glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS){
                     /*ImGui::OpenPopup("Change name");
@@ -1496,13 +1626,13 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
             }*/
             if (ImGui::IsItemHovered()){ImGui::BeginTooltip(); ImGui::Text("Save activity\nCtrl + Click to reset"); ImGui::EndTooltip();}
             ImGui::SameLine();
-            ImGui::BeginChild("VariableList", ImVec2(ImGui::GetContentRegionAvailWidth(), 100), true);
+            ImGui::BeginChild("VariableList", ImVec2(ImGui::GetContentRegionAvail().x, 100), true);
             ImGui::Columns(3);
-            std::vector<char*> toDelete;
+            std::vector<const char*> toDelete;
             int i = 1;
             for (auto &var: variables){
                 if (var.first == currentActivity) continue;
-                ImGui::Text(var.first);
+                ImGui::Text("%s", var.first);
                 if (ImGui::IsItemClicked()) toDelete.push_back(var.first);
                 if (ImGui::IsItemHovered()){ImGui::BeginTooltip(); ImGui::Text("Press to delete %s", var.first); ImGui::EndTooltip();}
                 if (i % 10 == 0) ImGui::NextColumn();
@@ -1547,10 +1677,10 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
         bool loadedPaused = false;
         if (paused && runBrainOnUpdate){
             loadedPaused = true;
-            ImGui::PushStyleColor(ImGuiCol_FrameBg, ImColor::HSV(0.0f, 0.7f, 0.7f));
-            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImColor::HSV(0.0f, 0.6f, 0.5f));
-            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImColor::HSV(0.0f, 0.7f, 0.5f));
-            ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImColor::HSV(0.0f, 0.7f, 0.5f));
+            ImGui::PushStyleColor(ImGuiCol_FrameBg, ImColor::HSV(0.0f, 0.7f, 0.7f).Value);
+            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImColor::HSV(0.0f, 0.6f, 0.5f).Value);
+            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImColor::HSV(0.0f, 0.7f, 0.5f).Value);
+            ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImColor::HSV(0.0f, 0.7f, 0.5f).Value);
 
             if (ImGui::Button("Run")){
                 paused = false;
@@ -1563,9 +1693,9 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
         }
         ImGui::SameLine();
         if (!realRunspeed)
-            ImGui::SliderFloat("Speed", &brain->runSpeed, 0.0, 1.0, "%.4f ms per run", 2.0f);
+            ImGui::SliderFloat("Speed", &brain->runSpeed, 0.0, 1.0, "%.4f ms per run");
         else
-            ImGui::SliderFloat("Speed", &brain->runSpeed, 0.0, 10.0, "%.4f ms/s ", 2.0f);
+            ImGui::SliderFloat("Speed", &brain->runSpeed, 0.0, 10.0, "%.4f ms/s ");
         if (loadedPaused) ImGui::PopStyleColor(4);
 
         if (runBrainOnUpdate){
@@ -1632,7 +1762,7 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
                 logger.activityUpdateTimer = a_updatePeriod;
             }
             if (!activityDistribution.empty()) {
-                ImGui::PlotHistogram("", activityDistribution.data(), activityDistribution.size(), 0, "", FLT_MAX, FLT_MAX, ImVec2(0, 200));
+                ImGui::PlotHistogram("##activity_distribution", activityDistribution.data(), activityDistribution.size(), 0, "", FLT_MAX, FLT_MAX, ImVec2(0, 200));
             }
 
             if (ImGui::IsItemClicked()) ImGui::OpenPopup("Activity distribution settings");
@@ -1644,7 +1774,7 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
                 if (ImGui::Button("Update")){
                     logger.activityUpdateTimer = -100;
                 }
-                ImGui::Checkbox("", &a_updatesOn);
+                ImGui::Checkbox("##activity_updates_enabled", &a_updatesOn);
                 ImGui::SameLine(); ImGui::DragFloat("Period", &a_updatePeriod, 0.2f, 0.05f, 60.0f, "%.1f s");
                 if (0.5 < a_updatePeriod) ImGui::ProgressBar(logger.activityUpdateTimer/a_updatePeriod, ImVec2(0,0), "");
                 if (ImGui::Button("Reset")){a_spans = 2.0, a_range_min = 0.0, a_range_max = 50.0; a_updatePeriod = 5.0; a_updatesOn = true;}
@@ -1686,7 +1816,7 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
                 logger.weightUpdateTimer = w_updatePeriod;
             }
             if (!weightDistribution.empty()) {
-                ImGui::PlotHistogram("", weightDistribution.data(), weightDistribution.size(), 0, "", FLT_MAX, FLT_MAX, ImVec2(0, 200));
+                ImGui::PlotHistogram("##weight_distribution", weightDistribution.data(), weightDistribution.size(), 0, "", FLT_MAX, FLT_MAX, ImVec2(0, 200));
             }
 
             if (ImGui::IsItemClicked()) ImGui::OpenPopup("Weight distribution settings");
@@ -1698,17 +1828,17 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
                 if (ImGui::Button("Update")){
                     logger.weightUpdateTimer = -100;
                 }
-                ImGui::Checkbox("", &w_updatesOn);
+                ImGui::Checkbox("##weight_updates_enabled", &w_updatesOn);
                 ImGui::SameLine(); ImGui::DragFloat("Period", &w_updatePeriod, 0.2f, 0.05f, 60.0f, "%.1f s");
                 if (0.5 < w_updatePeriod) ImGui::ProgressBar(logger.weightUpdateTimer/w_updatePeriod, ImVec2(0,0), "");
-                if (ImGui::Button("Reset")){w_spans = 0.2, w_range_min = -3.0, w_range_max = 3.0; w_updatePeriod = 5.0; w_updatesOn = true;}
+                if (ImGui::Button("Reset")){w_spans = 20, w_range_min = -3.0f, w_range_max = 3.0f; w_updatePeriod = 5.0f; w_updatesOn = true;}
                 ImGui::EndPopup();
             }
         }
 
         {
             ImGui::Text("Raster plot");
-            float rasterPlotWidth = ImGui::GetContentRegionAvailWidth(), rasterPlotHeight = sqrt(brain->neurons.size())*15.f;
+            float rasterPlotWidth = ImGui::GetContentRegionAvail().x, rasterPlotHeight = sqrt(brain->neurons.size())*15.f;
             static float rasterPlotTime = 20.0; // ms
 
             ImVec2 nextPos = ImVec2(ImGui::GetWindowPos().x + 8, ImGui::GetItemRectMax().y + 5);
@@ -1749,7 +1879,7 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
             ImGui::Dummy(ImVec2(rasterPlotWidth, rasterPlotHeight+50));
             if (ImGui::IsItemClicked()) ImGui::OpenPopup("Raster plot settings");
             if (ImGui::BeginPopup("Raster plot settings")){
-                    ImGui::DragFloat("Time range", &rasterPlotTime, 0.02, 0.1, 100, "%.2f", 2);
+                    ImGui::DragFloat("Time range", &rasterPlotTime, 0.02, 0.1, 100, "%.2f");
                     ImGui::EndPopup();
             }
         }
@@ -1760,14 +1890,14 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
     case (MODULE_SELECTED_NEURONS): {
         if (windowed) {
             ImGui::SetNextWindowSizeConstraints(ImVec2(250, 0), ImVec2(FLT_MAX, FLT_MAX));
-            ImGui::SetNextWindowContentWidth(250);
+            ImGui::SetNextWindowContentSize(ImVec2(250, 0));
             ImGui::Begin("Selected neurons");
         }
         else {openTree = ImGui::CollapsingHeader("Selected neurons"); if (!openTree) break; activeTree = ImGui::IsItemActive();}
 
-        ImGui::PushStyleColor(ImGuiCol_Header, ImColor(0, 90, 173));
-        ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImColor::HSV(1.57f, 1.0f, 0.9f));
-        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImColor::HSV(1.57f, 0.6f, 0.68f));
+        ImGui::PushStyleColor(ImGuiCol_Header, ImColor(0, 90, 173).Value);
+        ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImColor::HSV(1.57f, 1.0f, 0.9f).Value);
+        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImColor::HSV(1.57f, 0.6f, 0.68f).Value);
         ImDrawList* drawList = ImGui::GetWindowDrawList();
 
         int cellsPerRow = (int) std::max(floor(ImGui::GetWindowWidth()/50.0)-1 , 1.0);
@@ -1855,7 +1985,7 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
             "Scroll - Move closer/further away\n"
         ;
 
-        ImGui::Text(controlsText.c_str());
+        ImGui::Text("%s", controlsText.c_str());
         break;
     }
 
@@ -1869,23 +1999,18 @@ void NeuCor_Renderer::renderModule(module* mod, bool windowed){
     }
     static graphicsModule justUndocked = MODULE_count;
     if (justUndocked == mod->type && windowed){
-        // Keep dragging window by utilizing ImGui internals
-        ImGuiContext& g = *GImGui;
         ImGuiWindow* currentWindow = ImGui::GetCurrentWindow();
-        ImGui::FocusWindow(currentWindow);
-        g.MovedWindow = currentWindow;
-        g.MovedWindowMoveId = currentWindow->MoveId;
-        ImGui::SetActiveID(g.MovedWindowMoveId, currentWindow);
+        ImGui::StartMouseMovingWindow(currentWindow);
 
         justUndocked = MODULE_count;
     }
     if (windowed){
         if (mod->snapped && ImGui::IsMouseReleased(0)) {mod->snapped = false; mod->windowed = false;}
-        mod->snapped = ImGui::IsMouseHoveringWindow() && ImGui::IsMouseDragging() && ImGui::GetMousePos().x < 80;
+        mod->snapped = ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup | ImGuiHoveredFlags_AllowWhenBlockedByActiveItem) && ImGui::IsMouseDragging(0) && ImGui::GetMousePos().x < 80;
         ImGui::End();
     }
     else if (openTree) {
-        if (activeTree && ImGui::GetMousePos().x > 80 && ImGui::IsMouseDragging()){
+        if (activeTree && ImGui::GetMousePos().x > 80 && ImGui::IsMouseDragging(0)){
             mod->windowed = true;
             mod->beingDragged = true;
             justUndocked = mod->type;
@@ -1930,7 +2055,9 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
                 }
             }
             if (closestDistance < minDistance){
-                if (!selectNeuron(ID, true)) deselectNeuron(ID);   // Tries to select, if false the neuron is already selected and is then deselected.
+                if (!selectNeuron(ID, true)) {
+                    neuronWindows.at(ID).open = true;
+                }
             }
         }
     };
@@ -1973,7 +2100,7 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
 
     case (MOUSE_BUTTON):
         if (std::get<1>(TTparams) == GLFW_MOUSE_BUTTON_LEFT) {
-            if (std::get<2>(TTparams) == GLFW_PRESS && !navigationMode && !ImGui::IsMouseHoveringAnyWindow()){
+            if (std::get<2>(TTparams) == GLFW_PRESS && !navigationMode && !imguiWantsMouse()){
                 glfwGetCursorPos(window, &webScenePressX, &webScenePressY);
                 webScenePointerDown = true;
                 webSceneDragging = false;
@@ -1982,14 +2109,14 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
                 if (webNavigationTemporary) {
                     webNavigationTemporary = false;
                 }
-                if (!webSceneDragging && !navigationMode && !ImGui::IsMouseHoveringAnyWindow()) {
+                if (!webSceneDragging && !navigationMode && !imguiWantsMouse()) {
                     handleSceneClick();
                 }
                 webScenePointerDown = false;
                 webSceneDragging = false;
             }
         }
-        if (std::get<1>(TTparams) == GLFW_MOUSE_BUTTON_RIGHT && std::get<2>(TTparams) == GLFW_PRESS && !dockHovered) { // Switch to navigation mode
+        if (std::get<1>(TTparams) == GLFW_MOUSE_BUTTON_RIGHT && std::get<2>(TTparams) == GLFW_PRESS && !imguiWantsMouse()) { // Switch to navigation mode
             if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {navigationMode = true; showInterface = !showInterface;}
             else navigationMode = !navigationMode;
 
@@ -2005,13 +2132,24 @@ void NeuCor_Renderer::inputCallback(callbackErrand errand, callbackParameters ..
         break;
 
     case (MOUSE_ENTER):
-        mouseInWindow = std::get<1>(TTparams) && glfwGetWindowAttrib(window, GLFW_FOCUSED);
+        mouseInWindow = std::get<1>(TTparams);
         if (!mouseInWindow && webNavigationTemporary) {
             webNavigationTemporary = false;
             webScenePointerDown = false;
             webSceneDragging = false;
         }
         if (mouseInWindow && navigationMode) resetCursor();
+        break;
+
+    case (WINDOW_FOCUS):
+        if (!std::get<1>(TTparams)) {
+            webNavigationTemporary = false;
+            webScenePointerDown = false;
+            webSceneDragging = false;
+        }
+        else if (navigationMode) {
+            resetCursor();
+        }
         break;
     }
 }

@@ -46,7 +46,7 @@ class NeuCor_Renderer {
         typedef void (*CallbackType)();
         void setDestructCallback(CallbackType f);
 
-        enum callbackErrand {KEY_ACTION, CHAR_ACTION, MOUSE_BUTTON, MOUSE_SCROLL, MOUSE_ENTER };
+        enum callbackErrand {KEY_ACTION, CHAR_ACTION, MOUSE_BUTTON, MOUSE_SCROLL, MOUSE_ENTER, WINDOW_FOCUS };
         template<typename ... callbackParameters>
         void inputCallback(callbackErrand errand, callbackParameters ... params);
     protected:
@@ -89,8 +89,8 @@ class NeuCor_Renderer {
         float cameraRadius;
         void resetCursor();
 
-        std::map<char*, std::pair<std::unique_ptr<double>, std::vector<float>>> variables; // Set of variables storing neuron activities
-        char* currentActivity = ""; // The variable where activities are currently being stored
+        std::map<const char*, std::pair<std::unique_ptr<double>, std::vector<float>>> variables; // Set of variables storing neuron activities
+        const char* currentActivity = ""; // The variable where activities are currently being stored
         te_expr* evaluated = NULL; // Complied arithmetic expression of activity
         inline float activityFunction(int ID, bool update = false); // The function being called which calculates the actual value from the expression.
 
@@ -122,6 +122,7 @@ class NeuCor_Renderer {
         GLuint neuron_smallTexID;
         GLuint neuronProgramID;
         GLuint synapseProgramID;
+        GLuint neuronTextureSamplerID;
         GLuint ViewProjMatrixID[2];
         GLuint aspectID[2];
         GLuint sceneVertexArrayID;

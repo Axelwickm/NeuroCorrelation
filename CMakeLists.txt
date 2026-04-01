@@ -31,8 +31,12 @@ add_executable(NeuroCorrelation
     imgui/imgui.h
     imgui/imgui_draw.cpp
     imgui/imgui_internal.h
-    src/imgui_impl_glfw_gl3.cpp
-    src/imgui_impl_glfw_gl3.h
+    imgui/imgui_tables.cpp
+    imgui/imgui_widgets.cpp
+    imgui/backends/imgui_impl_glfw.cpp
+    imgui/backends/imgui_impl_glfw.h
+    imgui/backends/imgui_impl_opengl3.cpp
+    imgui/backends/imgui_impl_opengl3.h
     src/NeuCor_Renderer.cpp
     src/NeuCor_Renderer.h
     src/main.cpp
@@ -41,6 +45,7 @@ add_executable(NeuroCorrelation
 target_include_directories(NeuroCorrelation
     PRIVATE
         ${CMAKE_SOURCE_DIR}/imgui
+        ${CMAKE_SOURCE_DIR}/imgui/backends
         ${CMAKE_SOURCE_DIR}/tinyexpr
         ${GLEW_INCLUDE_DIRS}
 )

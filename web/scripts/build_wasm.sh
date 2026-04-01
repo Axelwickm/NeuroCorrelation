@@ -28,14 +28,18 @@ docker run --rm \
       -std=c++17 \
       -O2 \
       -Iimgui \
+      -Iimgui/backends \
       -Itinyexpr \
       -I/tmp/vendor \
       src/main.cpp \
       src/NeuCor.cpp \
       src/NeuCor_Renderer.cpp \
-      src/imgui_impl_glfw_gl3.cpp \
       imgui/imgui.cpp \
       imgui/imgui_draw.cpp \
+      imgui/imgui_tables.cpp \
+      imgui/imgui_widgets.cpp \
+      imgui/backends/imgui_impl_glfw.cpp \
+      imgui/backends/imgui_impl_opengl3.cpp \
       /tmp/build/tinyexpr.o \
       -o web/package/dist/neurocorrelation.mjs \
       --use-port=contrib.glfw3 \

@@ -28,5 +28,6 @@ void main(){
 
 
     UV = squareVertices.xy * vec2(1, -1) + 0.5;
-    opacity = (potAct[0]+75.0)/140.0;
+    float voltageOpacity = clamp((potAct[0] + 75.0) / 140.0, 0.0, 1.0);
+    opacity = 0.18 + voltageOpacity * 0.82;
 }
