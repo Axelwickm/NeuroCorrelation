@@ -1,9 +1,8 @@
 # NeuroCorrelation
-NeuroCorrelation is a spiking neural network simulation project that explores the concept of Spike Timing Dependent Plasticity (STDP). It is written in C++ and utilizes OpenGL for rendering.
+NeuroCorrelation is a spiking neural network simulation project that explores the concept of Spike Timing Dependent Plasticity (STDP). It is written in C++ and utilizes OpenGL for rendering. Runs native or on web.
 
-This was my first C++ project, so forgive the code-quality.
+## [Try live in browser]( https://axelwickman.com/articles/neurocorrelation?utm_source=gh_neurocorrelation )
 
-## Simulation Preview
 ![Simulation .gif](https://user-images.githubusercontent.com/1360495/95690086-7adbbe00-0c15-11eb-8d08-820fe2f50eb0.gif)
 
 ## About STDP
